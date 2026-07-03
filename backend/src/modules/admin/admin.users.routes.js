@@ -1,8 +1,9 @@
 // src/modules/admin/admin.users.routes.js
-import express from 'express';
+import express from 'express'
+import multer from 'multer'
 
-import authMiddleware from '../../middlewares/auth.middleware.js';
-import roleMiddleware from '../../middlewares/role.middleware.js';
+import authMiddleware from '../../middlewares/auth.middleware.js'
+import roleMiddleware from '../../middlewares/role.middleware.js'
 
 import {
   getAdminUsers,
@@ -13,20 +14,31 @@ import {
   unlockAdminUser,
   resetPasswordAdminUser,
   deleteAdminUser,
-} from './admin.users.controller.js';
+  importUsersFromExcel,
+} from './admin.users.controller.js'
 
-const router = express.Router();
+const router = express.Router()
 
-router.use(authMiddleware);
-router.use(roleMiddleware('Admin'));
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+})
 
-router.get('/', getAdminUsers);
-router.get('/:id', getAdminUserDetail);
-router.post('/', createAdminUser);
-router.put('/:id', updateAdminUser);
-router.patch('/:id/lock', lockAdminUser);
-router.patch('/:id/unlock', unlockAdminUser);
-router.patch('/:id/reset-password', resetPasswordAdminUser);
-router.delete('/:id', deleteAdminUser);
+router.use(authMiddleware)
+router.use(roleMiddleware('Admin'))
 
-export default router;
+router.get('/', getAdminUsers)
+router.get('/:id', getAdminUserDetail)
+router.post('/', createAdminUser)
+
+router.post('/import-excel', upload.single('file'), importUsersFromExcel)
+
+router.put('/:id', updateAdminUser)
+router.patch('/:id/lock', lockAdminUser)
+router.patch('/:id/unlock', unlockAdminUser)
+router.patch('/:id/reset-password', resetPasswordAdminUser)
+router.delete('/:id', deleteAdminUser)
+
+export default router

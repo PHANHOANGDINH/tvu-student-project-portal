@@ -14,23 +14,27 @@ function addUserFilters(request, filters = {}) {
     WHERE
       (
         @Search IS NULL
-        OR FullName LIKE @Search
-        OR Email LIKE @Search
-        OR UserCode LIKE @Search
-        OR Phone LIKE @Search
+        OR u.FullName LIKE @Search
+        OR u.Email LIKE @Search
+        OR u.UserCode LIKE @Search
+        OR u.Phone LIKE @Search
+        OR u.Department LIKE @Search
+        OR u.ClassName LIKE @Search
+        OR activeClass.ActiveClassCode LIKE @Search
+        OR activeClass.ActiveClassName LIKE @Search
       )
       AND
       (
         @Role IS NULL
-        OR Role = @Role
+        OR u.Role = @Role
       )
       AND
       (
         @Status = 'all'
-        OR (@Status = 'not-deleted' AND DeletedAt IS NULL)
-        OR (@Status = 'active' AND IsActive = 1 AND DeletedAt IS NULL)
-        OR (@Status = 'inactive' AND IsActive = 0 AND DeletedAt IS NULL)
-        OR (@Status = 'deleted' AND DeletedAt IS NOT NULL)
+        OR (@Status = 'not-deleted' AND u.DeletedAt IS NULL)
+        OR (@Status = 'active' AND u.IsActive = 1 AND u.DeletedAt IS NULL)
+        OR (@Status = 'inactive' AND u.IsActive = 0 AND u.DeletedAt IS NULL)
+        OR (@Status = 'deleted' AND u.DeletedAt IS NOT NULL)
       )
   `;
 }
@@ -43,7 +47,6 @@ export async function getUsers(filters = {}) {
   const offset = (page - 1) * limit;
 
   const request = pool.request();
-
   const whereClause = addUserFilters(request, filters);
 
   request.input('Offset', sql.Int, offset);
@@ -51,21 +54,37 @@ export async function getUsers(filters = {}) {
 
   const result = await request.query(`
     SELECT
-      Id,
-      FullName,
-      Email,
-      UserCode,
-      Phone,
-      Department,
-      ClassName,
-      Role,
-      IsActive,
-      CreatedAt,
-      UpdatedAt,
-      DeletedAt
-    FROM Users
+      u.Id,
+      u.FullName,
+      u.Email,
+      u.UserCode,
+      u.Phone,
+      u.Department,
+      COALESCE(activeClass.ActiveClassCode, u.ClassName) AS ClassName,
+      u.Role,
+      u.IsActive,
+      u.CreatedAt,
+      u.UpdatedAt,
+      u.DeletedAt,
+      activeClass.ActiveClassId,
+      activeClass.ActiveClassCode,
+      activeClass.ActiveClassName
+    FROM Users u
+    OUTER APPLY (
+      SELECT TOP 1
+        c.Id AS ActiveClassId,
+        c.ClassCode AS ActiveClassCode,
+        c.ClassName AS ActiveClassName
+      FROM StudentClassMembers scm
+      INNER JOIN Classes c
+        ON scm.ClassId = c.Id
+      WHERE scm.StudentId = u.Id
+        AND scm.DeletedAt IS NULL
+        AND c.DeletedAt IS NULL
+      ORDER BY scm.CreatedAt DESC
+    ) activeClass
     ${whereClause}
-    ORDER BY CreatedAt DESC
+    ORDER BY u.CreatedAt DESC
     OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
   `);
 
@@ -80,7 +99,20 @@ export async function countUsers(filters = {}) {
 
   const result = await request.query(`
     SELECT COUNT(*) AS Total
-    FROM Users
+    FROM Users u
+    OUTER APPLY (
+      SELECT TOP 1
+        c.Id AS ActiveClassId,
+        c.ClassCode AS ActiveClassCode,
+        c.ClassName AS ActiveClassName
+      FROM StudentClassMembers scm
+      INNER JOIN Classes c
+        ON scm.ClassId = c.Id
+      WHERE scm.StudentId = u.Id
+        AND scm.DeletedAt IS NULL
+        AND c.DeletedAt IS NULL
+      ORDER BY scm.CreatedAt DESC
+    ) activeClass
     ${whereClause}
   `);
 
@@ -143,9 +175,32 @@ export async function findUserByEmailForAdmin(email) {
         Id,
         FullName,
         Email,
+        UserCode,
+        Role,
         DeletedAt
       FROM Users
       WHERE Email = @Email
+    `);
+
+  return result.recordset[0] || null;
+}
+
+export async function findUserByUserCodeForAdmin(userCode) {
+  const pool = await poolPromise;
+
+  const result = await pool
+    .request()
+    .input('UserCode', sql.NVarChar(50), userCode)
+    .query(`
+      SELECT TOP 1
+        Id,
+        FullName,
+        Email,
+        UserCode,
+        Role,
+        DeletedAt
+      FROM Users
+      WHERE UserCode = @UserCode
     `);
 
   return result.recordset[0] || null;
