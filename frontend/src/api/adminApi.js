@@ -1,4 +1,4 @@
-import { request } from './http'
+﻿import { buildApiUrl, request } from './http'
 
 // DASHBOARD
 export function getDashboardApi() {
@@ -60,7 +60,7 @@ export async function importUsersExcelApi(file, importType) {
   formData.append('importType', importType)
 
   const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/admin/users/import-excel`,
+    buildApiUrl('/admin/users/import-excel'),
     {
       method: 'POST',
       headers: {
@@ -73,7 +73,7 @@ export async function importUsersExcelApi(file, importType) {
   const data = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new Error(data?.message || `Lỗi import Excel: ${response.status}`)
+    throw new Error(data?.message || `Lá»—i import Excel: ${response.status}`)
   }
 
   return data

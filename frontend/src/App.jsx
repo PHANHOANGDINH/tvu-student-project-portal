@@ -1,9 +1,8 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 
 import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
 
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
@@ -13,6 +12,7 @@ import ProfilePage from './pages/ProfilePage'
 import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
 
 import RoleRoute from './components/RoleRoute'
+import { USER_ROLES } from './constants/roles'
 import { getUserRole, isLoggedIn } from './utils/auth'
 
 function ProtectedRoute({ children }) {
@@ -24,19 +24,19 @@ function ProtectedRoute({ children }) {
 function DashboardRedirect() {
   const role = getUserRole()
 
-  if (role === 'Admin') {
+  if (role === USER_ROLES.ADMIN) {
     return (
-      <RoleRoute allowedRoles={['Admin']}>
+      <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
         <DashboardPage />
       </RoleRoute>
     )
   }
 
-  if (role === 'Teacher') {
+  if (role === USER_ROLES.LECTURER) {
     return <Navigate to="/teacher/dashboard" replace />
   }
 
-  if (role === 'Student') {
+  if (role === USER_ROLES.STUDENT) {
     return <Navigate to="/student/dashboard" replace />
   }
 
@@ -48,7 +48,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
 
         <Route
           path="/"
@@ -65,7 +65,7 @@ function App() {
           <Route
             path="users"
             element={
-              <RoleRoute allowedRoles={['Admin']}>
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <UsersPage />
               </RoleRoute>
             }
@@ -74,7 +74,7 @@ function App() {
           <Route
             path="classes"
             element={
-              <RoleRoute allowedRoles={['Admin']}>
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <ClassesPage />
               </RoleRoute>
             }
@@ -83,7 +83,7 @@ function App() {
           <Route
             path="teacher/dashboard"
             element={
-              <RoleRoute allowedRoles={['Teacher']}>
+              <RoleRoute allowedRoles={[USER_ROLES.LECTURER]}>
                 <TeacherDashboardPage />
               </RoleRoute>
             }
@@ -92,7 +92,7 @@ function App() {
           <Route
             path="profile"
             element={
-              <RoleRoute allowedRoles={['Admin', 'Teacher']}>
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT]}>
                 <ProfilePage />
               </RoleRoute>
             }

@@ -1,15 +1,24 @@
-// src/middlewares/role.middleware.js
+﻿// src/middlewares/role.middleware.js
+import { normalizeRole } from '../constants/roles.js';
+import { sendError } from '../utils/apiResponse.util.js';
+
 export default function roleMiddleware(...allowedRoles) {
+  const normalizedAllowedRoles = allowedRoles.map(normalizeRole).filter(Boolean);
+
   return function (req, res, next) {
     if (!req.user) {
-      return res.status(401).json({
-        message: 'Bạn chưa đăng nhập',
+      return sendError(res, {
+        statusCode: 401,
+        message: 'Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn',
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: 'Bạn không có quyền truy cập chức năng này',
+    const userRole = normalizeRole(req.user.role);
+
+    if (!userRole || !normalizedAllowedRoles.includes(userRole)) {
+      return sendError(res, {
+        statusCode: 403,
+        message: 'Bạn không có quyền thực hiện chức năng này',
       });
     }
 

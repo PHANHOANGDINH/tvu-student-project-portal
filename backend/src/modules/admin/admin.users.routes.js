@@ -1,9 +1,10 @@
-// src/modules/admin/admin.users.routes.js
+﻿// src/modules/admin/admin.users.routes.js
 import express from 'express'
 import multer from 'multer'
 
 import authMiddleware from '../../middlewares/auth.middleware.js'
 import roleMiddleware from '../../middlewares/role.middleware.js'
+import { USER_ROLES } from '../../constants/roles.js'
 
 import {
   getAdminUsers,
@@ -27,7 +28,7 @@ const upload = multer({
 })
 
 router.use(authMiddleware)
-router.use(roleMiddleware('Admin'))
+router.use(roleMiddleware(USER_ROLES.ADMIN))
 
 router.get('/', getAdminUsers)
 router.get('/:id', getAdminUserDetail)
@@ -42,3 +43,4 @@ router.patch('/:id/reset-password', resetPasswordAdminUser)
 router.delete('/:id', deleteAdminUser)
 
 export default router
+

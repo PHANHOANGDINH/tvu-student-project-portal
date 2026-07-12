@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+﻿import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { USER_ROLES } from '../constants/roles'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
 
 function MainLayout() {
@@ -12,98 +13,91 @@ function MainLayout() {
   }
 
   function getHomePath() {
-    if (role === 'Admin') return '/dashboard'
-    if (role === 'Teacher') return '/teacher/dashboard'
-    if (role === 'Student') return '/student/dashboard'
+    if (role === USER_ROLES.ADMIN) return '/dashboard'
+    if (role === USER_ROLES.LECTURER) return '/teacher/dashboard'
+    if (role === USER_ROLES.STUDENT) return '/student/dashboard'
 
     return '/login'
   }
 
   function getWorkspaceText() {
-    if (role === 'Admin') return 'Khu vực quản trị hệ thống'
-    if (role === 'Teacher') return 'Khu vực giảng viên'
-    if (role === 'Student') return 'Khu vực sinh viên'
+    if (role === USER_ROLES.ADMIN) return 'Khu vực quản trị hệ thống'
+    if (role === USER_ROLES.LECTURER) return 'Khu vực giảng viên'
+    if (role === USER_ROLES.STUDENT) return 'Khu vực sinh viên'
 
     return 'TVU Student Project Portal'
   }
 
   const menuItems = [
-    // ADMIN
     {
       label: 'Dashboard',
       path: '/dashboard',
-      roles: ['Admin']
+      roles: [USER_ROLES.ADMIN]
     },
     {
       label: 'Người dùng',
       path: '/users',
-      roles: ['Admin']
+      roles: [USER_ROLES.ADMIN]
     },
     {
       label: 'Lớp học',
       path: '/classes',
-      roles: ['Admin']
+      roles: [USER_ROLES.ADMIN]
     },
-
-    // TEACHER
     {
       label: 'Dashboard',
       path: '/teacher/dashboard',
-      roles: ['Teacher']
+      roles: [USER_ROLES.LECTURER]
     },
     {
       label: 'Đề tài của tôi',
       path: '/teacher/projects',
-      roles: ['Teacher']
+      roles: [USER_ROLES.LECTURER]
     },
     {
       label: 'Duyệt đăng ký',
       path: '/teacher/registrations',
-      roles: ['Teacher']
+      roles: [USER_ROLES.LECTURER]
     },
     {
       label: 'Tiến độ sinh viên',
       path: '/teacher/progress',
-      roles: ['Teacher']
+      roles: [USER_ROLES.LECTURER]
     },
     {
       label: 'Bài nộp cuối kỳ',
       path: '/teacher/final-submissions',
-      roles: ['Teacher']
+      roles: [USER_ROLES.LECTURER]
     },
-
-    // STUDENT - để sau mình làm tiếp
     {
       label: 'Dashboard',
       path: '/student/dashboard',
-      roles: ['Student']
+      roles: [USER_ROLES.STUDENT]
     },
     {
       label: 'Danh sách đề tài',
       path: '/student/projects',
-      roles: ['Student']
+      roles: [USER_ROLES.STUDENT]
     },
     {
       label: 'Dự án của tôi',
       path: '/student/my-project',
-      roles: ['Student']
+      roles: [USER_ROLES.STUDENT]
     },
     {
       label: 'Nộp tiến độ',
       path: '/student/progress',
-      roles: ['Student']
+      roles: [USER_ROLES.STUDENT]
     },
     {
       label: 'Nộp cuối kỳ',
       path: '/student/final-submissions',
-      roles: ['Student']
+      roles: [USER_ROLES.STUDENT]
     },
-
-    // CHUNG
     {
       label: 'Hồ sơ',
       path: '/profile',
-      roles: ['Admin', 'Teacher', 'Student']
+      roles: [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT]
     }
   ]
 

@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { loginApi } from '../api/authApi'
+﻿import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getCurrentUserApi, loginApi } from '../api/authApi'
+import { setAuth, updateStoredUser } from '../utils/auth'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -32,10 +33,17 @@ function LoginPage() {
     try {
       setLoading(true)
 
-      const data = await loginApi(form.email, form.password)
+      const response = await loginApi(form.email, form.password)
+      const authData = response?.data
 
-      localStorage.setItem('access_token', data.token)
-      localStorage.setItem('current_user', JSON.stringify(data.user))
+      setAuth(authData.accessToken, authData.user)
+
+      try {
+        const meResponse = await getCurrentUserApi()
+        if (meResponse?.data) updateStoredUser(meResponse.data)
+      } catch {
+        // Login already returned the required auth user; /me will be retried in protected pages.
+      }
 
       navigate('/dashboard')
     } catch (err) {
@@ -83,10 +91,6 @@ function LoginPage() {
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
-
-        <p className="auth-switch">
-          Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
-        </p>
       </div>
     </div>
   )
