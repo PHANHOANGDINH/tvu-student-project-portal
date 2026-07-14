@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { getClassesApi, getDashboardApi, getUsersApi } from "../api/adminApi";
+﻿import { useEffect, useMemo, useState } from "react";
+import { getClassesApi, getDashboardApi, getUsersApi } from '../api/adminApi'
+import { normalizeRole, USER_ROLES } from '../constants/roles'
 import {
     FaUsers,
     FaUserGraduate,
@@ -42,7 +43,7 @@ function DashboardPage() {
             setUsers(Array.isArray(userList) ? userList : []);
             setClasses(Array.isArray(classList) ? classList : []);
         } catch (err) {
-            setError(err.message || "Không thể tải dữ liệu dashboard");
+            setError(err.message || "KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u dashboard");
         } finally {
             setLoading(false);
         }
@@ -58,17 +59,17 @@ function DashboardPage() {
         const totalStudents =
             dashboard?.totalStudents ||
             dashboard?.TotalStudents ||
-            users.filter((user) => user.Role === "Student").length;
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.STUDENT).length;
 
         const totalTeachers =
             dashboard?.totalTeachers ||
             dashboard?.TotalTeachers ||
-            users.filter((user) => user.Role === "Teacher").length;
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.LECTURER).length;
 
         const totalAdmins =
             dashboard?.totalAdmins ||
             dashboard?.TotalAdmins ||
-            users.filter((user) => user.Role === "Admin").length;
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.ADMIN).length;
 
         const totalActiveUsers =
             dashboard?.totalActiveUsers ||
@@ -96,7 +97,7 @@ function DashboardPage() {
             classes.filter((item) => item.IsActive === false).length;
 
         const assignedStudents = users.filter((user) => {
-            if (user.Role !== "Student") return false;
+            if (normalizeRole(user.Role) !== USER_ROLES.STUDENT) return false;
 
             return (
                 !!user.ActiveClassId ||
@@ -106,7 +107,7 @@ function DashboardPage() {
         }).length;
 
         const unassignedStudents = users.filter((user) => {
-            if (user.Role !== "Student") return false;
+            if (normalizeRole(user.Role) !== USER_ROLES.STUDENT) return false;
 
             return (
                 !user.ActiveClassId &&
@@ -155,12 +156,12 @@ function DashboardPage() {
 
     function getRoleText(role) {
         switch (role) {
-            case "Admin":
+            case USER_ROLES.ADMIN:
                 return "Admin";
-            case "Teacher":
-                return "Giảng viên";
-            case "Student":
-                return "Sinh viên";
+            case USER_ROLES.LECTURER:
+                return "Giáº£ng viĂªn";
+            case USER_ROLES.STUDENT:
+                return "Sinh viĂªn";
             default:
                 return role || "-";
         }
@@ -171,7 +172,7 @@ function DashboardPage() {
     }
 
     function getStatusText(isActive) {
-        return isActive === false ? "Đã khóa" : "Hoạt động";
+        return isActive === false ? "ÄĂ£ khĂ³a" : "Hoáº¡t Ä‘á»™ng";
     }
 
     if (loading) {
@@ -179,11 +180,11 @@ function DashboardPage() {
             <div>
                 <div className="page-title">
                     <h2>Dashboard</h2>
-                    <p>Đang tải dữ liệu tổng quan...</p>
+                    <p>Äang táº£i dá»¯ liá»‡u tá»•ng quan...</p>
                 </div>
 
                 <div className="panel">
-                    <p>Đang tải dữ liệu...</p>
+                    <p>Äang táº£i dá»¯ liá»‡u...</p>
                 </div>
             </div>
         );
@@ -194,11 +195,11 @@ function DashboardPage() {
             <div className="page-title row-between">
                 <div>
                     <h2>Dashboard Admin</h2>
-                    <p>Tổng quan hệ thống TVU Student Project Portal.</p>
+                    <p>Tá»•ng quan há»‡ thá»‘ng TVU Student Project Portal.</p>
                 </div>
 
                 <button className="btn-light" onClick={loadDashboard}>
-                    Làm mới
+                    LĂ m má»›i
                 </button>
             </div>
 
@@ -211,9 +212,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Tổng người dùng</span>
+                        <span>Tá»•ng ngÆ°á»i dĂ¹ng</span>
                         <strong>{stats.totalUsers}</strong>
-                        <p>Tất cả tài khoản trong hệ thống</p>
+                        <p>Táº¥t cáº£ tĂ i khoáº£n trong há»‡ thá»‘ng</p>
                     </div>
                 </div>
 
@@ -223,9 +224,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Sinh viên</span>
+                        <span>Sinh viĂªn</span>
                         <strong>{stats.totalStudents}</strong>
-                        <p>Tài khoản sinh viên</p>
+                        <p>TĂ i khoáº£n sinh viĂªn</p>
                     </div>
                 </div>
 
@@ -235,9 +236,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Giảng viên</span>
+                        <span>Giáº£ng viĂªn</span>
                         <strong>{stats.totalTeachers}</strong>
-                        <p>Giảng viên hướng dẫn</p>
+                        <p>Giáº£ng viĂªn hÆ°á»›ng dáº«n</p>
                     </div>
                 </div>
 
@@ -247,9 +248,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Quản trị viên</span>
+                        <span>Quáº£n trá»‹ viĂªn</span>
                         <strong>{stats.totalAdmins}</strong>
-                        <p>Tài khoản quản trị</p>
+                        <p>TĂ i khoáº£n quáº£n trá»‹</p>
                     </div>
                 </div>
 
@@ -259,9 +260,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Lớp học</span>
+                        <span>Lá»›p há»c</span>
                         <strong>{stats.totalClasses}</strong>
-                        <p>Lớp đang quản lý</p>
+                        <p>Lá»›p Ä‘ang quáº£n lĂ½</p>
                     </div>
                 </div>
 
@@ -271,72 +272,72 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Tài khoản khóa</span>
+                        <span>TĂ i khoáº£n khĂ³a</span>
                         <strong>{stats.totalInactiveUsers}</strong>
-                        <p>Đang bị vô hiệu hóa</p>
+                        <p>Äang bá»‹ vĂ´ hiá»‡u hĂ³a</p>
                     </div>
                 </div>
             </div>
 
             <div className="dashboard-grid">
                 <div className="panel">
-                    <h3>Trạng thái tài khoản</h3>
+                    <h3>Tráº¡ng thĂ¡i tĂ i khoáº£n</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>Đang hoạt động</span>
+                            <span>Äang hoáº¡t Ä‘á»™ng</span>
                             <strong>{stats.totalActiveUsers}</strong>
                         </div>
 
                         <div>
-                            <span>Bị khóa</span>
+                            <span>Bá»‹ khĂ³a</span>
                             <strong>{stats.totalInactiveUsers}</strong>
                         </div>
 
                         <div>
-                            <span>Tổng tài khoản</span>
+                            <span>Tá»•ng tĂ i khoáº£n</span>
                             <strong>{stats.totalUsers}</strong>
                         </div>
                     </div>
                 </div>
 
                 <div className="panel">
-                    <h3>Trạng thái lớp học</h3>
+                    <h3>Tráº¡ng thĂ¡i lá»›p há»c</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>Lớp hoạt động</span>
+                            <span>Lá»›p hoáº¡t Ä‘á»™ng</span>
                             <strong>{stats.totalActiveClasses}</strong>
                         </div>
 
                         <div>
-                            <span>Lớp bị khóa</span>
+                            <span>Lá»›p bá»‹ khĂ³a</span>
                             <strong>{stats.totalInactiveClasses}</strong>
                         </div>
 
                         <div>
-                            <span>Tổng lớp</span>
+                            <span>Tá»•ng lá»›p</span>
                             <strong>{stats.totalClasses}</strong>
                         </div>
                     </div>
                 </div>
 
                 <div className="panel">
-                    <h3>Xếp lớp sinh viên</h3>
+                    <h3>Xáº¿p lá»›p sinh viĂªn</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>Đã thuộc lớp</span>
+                            <span>ÄĂ£ thuá»™c lá»›p</span>
                             <strong>{stats.assignedStudents}</strong>
                         </div>
 
                         <div>
-                            <span>Chưa thuộc lớp</span>
+                            <span>ChÆ°a thuá»™c lá»›p</span>
                             <strong>{stats.unassignedStudents}</strong>
                         </div>
 
                         <div>
-                            <span>Tổng sinh viên trong lớp</span>
+                            <span>Tá»•ng sinh viĂªn trong lá»›p</span>
                             <strong>{stats.totalStudentsInClasses}</strong>
                         </div>
                     </div>
@@ -345,14 +346,14 @@ function DashboardPage() {
 
             <div className="dashboard-grid">
                 <div className="panel">
-                    <h3>Lớp có nhiều sinh viên nhất</h3>
+                    <h3>Lá»›p cĂ³ nhiá»u sinh viĂªn nháº¥t</h3>
 
                     <table>
                         <thead>
                             <tr>
-                                <th>Mã lớp</th>
-                                <th>Tên lớp</th>
-                                <th>Số SV</th>
+                                <th>MĂ£ lá»›p</th>
+                                <th>TĂªn lá»›p</th>
+                                <th>Sá»‘ SV</th>
                             </tr>
                         </thead>
 
@@ -368,7 +369,7 @@ function DashboardPage() {
                             {topClasses.length === 0 && (
                                 <tr>
                                     <td colSpan="3">
-                                        Chưa có dữ liệu lớp học.
+                                        ChÆ°a cĂ³ dá»¯ liá»‡u lá»›p há»c.
                                     </td>
                                 </tr>
                             )}
@@ -377,14 +378,14 @@ function DashboardPage() {
                 </div>
 
                 <div className="panel">
-                    <h3>Người dùng mới tạo</h3>
+                    <h3>NgÆ°á»i dĂ¹ng má»›i táº¡o</h3>
 
                     <table>
                         <thead>
                             <tr>
-                                <th>Họ tên</th>
-                                <th>Vai trò</th>
-                                <th>Trạng thái</th>
+                                <th>Há» tĂªn</th>
+                                <th>Vai trĂ²</th>
+                                <th>Tráº¡ng thĂ¡i</th>
                             </tr>
                         </thead>
 
@@ -420,7 +421,7 @@ function DashboardPage() {
                             {recentUsers.length === 0 && (
                                 <tr>
                                     <td colSpan="3">
-                                        Chưa có dữ liệu người dùng.
+                                        ChÆ°a cĂ³ dá»¯ liá»‡u ngÆ°á»i dĂ¹ng.
                                     </td>
                                 </tr>
                             )}

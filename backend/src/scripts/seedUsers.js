@@ -1,4 +1,4 @@
-// src/scripts/seedUsers.js
+﻿// src/scripts/seedUsers.js
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 
@@ -8,53 +8,53 @@ dotenv.config();
 
 const sampleUsers = [
   {
-    fullName: 'Nguyễn Văn An',
+    fullName: 'Nguyá»…n VÄƒn An',
     email: 'teacher01@tvu.edu.vn',
     password: '123456',
-    role: 'Teacher',
+    role: 'LECTURER',
     userCode: 'GV001',
     phone: '0901000001',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     className: null,
   },
   {
-    fullName: 'Trần Thị Bình',
+    fullName: 'Tráº§n Thá»‹ BĂ¬nh',
     email: 'teacher02@tvu.edu.vn',
     password: '123456',
-    role: 'Teacher',
+    role: 'LECTURER',
     userCode: 'GV002',
     phone: '0901000002',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     className: null,
   },
   {
-    fullName: 'Lê Minh Cường',
+    fullName: 'LĂª Minh CÆ°á»ng',
     email: 'student01@st.tvu.edu.vn',
     password: '123456',
-    role: 'Student',
+    role: 'STUDENT',
     userCode: '1101230001',
     phone: '0911000001',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     className: 'DA23TTA',
   },
   {
-    fullName: 'Phạm Quốc Dũng',
+    fullName: 'Pháº¡m Quá»‘c DÅ©ng',
     email: 'student02@st.tvu.edu.vn',
     password: '123456',
-    role: 'Student',
+    role: 'STUDENT',
     userCode: '1101230002',
     phone: '0911000002',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     className: 'DA23TTA',
   },
   {
-    fullName: 'Võ Thanh Huy',
+    fullName: 'VĂµ Thanh Huy',
     email: 'student03@st.tvu.edu.vn',
     password: '123456',
-    role: 'Student',
+    role: 'STUDENT',
     userCode: '1101230003',
     phone: '0911000003',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     className: 'DA23TTA',
   },
 ];
@@ -74,7 +74,7 @@ async function seedUsers() {
         `);
 
       if (checkResult.recordset.length > 0) {
-        console.log(`Bỏ qua vì đã tồn tại: ${user.email}`);
+        console.log(`Bá» qua vĂ¬ Ä‘Ă£ tá»“n táº¡i: ${user.email}`);
         continue;
       }
 
@@ -113,13 +113,13 @@ async function seedUsers() {
           )
         `);
 
-      console.log(`Đã tạo user: ${user.email}`);
+      console.log(`ÄĂ£ táº¡o user: ${user.email}`);
     }
 
-    console.log('Seed user mẫu hoàn tất');
+    console.log('Seed user máº«u hoĂ n táº¥t');
     process.exit(0);
   } catch (error) {
-    console.error('Lỗi seed users:', error);
+    console.error('Lá»—i seed users:', error);
     process.exit(1);
   }
 }

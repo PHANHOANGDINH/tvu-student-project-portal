@@ -1,18 +1,44 @@
-﻿// src/modules/admin/admin.users.model.js
-import { sql, poolPromise } from '../../config/db.js';
+﻿import { poolPromise, sql } from '../../config/db.js';
+
+const SORT_COLUMNS = Object.freeze({
+  fullName: 'u.FullName',
+  email: 'u.Email',
+  userCode: 'u.UserCode',
+  role: 'u.Role',
+  status: 'u.IsActive',
+  createdAt: 'u.CreatedAt',
+});
+
+function mapUser(record) {
+  if (!record) return null;
+
+  return {
+    id: record.Id,
+    fullName: record.FullName,
+    email: record.Email,
+    userCode: record.UserCode,
+    phone: record.Phone,
+    department: record.Department,
+    className: record.ClassName,
+    role: record.Role,
+    isActive: record.IsActive,
+    createdAt: record.CreatedAt,
+    updatedAt: record.UpdatedAt,
+  };
+}
 
 function addUserFilters(request, filters = {}) {
-  const search = filters.search ? `%${filters.search.trim()}%` : null;
+  const search = filters.search ? `%${filters.search}%` : null;
   const role = filters.role || null;
-  const status = filters.status || 'not-deleted';
+  const status = filters.status || null;
 
   request.input('Search', sql.NVarChar(200), search);
   request.input('Role', sql.NVarChar(20), role);
   request.input('Status', sql.NVarChar(20), status);
 
   return `
-    WHERE
-      (
+    WHERE u.DeletedAt IS NULL
+      AND (
         @Search IS NULL
         OR u.FullName LIKE @Search
         OR u.Email LIKE @Search
@@ -20,37 +46,34 @@ function addUserFilters(request, filters = {}) {
         OR u.Phone LIKE @Search
         OR u.Department LIKE @Search
         OR u.ClassName LIKE @Search
-        OR activeClass.ActiveClassCode LIKE @Search
-        OR activeClass.ActiveClassName LIKE @Search
       )
-      AND
-      (
-        @Role IS NULL
-        OR u.Role = @Role
-      )
-      AND
-      (
-        @Status = 'all'
-        OR (@Status = 'not-deleted' AND u.DeletedAt IS NULL)
-        OR (@Status = 'active' AND u.IsActive = 1 AND u.DeletedAt IS NULL)
-        OR (@Status = 'inactive' AND u.IsActive = 0 AND u.DeletedAt IS NULL)
-        OR (@Status = 'deleted' AND u.DeletedAt IS NOT NULL)
+      AND (@Role IS NULL OR u.Role = @Role)
+      AND (
+        @Status IS NULL
+        OR (@Status = 'ACTIVE' AND u.IsActive = 1)
+        OR (@Status = 'INACTIVE' AND u.IsActive = 0)
       )
   `;
 }
 
-export async function getUsers(filters = {}) {
+export function getSortExpression(sortBy = 'createdAt', sortOrder = 'desc') {
+  const column = SORT_COLUMNS[sortBy] || SORT_COLUMNS.createdAt;
+  const direction = String(sortOrder).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  return `${column} ${direction}`;
+}
+
+export async function findUsers(filters = {}) {
   const pool = await poolPromise;
-
-  const page = Number(filters.page) > 0 ? Number(filters.page) : 1;
-  const limit = Number(filters.limit) > 0 ? Number(filters.limit) : 10;
-  const offset = (page - 1) * limit;
-
   const request = pool.request();
   const whereClause = addUserFilters(request, filters);
+  const orderBy = getSortExpression(filters.sortBy, filters.sortOrder);
+  const page = Number(filters.page) > 0 ? Number(filters.page) : 1;
+  const pageSize = Number(filters.pageSize) > 0 ? Number(filters.pageSize) : 10;
+  const offset = (page - 1) * pageSize;
 
   request.input('Offset', sql.Int, offset);
-  request.input('Limit', sql.Int, limit);
+  request.input('PageSize', sql.Int, pageSize);
 
   const result = await request.query(`
     SELECT
@@ -60,88 +83,38 @@ export async function getUsers(filters = {}) {
       u.UserCode,
       u.Phone,
       u.Department,
-      COALESCE(activeClass.ActiveClassCode, u.ClassName) AS ClassName,
+      u.ClassName,
       u.Role,
       u.IsActive,
       u.CreatedAt,
-      u.UpdatedAt,
-      u.DeletedAt,
-      activeClass.ActiveClassId,
-      activeClass.ActiveClassCode,
-      activeClass.ActiveClassName
+      u.UpdatedAt
     FROM Users u
-    OUTER APPLY (
-      SELECT TOP 1
-        c.Id AS ActiveClassId,
-        c.ClassCode AS ActiveClassCode,
-        c.ClassName AS ActiveClassName
-      FROM StudentClassMembers scm
-      INNER JOIN Classes c
-        ON scm.ClassId = c.Id
-      WHERE scm.StudentId = u.Id
-        AND scm.DeletedAt IS NULL
-        AND c.DeletedAt IS NULL
-      ORDER BY scm.CreatedAt DESC
-    ) activeClass
     ${whereClause}
-    ORDER BY u.CreatedAt DESC
-    OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY
+    ORDER BY ${orderBy}
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
   `);
 
-  return result.recordset;
+  return result.recordset.map(mapUser);
 }
 
 export async function countUsers(filters = {}) {
   const pool = await poolPromise;
   const request = pool.request();
-
   const whereClause = addUserFilters(request, filters);
 
   const result = await request.query(`
     SELECT COUNT(*) AS Total
     FROM Users u
-    OUTER APPLY (
-      SELECT TOP 1
-        c.Id AS ActiveClassId,
-        c.ClassCode AS ActiveClassCode,
-        c.ClassName AS ActiveClassName
-      FROM StudentClassMembers scm
-      INNER JOIN Classes c
-        ON scm.ClassId = c.Id
-      WHERE scm.StudentId = u.Id
-        AND scm.DeletedAt IS NULL
-        AND c.DeletedAt IS NULL
-      ORDER BY scm.CreatedAt DESC
-    ) activeClass
     ${whereClause}
   `);
 
-  return result.recordset[0].Total;
+  return Number(result.recordset[0]?.Total || 0);
 }
 
-export async function getUserStats() {
+export async function findUserById(id) {
   const pool = await poolPromise;
 
-  const result = await pool.request().query(`
-    SELECT
-      COUNT(*) AS TotalUsers,
-      SUM(CASE WHEN Role = 'ADMIN' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalAdmins,
-      SUM(CASE WHEN Role = 'LECTURER' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalTeachers,
-      SUM(CASE WHEN Role = 'STUDENT' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalStudents,
-      SUM(CASE WHEN IsActive = 1 AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalActiveUsers,
-      SUM(CASE WHEN IsActive = 0 AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalInactiveUsers,
-      SUM(CASE WHEN DeletedAt IS NOT NULL THEN 1 ELSE 0 END) AS TotalDeletedUsers
-    FROM Users
-  `);
-
-  return result.recordset[0];
-}
-
-export async function findUserByIdForAdmin(id) {
-  const pool = await poolPromise;
-
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('Id', sql.Int, id)
     .query(`
       SELECT TOP 1
@@ -155,29 +128,22 @@ export async function findUserByIdForAdmin(id) {
         Role,
         IsActive,
         CreatedAt,
-        UpdatedAt,
-        DeletedAt
+        UpdatedAt
       FROM Users
       WHERE Id = @Id
+        AND DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
+  return mapUser(result.recordset[0]);
 }
 
-export async function findUserByEmailForAdmin(email) {
+export async function findUserByEmail(email) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('Email', sql.NVarChar(150), email)
     .query(`
-      SELECT TOP 1
-        Id,
-        FullName,
-        Email,
-        UserCode,
-        Role,
-        DeletedAt
+      SELECT TOP 1 Id, Email, DeletedAt
       FROM Users
       WHERE Email = @Email
     `);
@@ -185,20 +151,13 @@ export async function findUserByEmailForAdmin(email) {
   return result.recordset[0] || null;
 }
 
-export async function findUserByUserCodeForAdmin(userCode) {
+export async function findUserByUserCode(userCode) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('UserCode', sql.NVarChar(50), userCode)
     .query(`
-      SELECT TOP 1
-        Id,
-        FullName,
-        Email,
-        UserCode,
-        Role,
-        DeletedAt
+      SELECT TOP 1 Id, UserCode, DeletedAt
       FROM Users
       WHERE UserCode = @UserCode
     `);
@@ -206,11 +165,28 @@ export async function findUserByUserCodeForAdmin(userCode) {
   return result.recordset[0] || null;
 }
 
+export async function countActiveAdmins(excludeUserId = null) {
+  const pool = await poolPromise;
+  const request = pool.request();
+
+  request.input('ExcludeUserId', sql.Int, excludeUserId);
+
+  const result = await request.query(`
+    SELECT COUNT(*) AS Total
+    FROM Users
+    WHERE Role = 'ADMIN'
+      AND IsActive = 1
+      AND DeletedAt IS NULL
+      AND (@ExcludeUserId IS NULL OR Id <> @ExcludeUserId)
+  `);
+
+  return Number(result.recordset[0]?.Total || 0);
+}
+
 export async function createUser(data) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('FullName', sql.NVarChar(100), data.fullName)
     .input('Email', sql.NVarChar(150), data.email)
     .input('PasswordHash', sql.NVarChar(255), data.passwordHash)
@@ -228,7 +204,8 @@ export async function createUser(data) {
         UserCode,
         Phone,
         Department,
-        ClassName
+        ClassName,
+        IsActive
       )
       OUTPUT
         INSERTED.Id,
@@ -240,7 +217,8 @@ export async function createUser(data) {
         INSERTED.ClassName,
         INSERTED.Role,
         INSERTED.IsActive,
-        INSERTED.CreatedAt
+        INSERTED.CreatedAt,
+        INSERTED.UpdatedAt
       VALUES (
         @FullName,
         @Email,
@@ -249,18 +227,18 @@ export async function createUser(data) {
         @UserCode,
         @Phone,
         @Department,
-        @ClassName
+        @ClassName,
+        1
       )
     `);
 
-  return result.recordset[0];
+  return mapUser(result.recordset[0]);
 }
 
 export async function updateUser(id, data) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('Id', sql.Int, id)
     .input('FullName', sql.NVarChar(100), data.fullName)
     .input('Email', sql.NVarChar(150), data.email)
@@ -296,14 +274,13 @@ export async function updateUser(id, data) {
         AND DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
+  return mapUser(result.recordset[0]);
 }
 
-export async function setUserActive(id, isActive) {
+export async function updateUserStatus(id, isActive) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('Id', sql.Int, id)
     .input('IsActive', sql.Bit, isActive)
     .query(`
@@ -315,21 +292,25 @@ export async function setUserActive(id, isActive) {
         INSERTED.Id,
         INSERTED.FullName,
         INSERTED.Email,
+        INSERTED.UserCode,
+        INSERTED.Phone,
+        INSERTED.Department,
+        INSERTED.ClassName,
         INSERTED.Role,
         INSERTED.IsActive,
+        INSERTED.CreatedAt,
         INSERTED.UpdatedAt
       WHERE Id = @Id
         AND DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
+  return mapUser(result.recordset[0]);
 }
 
-export async function resetUserPassword(id, passwordHash) {
+export async function updatePassword(id, passwordHash) {
   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
+  const result = await pool.request()
     .input('Id', sql.Int, id)
     .input('PasswordHash', sql.NVarChar(255), passwordHash)
     .query(`
@@ -341,37 +322,17 @@ export async function resetUserPassword(id, passwordHash) {
         INSERTED.Id,
         INSERTED.FullName,
         INSERTED.Email,
+        INSERTED.UserCode,
+        INSERTED.Phone,
+        INSERTED.Department,
+        INSERTED.ClassName,
         INSERTED.Role,
+        INSERTED.IsActive,
+        INSERTED.CreatedAt,
         INSERTED.UpdatedAt
       WHERE Id = @Id
         AND DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
-}
-
-export async function softDeleteUser(id) {
-  const pool = await poolPromise;
-
-  const result = await pool
-    .request()
-    .input('Id', sql.Int, id)
-    .query(`
-      UPDATE Users
-      SET
-        IsActive = 0,
-        DeletedAt = SYSDATETIME(),
-        UpdatedAt = SYSDATETIME()
-      OUTPUT
-        INSERTED.Id,
-        INSERTED.FullName,
-        INSERTED.Email,
-        INSERTED.Role,
-        INSERTED.IsActive,
-        INSERTED.DeletedAt
-      WHERE Id = @Id
-        AND DeletedAt IS NULL
-    `);
-
-  return result.recordset[0] || null;
+  return mapUser(result.recordset[0]);
 }

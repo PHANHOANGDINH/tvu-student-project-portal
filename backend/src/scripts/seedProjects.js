@@ -1,4 +1,4 @@
-// src/scripts/seedProjects.js
+﻿// src/scripts/seedProjects.js
 import dotenv from 'dotenv';
 
 import { sql, poolPromise } from '../config/db.js';
@@ -7,39 +7,39 @@ dotenv.config();
 
 const sampleProjects = [
   {
-    title: 'Xây dựng cổng quản lý đề tài sinh viên',
+    title: 'XĂ¢y dá»±ng cá»•ng quáº£n lĂ½ Ä‘á» tĂ i sinh viĂªn',
     description:
-      'Hệ thống hỗ trợ giảng viên đăng đề tài, sinh viên đăng ký đề tài và admin quản lý quy trình xét duyệt.',
+      'Há»‡ thá»‘ng há»— trá»£ giáº£ng viĂªn Ä‘Äƒng Ä‘á» tĂ i, sinh viĂªn Ä‘Äƒng kĂ½ Ä‘á» tĂ i vĂ  admin quáº£n lĂ½ quy trĂ¬nh xĂ©t duyá»‡t.',
     requirements:
-      'Sử dụng Node.js, Express, SQL Server. Có phân quyền Admin, Teacher, Student.',
+      'Sá»­ dá»¥ng Node.js, Express, SQL Server. CĂ³ phĂ¢n quyá»n Admin, Teacher, Student.',
     expectedOutcome:
-      'Website có API backend hoàn chỉnh, hỗ trợ quản lý tài khoản, lớp học, đề tài và đăng ký đề tài.',
+      'Website cĂ³ API backend hoĂ n chá»‰nh, há»— trá»£ quáº£n lĂ½ tĂ i khoáº£n, lá»›p há»c, Ä‘á» tĂ i vĂ  Ä‘Äƒng kĂ½ Ä‘á» tĂ i.',
     teacherEmail: 'teacher01@tvu.edu.vn',
     classCode: 'DA23TTA',
     maxStudents: 3,
     status: 'Approved',
   },
   {
-    title: 'Ứng dụng theo dõi tiến độ thực hiện đồ án',
+    title: 'á»¨ng dá»¥ng theo dĂµi tiáº¿n Ä‘á»™ thá»±c hiá»‡n Ä‘á»“ Ă¡n',
     description:
-      'Hệ thống cho phép sinh viên nộp tiến độ, giảng viên nhận xét và đánh giá quá trình thực hiện.',
+      'Há»‡ thá»‘ng cho phĂ©p sinh viĂªn ná»™p tiáº¿n Ä‘á»™, giáº£ng viĂªn nháº­n xĂ©t vĂ  Ä‘Ă¡nh giĂ¡ quĂ¡ trĂ¬nh thá»±c hiá»‡n.',
     requirements:
-      'Có chức năng nộp báo cáo tiến độ, nhận xét, thống kê trạng thái.',
+      'CĂ³ chá»©c nÄƒng ná»™p bĂ¡o cĂ¡o tiáº¿n Ä‘á»™, nháº­n xĂ©t, thá»‘ng kĂª tráº¡ng thĂ¡i.',
     expectedOutcome:
-      'API backend phục vụ quản lý tiến độ đồ án.',
+      'API backend phá»¥c vá»¥ quáº£n lĂ½ tiáº¿n Ä‘á»™ Ä‘á»“ Ă¡n.',
     teacherEmail: 'teacher02@tvu.edu.vn',
     classCode: 'DA23TTB',
     maxStudents: 2,
     status: 'Pending',
   },
   {
-    title: 'Hệ thống gợi ý đề tài theo năng lực sinh viên',
+    title: 'Há»‡ thá»‘ng gá»£i Ă½ Ä‘á» tĂ i theo nÄƒng lá»±c sinh viĂªn',
     description:
-      'Dựa trên kỹ năng và định hướng của sinh viên để đề xuất đề tài phù hợp.',
+      'Dá»±a trĂªn ká»¹ nÄƒng vĂ  Ä‘á»‹nh hÆ°á»›ng cá»§a sinh viĂªn Ä‘á»ƒ Ä‘á» xuáº¥t Ä‘á» tĂ i phĂ¹ há»£p.',
     requirements:
-      'Có dữ liệu kỹ năng sinh viên, danh sách đề tài, cơ chế gợi ý đơn giản.',
+      'CĂ³ dá»¯ liá»‡u ká»¹ nÄƒng sinh viĂªn, danh sĂ¡ch Ä‘á» tĂ i, cÆ¡ cháº¿ gá»£i Ă½ Ä‘Æ¡n giáº£n.',
     expectedOutcome:
-      'Prototype backend cho chức năng gợi ý đề tài.',
+      'Prototype backend cho chá»©c nÄƒng gá»£i Ă½ Ä‘á» tĂ i.',
     teacherEmail: 'teacher01@tvu.edu.vn',
     classCode: 'DA23TTA',
     maxStudents: 2,
@@ -55,7 +55,7 @@ async function findTeacherIdByEmail(pool, email) {
       SELECT TOP 1 Id
       FROM Users
       WHERE Email = @Email
-        AND Role = 'Teacher'
+        AND Role = 'LECTURER'
         AND DeletedAt IS NULL
     `);
 
@@ -92,7 +92,7 @@ async function seedProjects() {
         `);
 
       if (checkResult.recordset.length > 0) {
-        console.log(`Bỏ qua vì đề tài đã tồn tại: ${item.title}`);
+        console.log(`Bá» qua vĂ¬ Ä‘á» tĂ i Ä‘Ă£ tá»“n táº¡i: ${item.title}`);
         continue;
       }
 
@@ -100,7 +100,7 @@ async function seedProjects() {
       const classId = await findClassIdByCode(pool, item.classCode);
 
       if (!teacherId) {
-        console.log(`Không tìm thấy giảng viên: ${item.teacherEmail}`);
+        console.log(`KhĂ´ng tĂ¬m tháº¥y giáº£ng viĂªn: ${item.teacherEmail}`);
         continue;
       }
 
@@ -137,13 +137,13 @@ async function seedProjects() {
           )
         `);
 
-      console.log(`Đã tạo đề tài: ${item.title}`);
+      console.log(`ÄĂ£ táº¡o Ä‘á» tĂ i: ${item.title}`);
     }
 
-    console.log('Seed đề tài mẫu hoàn tất');
+    console.log('Seed Ä‘á» tĂ i máº«u hoĂ n táº¥t');
     process.exit(0);
   } catch (error) {
-    console.error('Lỗi seed projects:', error);
+    console.error('Lá»—i seed projects:', error);
     process.exit(1);
   }
 }

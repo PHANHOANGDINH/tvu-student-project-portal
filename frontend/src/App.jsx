@@ -59,17 +59,17 @@ function App() {
           }
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
-
           <Route path="dashboard" element={<DashboardRedirect />} />
 
           <Route
-            path="users"
+            path="admin/users"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <UsersPage />
               </RoleRoute>
             }
           />
+          <Route path="users" element={<Navigate to="/admin/users" replace />} />
 
           <Route
             path="classes"

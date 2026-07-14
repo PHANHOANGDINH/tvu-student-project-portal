@@ -1,61 +1,112 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import {
-  createUserApi,
-  getUsersApi,
-  importUsersExcelApi,
-  lockUserApi,
-  resetUserPasswordApi,
-  unlockUserApi,
-  updateUserApi
+  createUser,
+  getUserById,
+  getUsers,
+  resetUserPassword,
+  updateUser,
+  updateUserStatus
 } from '../api/adminApi'
+import { USER_ROLES } from '../constants/roles'
 
 const emptyForm = {
   fullName: '',
   email: '',
-  password: '',
-  role: 'Student',
+  role: USER_ROLES.STUDENT,
   userCode: '',
   phone: '',
   department: '',
-  className: ''
+  className: '',
+  password: '',
+  confirmPassword: ''
+}
+
+const emptyResetForm = {
+  newPassword: '',
+  confirmNewPassword: ''
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString('vi-VN') : '-'
+}
+
+function getRoleText(role) {
+  if (role === USER_ROLES.ADMIN) return 'Admin'
+  if (role === USER_ROLES.LECTURER) return 'Giảng viên'
+  if (role === USER_ROLES.STUDENT) return 'Sinh viên'
+  return role || '-'
+}
+
+function getStatusText(isActive) {
+  return isActive === false ? 'Đã khóa' : 'Hoạt động'
+}
+
+function getStatusClass(isActive) {
+  return isActive === false ? 'badge' : 'badge green'
+}
+
+function getUserId(user) {
+  return user?.id || user?.Id
 }
 
 function UsersPage() {
   const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [resetPassword, setResetPassword] = useState('')
-  const [importResult, setImportResult] = useState(null)
-  const [importType, setImportType] = useState('students')
-
-  const [showForm, setShowForm] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
-  const [form, setForm] = useState(emptyForm)
-
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    totalItems: 0,
+    totalPages: 0
+  })
   const [filters, setFilters] = useState({
-    keyword: '',
+    page: 1,
+    pageSize: 10,
+    search: '',
     role: '',
     status: '',
-    className: '',
-    department: ''
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
   })
 
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const [mode, setMode] = useState('list')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [form, setForm] = useState(emptyForm)
+  const [resetForm, setResetForm] = useState(emptyResetForm)
+
   useEffect(() => {
-    loadUsers()
+    loadUsers(filters)
   }, [])
 
-  async function loadUsers() {
+  const canGoPrevious = pagination.page > 1
+  const canGoNext = pagination.page < pagination.totalPages
+
+  const formTitle = useMemo(() => {
+    if (mode === 'create') return 'Tạo tài khoản'
+    if (mode === 'edit') return 'Cập nhật tài khoản'
+    if (mode === 'detail') return 'Chi tiết tài khoản'
+    if (mode === 'reset') return 'Reset mật khẩu'
+    return ''
+  }, [mode])
+
+  async function loadUsers(nextFilters = filters) {
     try {
       setLoading(true)
       setError('')
 
-      const response = await getUsersApi()
-      const list = response?.data || []
+      const response = await getUsers(nextFilters)
+      const data = response?.data || {}
 
-      setUsers(Array.isArray(list) ? list : [])
+      setUsers(Array.isArray(data.items) ? data.items : [])
+      setPagination({
+        page: data.page || nextFilters.page || 1,
+        pageSize: data.pageSize || nextFilters.pageSize || 10,
+        totalItems: data.totalItems || 0,
+        totalPages: data.totalPages || 0
+      })
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách người dùng')
     } finally {
@@ -66,660 +117,487 @@ function UsersPage() {
   function clearMessages() {
     setError('')
     setSuccess('')
-    setResetPassword('')
   }
 
-  function handleFilterChange(e) {
-    const { name, value } = e.target
-
-    setFilters({
+  function updateFilters(patch) {
+    const nextFilters = {
       ...filters,
-      [name]: value
-    })
+      ...patch
+    }
+
+    setFilters(nextFilters)
+    return nextFilters
   }
 
-  function resetFilters() {
-    setFilters({
-      keyword: '',
-      role: '',
-      status: '',
-      className: '',
-      department: ''
-    })
+  async function handleSearch(e) {
+    e.preventDefault()
+    const nextFilters = updateFilters({ page: 1 })
+    await loadUsers(nextFilters)
   }
 
-  function openCreateForm() {
-    setEditingUser(null)
-    setForm(emptyForm)
-    setShowForm(true)
-    setImportResult(null)
-    clearMessages()
+  async function handleFilterChange(e) {
+    const { name, value } = e.target
+    const nextFilters = updateFilters({ [name]: value, page: 1 })
+    await loadUsers(nextFilters)
   }
 
-  function openEditForm(user) {
-    setEditingUser(user)
+  async function handlePageChange(page) {
+    if (page < 1 || (pagination.totalPages && page > pagination.totalPages)) return
 
-    setForm({
-      fullName: user.FullName || '',
-      email: user.Email || '',
-      password: '',
-      role: user.Role || 'Student',
-      userCode: user.UserCode || '',
-      phone: user.Phone || '',
-      department: user.Department || '',
-      className: user.ClassName || ''
-    })
-
-    setShowForm(true)
-    setImportResult(null)
-    clearMessages()
-  }
-
-  function closeForm() {
-    setShowForm(false)
-    setEditingUser(null)
-    setForm(emptyForm)
+    const nextFilters = updateFilters({ page })
+    await loadUsers(nextFilters)
   }
 
   function handleFormChange(e) {
     const { name, value } = e.target
-
     setForm({
       ...form,
       [name]: value
     })
   }
 
+  function handleResetFormChange(e) {
+    const { name, value } = e.target
+    setResetForm({
+      ...resetForm,
+      [name]: value
+    })
+  }
+
+  function openCreateForm() {
+    clearMessages()
+    setSelectedUser(null)
+    setForm(emptyForm)
+    setMode('create')
+  }
+
+  async function openDetail(user) {
+    try {
+      clearMessages()
+      setSaving(true)
+      const response = await getUserById(getUserId(user))
+      setSelectedUser(response?.data || user)
+      setMode('detail')
+    } catch (err) {
+      setError(err.message || 'Không thể tải chi tiết người dùng')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function openEditForm(user) {
+    clearMessages()
+    setSelectedUser(user)
+    setForm({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      role: user.role || USER_ROLES.STUDENT,
+      userCode: user.userCode || '',
+      phone: user.phone || '',
+      department: user.department || '',
+      className: user.className || '',
+      password: '',
+      confirmPassword: ''
+    })
+    setMode('edit')
+  }
+
+  function openResetPassword(user) {
+    clearMessages()
+    setSelectedUser(user)
+    setResetForm(emptyResetForm)
+    setMode('reset')
+  }
+
+  function closePanel() {
+    setMode('list')
+    setSelectedUser(null)
+    setForm(emptyForm)
+    setResetForm(emptyResetForm)
+  }
+
+  function validateCreateForm() {
+    if (!form.fullName.trim()) return 'Vui lòng nhập họ tên.'
+    if (!form.email.trim()) return 'Vui lòng nhập email.'
+    if (!form.role) return 'Vui lòng chọn vai trò.'
+    if (mode === 'create' && !form.password) return 'Vui lòng nhập mật khẩu ban đầu.'
+    if (mode === 'create' && form.password !== form.confirmPassword) return 'Xác nhận mật khẩu không khớp.'
+    if (form.role === USER_ROLES.STUDENT && !form.className.trim()) return 'Sinh viên cần có mã lớp.'
+    if ((form.role === USER_ROLES.STUDENT || form.role === USER_ROLES.LECTURER) && !form.userCode.trim()) {
+      return form.role === USER_ROLES.STUDENT ? 'Vui lòng nhập MSSV.' : 'Vui lòng nhập mã giảng viên.'
+    }
+
+    return ''
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    clearMessages()
+
+    const validationMessage = validateCreateForm()
+    if (validationMessage) {
+      setError(validationMessage)
+      return
+    }
+
+    const payload = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      role: form.role,
+      userCode: form.userCode.trim(),
+      phone: form.phone.trim(),
+      department: form.department.trim(),
+      className: form.className.trim()
+    }
 
     try {
       setSaving(true)
-      clearMessages()
 
-      if (!form.fullName.trim() || !form.email.trim() || !form.role) {
-        setError('Vui lòng nhập họ tên, email và vai trò')
-        return
-      }
-
-      if (!editingUser && !form.password.trim()) {
-        setError('Vui lòng nhập mật khẩu cho tài khoản mới')
-        return
-      }
-
-      if (!editingUser && form.password.trim().length < 6) {
-        setError('Mật khẩu phải có ít nhất 6 ký tự')
-        return
-      }
-
-      const payload = {
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
-        role: form.role,
-        userCode: form.userCode.trim(),
-        phone: form.phone.trim(),
-        department: form.department.trim(),
-        className: form.className.trim()
-      }
-
-      if (editingUser) {
-        await updateUserApi(editingUser.Id, payload)
-        setSuccess('Cập nhật người dùng thành công')
-      } else {
-        payload.password = form.password
-        await createUserApi(payload)
+      if (mode === 'create') {
+        await createUser({
+          ...payload,
+          password: form.password,
+          confirmPassword: form.confirmPassword
+        })
         setSuccess('Tạo người dùng thành công')
+      } else {
+        await updateUser(getUserId(selectedUser), payload)
+        setSuccess('Cập nhật người dùng thành công')
       }
 
-      closeForm()
-      await loadUsers()
+      closePanel()
+      await loadUsers(filters)
     } catch (err) {
-      setError(err.message || 'Lưu người dùng thất bại')
+      setError(err.message || 'Không thể lưu người dùng')
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleToggleLock(user) {
+  async function handleStatusToggle(user) {
+    const nextIsActive = user.isActive === false
+    const actionText = nextIsActive ? 'mở khóa' : 'khóa'
+
+    if (!window.confirm(`Bạn có chắc muốn ${actionText} tài khoản ${user.fullName || user.email}?`)) {
+      return
+    }
+
     try {
       clearMessages()
-      setImportResult(null)
-
-      if (user.IsActive === false) {
-        await unlockUserApi(user.Id)
-        setSuccess('Mở khóa tài khoản thành công')
-      } else {
-        await lockUserApi(user.Id)
-        setSuccess('Khóa tài khoản thành công')
-      }
-
-      await loadUsers()
+      setSaving(true)
+      await updateUserStatus(getUserId(user), nextIsActive)
+      setSuccess(nextIsActive ? 'Mở khóa tài khoản thành công' : 'Khóa tài khoản thành công')
+      await loadUsers(filters)
     } catch (err) {
       setError(err.message || 'Không thể cập nhật trạng thái tài khoản')
-    }
-  }
-
-  async function handleResetPassword(user) {
-    try {
-      clearMessages()
-      setImportResult(null)
-
-      const ok = window.confirm(
-        `Bạn có chắc muốn cấp lại mật khẩu cho ${user.FullName || user.Email}?`
-      )
-
-      if (!ok) return
-
-      const response = await resetUserPasswordApi(user.Id)
-
-      setSuccess('Cấp lại mật khẩu thành công')
-      setResetPassword(response?.newPassword || '')
-    } catch (err) {
-      setError(err.message || 'Không thể cấp lại mật khẩu')
-    }
-  }
-
-  async function handleImportExcel(e) {
-    try {
-      const file = e.target.files?.[0]
-
-      if (!file) return
-
-      clearMessages()
-      setImportResult(null)
-      setSaving(true)
-
-      const response = await importUsersExcelApi(file, importType)
-
-      setImportResult(response)
-      setSuccess('Import Excel hoàn tất')
-
-      await loadUsers()
-    } catch (err) {
-      setError(err.message || 'Import Excel thất bại')
     } finally {
       setSaving(false)
-      e.target.value = ''
     }
   }
 
-  function getImportTypeText(type) {
-    if (type === 'students') {
-      return 'Danh sách sinh viên'
+  async function handleResetPassword(e) {
+    e.preventDefault()
+    clearMessages()
+
+    if (!resetForm.newPassword) {
+      setError('Vui lòng nhập mật khẩu mới.')
+      return
     }
 
-    if (type === 'teachers') {
-      return 'Danh sách giảng viên'
+    if (resetForm.newPassword !== resetForm.confirmNewPassword) {
+      setError('Xác nhận mật khẩu mới không khớp.')
+      return
     }
 
-    return '-'
-  }
-
-  function getStatusText(user) {
-    return user.IsActive === false ? 'Đã khóa' : 'Hoạt động'
-  }
-
-  function getStatusClass(user) {
-    return user.IsActive === false ? 'badge' : 'badge green'
-  }
-
-  function getRoleText(role) {
-    switch (role) {
-      case 'Admin':
-        return 'Admin'
-      case 'Teacher':
-        return 'Giảng viên'
-      case 'Student':
-        return 'Sinh viên'
-      default:
-        return role || '-'
+    try {
+      setSaving(true)
+      await resetUserPassword(getUserId(selectedUser), resetForm)
+      setSuccess('Reset mật khẩu thành công')
+      closePanel()
+    } catch (err) {
+      setError(err.message || 'Không thể reset mật khẩu')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const classOptions = useMemo(() => {
-    return [...new Set(users.map((user) => user.ClassName).filter(Boolean))]
-  }, [users])
+  function renderUserPanel() {
+    if (mode === 'list') return null
 
-  const departmentOptions = useMemo(() => {
-    return [...new Set(users.map((user) => user.Department).filter(Boolean))]
-  }, [users])
-
-  const filteredUsers = useMemo(() => {
-    const keyword = filters.keyword.trim().toLowerCase()
-
-    return users.filter((user) => {
-      const fullName = String(user.FullName || '').toLowerCase()
-      const email = String(user.Email || '').toLowerCase()
-      const userCode = String(user.UserCode || '').toLowerCase()
-      const phone = String(user.Phone || '').toLowerCase()
-      const className = String(user.ClassName || '')
-      const department = String(user.Department || '')
-      const role = String(user.Role || '')
-
-      const matchKeyword =
-        !keyword ||
-        fullName.includes(keyword) ||
-        email.includes(keyword) ||
-        userCode.includes(keyword) ||
-        phone.includes(keyword) ||
-        className.toLowerCase().includes(keyword) ||
-        department.toLowerCase().includes(keyword)
-
-      const matchRole = !filters.role || role === filters.role
-
-      const matchStatus =
-        !filters.status ||
-        (filters.status === 'active' && user.IsActive !== false) ||
-        (filters.status === 'inactive' && user.IsActive === false)
-
-      const matchClass =
-        !filters.className || className === filters.className
-
-      const matchDepartment =
-        !filters.department || department === filters.department
+    if (mode === 'detail') {
+      const user = selectedUser || {}
 
       return (
-        matchKeyword &&
-        matchRole &&
-        matchStatus &&
-        matchClass &&
-        matchDepartment
+        <div className="panel">
+          <div className="row-between">
+            <h3>{formTitle}</h3>
+            <button className="btn-light" onClick={closePanel}>Đóng</button>
+          </div>
+
+          <div className="info-list">
+            <div><span>Mã</span><strong>{user.userCode || '-'}</strong></div>
+            <div><span>Họ tên</span><strong>{user.fullName || '-'}</strong></div>
+            <div><span>Email</span><strong>{user.email || '-'}</strong></div>
+            <div><span>Vai trò</span><strong>{getRoleText(user.role)}</strong></div>
+            <div><span>Trạng thái</span><strong>{getStatusText(user.isActive)}</strong></div>
+            <div><span>Số điện thoại</span><strong>{user.phone || '-'}</strong></div>
+            <div><span>Khoa</span><strong>{user.department || '-'}</strong></div>
+            <div><span>Lớp</span><strong>{user.className || '-'}</strong></div>
+            <div><span>Ngày tạo</span><strong>{formatDate(user.createdAt)}</strong></div>
+          </div>
+        </div>
       )
-    })
-  }, [users, filters])
+    }
+
+    if (mode === 'reset') {
+      return (
+        <div className="panel">
+          <div className="row-between">
+            <h3>{formTitle}</h3>
+            <button className="btn-light" onClick={closePanel}>Đóng</button>
+          </div>
+
+          <form onSubmit={handleResetPassword}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Mật khẩu mới</label>
+                <input
+                  name="newPassword"
+                  type="password"
+                  value={resetForm.newPassword}
+                  onChange={handleResetFormChange}
+                  placeholder="Tối thiểu 8 ký tự"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Xác nhận mật khẩu mới</label>
+                <input
+                  name="confirmNewPassword"
+                  type="password"
+                  value={resetForm.confirmNewPassword}
+                  onChange={handleResetFormChange}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
+              </div>
+            </div>
+
+            <button className="btn-primary small" type="submit" disabled={saving}>
+              {saving ? 'Đang lưu...' : 'Reset mật khẩu'}
+            </button>
+          </form>
+        </div>
+      )
+    }
+
+    return (
+      <div className="panel">
+        <div className="row-between">
+          <h3>{formTitle}</h3>
+          <button className="btn-light" onClick={closePanel}>Đóng</button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Họ tên</label>
+              <input name="fullName" value={form.fullName} onChange={handleFormChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Email</label>
+              <input name="email" type="email" value={form.email} onChange={handleFormChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Vai trò</label>
+              <select name="role" value={form.role} onChange={handleFormChange}>
+                {mode === 'edit' && selectedUser?.role === USER_ROLES.ADMIN && (
+                  <option value={USER_ROLES.ADMIN}>Admin</option>
+                )}
+                <option value={USER_ROLES.LECTURER}>Giảng viên</option>
+                <option value={USER_ROLES.STUDENT}>Sinh viên</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>MSSV / Mã giảng viên</label>
+              <input name="userCode" value={form.userCode} onChange={handleFormChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Số điện thoại</label>
+              <input name="phone" value={form.phone} onChange={handleFormChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Khoa</label>
+              <input name="department" value={form.department} onChange={handleFormChange} />
+            </div>
+
+            <div className="form-group">
+              <label>Lớp</label>
+              <input name="className" value={form.className} onChange={handleFormChange} />
+            </div>
+
+            {mode === 'create' && (
+              <>
+                <div className="form-group">
+                  <label>Mật khẩu ban đầu</label>
+                  <input name="password" type="password" value={form.password} onChange={handleFormChange} />
+                </div>
+
+                <div className="form-group">
+                  <label>Xác nhận mật khẩu</label>
+                  <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleFormChange} />
+                </div>
+              </>
+            )}
+          </div>
+
+          <button className="btn-primary small" type="submit" disabled={saving}>
+            {saving ? 'Đang lưu...' : 'Lưu'}
+          </button>
+        </form>
+      </div>
+    )
+  }
 
   return (
     <div>
       <div className="page-title row-between">
         <div>
           <h2>Quản lý người dùng</h2>
-          <p>
-            Admin quản lý tài khoản sinh viên, giảng viên và quản trị viên.
-          </p>
+          <p>Admin quản lý tài khoản giảng viên và sinh viên trong hệ thống.</p>
         </div>
 
-        <div className="card-actions">
-          <select
-            value={importType}
-            onChange={(e) => setImportType(e.target.value)}
-            className="import-select"
-            disabled={saving}
-          >
-            <option value="students">Import danh sách sinh viên</option>
-            <option value="teachers">Import danh sách giảng viên</option>
-          </select>
-
-          <label className="btn-light import-label">
-            {saving ? 'Đang xử lý...' : 'Chọn file Excel'}
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleImportExcel}
-              style={{ display: 'none' }}
-              disabled={saving}
-            />
-          </label>
-
-          <button className="btn-primary small" onClick={openCreateForm}>
-            Thêm người dùng
-          </button>
-        </div>
-      </div>
-
-      <div className="panel">
-        <h3>Hướng dẫn import Excel</h3>
-
-        {importType === 'students' ? (
-          <p>
-            File sinh viên cần các cột: <strong>Họ tên, Email, MSSV, Số điện thoại, Khoa, Mã lớp, Mật khẩu</strong>.
-            Mật khẩu có thể để trống, hệ thống sẽ dùng mặc định <strong>123456</strong>.
-          </p>
-        ) : (
-          <p>
-            File giảng viên cần các cột: <strong>Họ tên, Email, Mã giảng viên, Số điện thoại, Khoa, Mật khẩu</strong>.
-            Mật khẩu có thể để trống, hệ thống sẽ dùng mặc định <strong>123456</strong>.
-          </p>
-        )}
+        <button className="btn-primary small" onClick={openCreateForm}>
+          Tạo tài khoản
+        </button>
       </div>
 
       {error && <div className="alert error">{error}</div>}
       {success && <div className="alert success">{success}</div>}
 
-      {resetPassword && (
-        <div className="alert success">
-          Mật khẩu mới: <strong>{resetPassword}</strong>
-        </div>
-      )}
-
-      {importResult && (
-        <div className="panel">
-          <h3>Kết quả import Excel</h3>
-
-          <p>
-            Loại import: <strong>{getImportTypeText(importResult.importType)}</strong>
-          </p>
-
-          <div className="stat-grid">
-            <div className="stat-card">
-              <span>Tổng dòng</span>
-              <strong>{importResult.totalRows || 0}</strong>
-            </div>
-
-            <div className="stat-card">
-              <span>Thành công</span>
-              <strong>{importResult.successCount || 0}</strong>
-            </div>
-
-            <div className="stat-card">
-              <span>Thất bại</span>
-              <strong>{importResult.failedCount || 0}</strong>
-            </div>
-          </div>
-
-          {importResult.errorItems?.length > 0 && (
-            <>
-              <h4>Danh sách dòng lỗi</h4>
-
-              <table>
-                <thead>
-                  <tr>
-                    <th>Dòng</th>
-                    <th>Email</th>
-                    <th>Lý do lỗi</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {importResult.errorItems.map((item) => (
-                    <tr key={`${item.row}-${item.email}-${item.reason}`}>
-                      <td>{item.row}</td>
-                      <td>{item.email || '-'}</td>
-                      <td>{item.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-        </div>
-      )}
-
-      {showForm && (
-        <div className="panel">
-          <h3>{editingUser ? 'Sửa người dùng' : 'Thêm người dùng'}</h3>
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Họ tên</label>
-                <input
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleFormChange}
-                  placeholder="Nhập họ tên"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleFormChange}
-                  placeholder="Nhập email"
-                />
-              </div>
-
-              {!editingUser && (
-                <div className="form-group">
-                  <label>Mật khẩu</label>
-                  <input
-                    name="password"
-                    type="password"
-                    value={form.password}
-                    onChange={handleFormChange}
-                    placeholder="Tối thiểu 6 ký tự"
-                  />
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Vai trò</label>
-                <select
-                  name="role"
-                  value={form.role}
-                  onChange={handleFormChange}
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="Teacher">Giảng viên</option>
-                  <option value="Student">Sinh viên</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>MSSV / Mã giảng viên</label>
-                <input
-                  name="userCode"
-                  value={form.userCode}
-                  onChange={handleFormChange}
-                  placeholder="Ví dụ: 1101220001 hoặc GV001"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Số điện thoại</label>
-                <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleFormChange}
-                  placeholder="Nhập số điện thoại"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Khoa</label>
-                <input
-                  name="department"
-                  value={form.department}
-                  onChange={handleFormChange}
-                  placeholder="Nhập khoa"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Lớp</label>
-                <input
-                  name="className"
-                  value={form.className}
-                  onChange={handleFormChange}
-                  placeholder="Ví dụ: DA22TTB"
-                />
-              </div>
-            </div>
-
-            <div className="card-actions">
-              <button
-                className="btn-primary small"
-                type="submit"
-                disabled={saving}
-              >
-                {saving ? 'Đang lưu...' : 'Lưu'}
-              </button>
-
-              <button className="btn-light" type="button" onClick={closeForm}>
-                Hủy
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {renderUserPanel()}
 
       <div className="panel">
-        <h3>Bộ lọc người dùng</h3>
-
-        <div className="filter-grid">
+        <form className="filter-grid" onSubmit={handleSearch}>
           <div className="form-group">
             <label>Tìm kiếm</label>
             <input
-              name="keyword"
-              value={filters.keyword}
-              onChange={handleFilterChange}
-              placeholder="Họ tên, email, MSSV, mã GV, SĐT, lớp, khoa..."
+              name="search"
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              placeholder="Họ tên, email, mã, khoa, lớp..."
             />
           </div>
 
           <div className="form-group">
             <label>Vai trò</label>
-            <select
-              name="role"
-              value={filters.role}
-              onChange={handleFilterChange}
-            >
-              <option value="">Tất cả vai trò</option>
-              <option value="Admin">Admin</option>
-              <option value="Teacher">Giảng viên</option>
-              <option value="Student">Sinh viên</option>
+            <select name="role" value={filters.role} onChange={handleFilterChange}>
+              <option value="">Tất cả</option>
+              <option value={USER_ROLES.ADMIN}>Admin</option>
+              <option value={USER_ROLES.LECTURER}>Giảng viên</option>
+              <option value={USER_ROLES.STUDENT}>Sinh viên</option>
             </select>
           </div>
 
           <div className="form-group">
             <label>Trạng thái</label>
-            <select
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Đã khóa</option>
+            <select name="status" value={filters.status} onChange={handleFilterChange}>
+              <option value="">Tất cả</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Đã khóa</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Lớp</label>
-            <select
-              name="className"
-              value={filters.className}
-              onChange={handleFilterChange}
-            >
-              <option value="">Tất cả lớp</option>
-              {classOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
+            <label>Sắp xếp</label>
+            <select name="sortBy" value={filters.sortBy} onChange={handleFilterChange}>
+              <option value="createdAt">Ngày tạo</option>
+              <option value="fullName">Họ tên</option>
+              <option value="email">Email</option>
+              <option value="role">Vai trò</option>
+              <option value="status">Trạng thái</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Khoa</label>
-            <select
-              name="department"
-              value={filters.department}
-              onChange={handleFilterChange}
-            >
-              <option value="">Tất cả khoa</option>
-              {departmentOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
+            <label>Thứ tự</label>
+            <select name="sortOrder" value={filters.sortOrder} onChange={handleFilterChange}>
+              <option value="desc">Giảm dần</option>
+              <option value="asc">Tăng dần</option>
             </select>
           </div>
 
           <div className="filter-actions">
-            <button className="btn-light" onClick={resetFilters}>
-              Xóa bộ lọc
-            </button>
+            <button className="btn-light" type="submit">Tìm</button>
           </div>
-        </div>
-
-        <p className="filter-summary">
-          Hiển thị {filteredUsers.length} / {users.length} người dùng
-        </p>
+        </form>
       </div>
 
       <div className="panel">
         {loading ? (
           <p>Đang tải dữ liệu...</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Mã người dùng</th>
-                <th>Số điện thoại</th>
-                <th>Khoa</th>
-                <th>Lớp</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th>Ngày tạo</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.Id}>
-                  <td>{user.FullName || '-'}</td>
-                  <td>{user.Email || '-'}</td>
-                  <td>{user.UserCode || '-'}</td>
-                  <td>{user.Phone || '-'}</td>
-                  <td>{user.Department || '-'}</td>
-                  <td>{user.ClassName || '-'}</td>
-
-                  <td>
-                    <span className="badge blue">
-                      {getRoleText(user.Role)}
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className={getStatusClass(user)}>
-                      {getStatusText(user)}
-                    </span>
-                  </td>
-
-                  <td>
-                    {user.CreatedAt
-                      ? new Date(user.CreatedAt).toLocaleDateString('vi-VN')
-                      : '-'}
-                  </td>
-
-                  <td>
-                    <button
-                      className="btn-light"
-                      onClick={() => openEditForm(user)}
-                    >
-                      Sửa
-                    </button>
-
-                    <button
-                      className="btn-light"
-                      onClick={() => handleResetPassword(user)}
-                    >
-                      Cấp lại MK
-                    </button>
-
-                    <button
-                      className="btn-danger"
-                      onClick={() => handleToggleLock(user)}
-                    >
-                      {user.IsActive === false ? 'Mở khóa' : 'Khóa'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredUsers.length === 0 && (
+          <>
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="10">Không tìm thấy người dùng phù hợp.</td>
+                  <th>Mã</th>
+                  <th>Họ tên</th>
+                  <th>Email</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Thao tác</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {users.map((user) => (
+                  <tr key={getUserId(user)}>
+                    <td>{user.userCode || '-'}</td>
+                    <td>{user.fullName || '-'}</td>
+                    <td>{user.email || '-'}</td>
+                    <td><span className="badge blue">{getRoleText(user.role)}</span></td>
+                    <td><span className={getStatusClass(user.isActive)}>{getStatusText(user.isActive)}</span></td>
+                    <td>{formatDate(user.createdAt)}</td>
+                    <td>
+                      <button className="btn-light" onClick={() => openDetail(user)}>Xem</button>
+                      <button className="btn-light" onClick={() => openEditForm(user)}>Sửa</button>
+                      <button className="btn-light" onClick={() => openResetPassword(user)}>Reset MK</button>
+                      <button className="btn-danger" onClick={() => handleStatusToggle(user)}>
+                        {user.isActive === false ? 'Mở khóa' : 'Khóa'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan="7">Không có người dùng phù hợp.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            <div className="row-between pagination-row">
+              <span>
+                Trang {pagination.page} / {pagination.totalPages || 1} - Tổng {pagination.totalItems} người dùng
+              </span>
+
+              <div className="card-actions">
+                <button className="btn-light" disabled={!canGoPrevious} onClick={() => handlePageChange(pagination.page - 1)}>
+                  Trước
+                </button>
+                <button className="btn-light" disabled={!canGoNext} onClick={() => handlePageChange(pagination.page + 1)}>
+                  Sau
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

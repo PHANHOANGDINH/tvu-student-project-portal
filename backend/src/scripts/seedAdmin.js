@@ -1,4 +1,4 @@
-// src/scripts/seedAdmin.js
+﻿// src/scripts/seedAdmin.js
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { sql, poolPromise } from '../config/db.js';
@@ -23,28 +23,28 @@ async function seedAdmin() {
       `);
 
     if (checkResult.recordset.length > 0) {
-      console.log('Tài khoản admin đã tồn tại');
+      console.log('TĂ i khoáº£n admin Ä‘Ă£ tá»“n táº¡i');
       process.exit(0);
     }
 
     await pool
       .request()
-      .input('FullName', sql.NVarChar(100), 'Quản trị viên')
+      .input('FullName', sql.NVarChar(100), 'Quáº£n trá»‹ viĂªn')
       .input('Email', sql.NVarChar(150), email)
       .input('PasswordHash', sql.NVarChar(255), passwordHash)
-      .input('Role', sql.NVarChar(20), 'Admin')
+      .input('Role', sql.NVarChar(20), 'ADMIN')
       .query(`
         INSERT INTO Users (FullName, Email, PasswordHash, Role)
         VALUES (@FullName, @Email, @PasswordHash, @Role)
       `);
 
-    console.log('Tạo tài khoản admin thành công');
+    console.log('Táº¡o tĂ i khoáº£n admin thĂ nh cĂ´ng');
     console.log('Email:', email);
     console.log('Password:', password);
 
     process.exit(0);
   } catch (error) {
-    console.error('Lỗi seed admin:', error);
+    console.error('Lá»—i seed admin:', error);
     process.exit(1);
   }
 }

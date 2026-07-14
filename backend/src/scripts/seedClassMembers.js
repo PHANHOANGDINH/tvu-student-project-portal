@@ -1,4 +1,4 @@
-// src/scripts/seedClassMembers.js
+﻿// src/scripts/seedClassMembers.js
 import dotenv from 'dotenv';
 
 import { sql, poolPromise } from '../config/db.js';
@@ -42,7 +42,7 @@ async function findStudentId(pool, email) {
       SELECT TOP 1 Id
       FROM Users
       WHERE Email = @Email
-        AND Role = 'Student'
+        AND Role = 'STUDENT'
         AND DeletedAt IS NULL
     `);
 
@@ -72,19 +72,19 @@ async function seedClassMembers() {
       const studentId = await findStudentId(pool, item.studentEmail);
 
       if (!classId) {
-        console.log(`Không tìm thấy lớp: ${item.classCode}`);
+        console.log(`KhĂ´ng tĂ¬m tháº¥y lá»›p: ${item.classCode}`);
         continue;
       }
 
       if (!studentId) {
-        console.log(`Không tìm thấy sinh viên: ${item.studentEmail}`);
+        console.log(`KhĂ´ng tĂ¬m tháº¥y sinh viĂªn: ${item.studentEmail}`);
         continue;
       }
 
       const activeClass = await findActiveStudentClass(pool, studentId);
 
       if (activeClass) {
-        console.log(`Bỏ qua vì sinh viên đã có lớp: ${item.studentEmail}`);
+        console.log(`Bá» qua vĂ¬ sinh viĂªn Ä‘Ă£ cĂ³ lá»›p: ${item.studentEmail}`);
         continue;
       }
 
@@ -103,13 +103,13 @@ async function seedClassMembers() {
           )
         `);
 
-      console.log(`Đã thêm ${item.studentEmail} vào lớp ${item.classCode}`);
+      console.log(`ÄĂ£ thĂªm ${item.studentEmail} vĂ o lá»›p ${item.classCode}`);
     }
 
-    console.log('Seed sinh viên vào lớp hoàn tất');
+    console.log('Seed sinh viĂªn vĂ o lá»›p hoĂ n táº¥t');
     process.exit(0);
   } catch (error) {
-    console.error('Lỗi seed class members:', error);
+    console.error('Lá»—i seed class members:', error);
     process.exit(1);
   }
 }

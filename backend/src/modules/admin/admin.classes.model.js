@@ -1,4 +1,4 @@
-// src/modules/admin/admin.classes.model.js
+﻿// src/modules/admin/admin.classes.model.js
 import { sql, poolPromise } from '../../config/db.js';
 
 function addClassFilters(request, filters = {}) {
@@ -178,7 +178,7 @@ export async function findTeacherById(teacherId) {
         DeletedAt
       FROM Users
       WHERE Id = @TeacherId
-        AND Role = 'Teacher'
+        AND Role = 'LECTURER'
         AND IsActive = 1
         AND DeletedAt IS NULL
     `);
@@ -329,7 +329,7 @@ export async function findStudentById(studentId) {
         DeletedAt
       FROM Users
       WHERE Id = @StudentId
-        AND Role = 'Student'
+        AND Role = 'STUDENT'
         AND IsActive = 1
         AND DeletedAt IS NULL
     `);
