@@ -7,6 +7,10 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
 import ClassesPage from './pages/ClassesPage'
+import AcademicYearsPage from './pages/AcademicYearsPage'
+import SemestersPage from './pages/SemestersPage'
+import SubjectsPage from './pages/SubjectsPage'
+import CourseClassesPage from './pages/CourseClassesPage'
 import ProfilePage from './pages/ProfilePage'
 
 import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
@@ -70,6 +74,41 @@ function App() {
             }
           />
           <Route path="users" element={<Navigate to="/admin/users" replace />} />
+          <Route
+            path="admin/academic-years"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <AcademicYearsPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="admin/semesters"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <SemestersPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="admin/subjects"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <SubjectsPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="admin/course-classes"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <CourseClassesPage mode="admin" />
+              </RoleRoute>
+            }
+          />
 
           <Route
             path="classes"

@@ -21,31 +21,38 @@ function MainLayout() {
   }
 
   function getWorkspaceText() {
-    if (role === USER_ROLES.ADMIN) return 'Khu vực quản trị hệ thống'
-    if (role === USER_ROLES.LECTURER) return 'Khu vực giảng viên'
-    if (role === USER_ROLES.STUDENT) return 'Khu vực sinh viên'
+    if (role === USER_ROLES.ADMIN) return 'Admin workspace'
+    if (role === USER_ROLES.LECTURER) return 'Lecturer workspace'
+    if (role === USER_ROLES.STUDENT) return 'Student workspace'
 
     return 'TVU Student Project Portal'
   }
 
   const menuItems = [
     { label: 'Dashboard', path: '/dashboard', roles: [USER_ROLES.ADMIN] },
-    { label: 'Người dùng', path: '/admin/users', roles: [USER_ROLES.ADMIN] },
-    { label: 'Lớp học', path: '/classes', roles: [USER_ROLES.ADMIN] },
+    { label: 'Users', path: '/admin/users', roles: [USER_ROLES.ADMIN] },
+    { label: 'Academic years', path: '/admin/academic-years', roles: [USER_ROLES.ADMIN] },
+    { label: 'Semesters', path: '/admin/semesters', roles: [USER_ROLES.ADMIN] },
+    { label: 'Subjects', path: '/admin/subjects', roles: [USER_ROLES.ADMIN] },
+    { label: 'Course classes', path: '/admin/course-classes', roles: [USER_ROLES.ADMIN] },
+    { label: 'Student classes', path: '/classes', roles: [USER_ROLES.ADMIN] },
     { label: 'Dashboard', path: '/teacher/dashboard', roles: [USER_ROLES.LECTURER] },
-    { label: 'Đề tài của tôi', path: '/teacher/projects', roles: [USER_ROLES.LECTURER] },
-    { label: 'Duyệt đăng ký', path: '/teacher/registrations', roles: [USER_ROLES.LECTURER] },
-    { label: 'Tiến độ sinh viên', path: '/teacher/progress', roles: [USER_ROLES.LECTURER] },
-    { label: 'Bài nộp cuối kỳ', path: '/teacher/final-submissions', roles: [USER_ROLES.LECTURER] },
+    { label: 'Teaching classes', path: '/lecturer/course-classes', roles: [USER_ROLES.LECTURER] },
+    { label: 'My topics', path: '/teacher/projects', roles: [USER_ROLES.LECTURER] },
+    { label: 'Registrations', path: '/teacher/registrations', roles: [USER_ROLES.LECTURER] },
+    { label: 'Student progress', path: '/teacher/progress', roles: [USER_ROLES.LECTURER] },
+    { label: 'Final submissions', path: '/teacher/final-submissions', roles: [USER_ROLES.LECTURER] },
     { label: 'Dashboard', path: '/student/dashboard', roles: [USER_ROLES.STUDENT] },
-    { label: 'Danh sách đề tài', path: '/student/projects', roles: [USER_ROLES.STUDENT] },
-    { label: 'Dự án của tôi', path: '/student/my-project', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp tiến độ', path: '/student/progress', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp cuối kỳ', path: '/student/final-submissions', roles: [USER_ROLES.STUDENT] },
-    { label: 'Hồ sơ', path: '/profile', roles: [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT] }
+    { label: 'My classes', path: '/student/course-classes', roles: [USER_ROLES.STUDENT] },
+    { label: 'Topic list', path: '/student/projects', roles: [USER_ROLES.STUDENT] },
+    { label: 'My project', path: '/student/my-project', roles: [USER_ROLES.STUDENT] },
+    { label: 'Progress', path: '/student/progress', roles: [USER_ROLES.STUDENT] },
+    { label: 'Final submission', path: '/student/final-submissions', roles: [USER_ROLES.STUDENT] },
+    { label: 'Profile', path: '/profile', roles: [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT] }
   ]
 
   const visibleMenus = menuItems.filter((item) => item.roles.includes(role))
+  const displayName = user?.fullName || user?.FullName || user?.email || user?.Email || 'User'
 
   return (
     <div className="app-shell">
@@ -55,7 +62,7 @@ function MainLayout() {
 
           <div className="brand-text">
             <h2>Project Portal</h2>
-            <p>Quản lý dự án sinh viên</p>
+            <p>Student project management</p>
           </div>
         </div>
 
@@ -77,24 +84,22 @@ function MainLayout() {
       <div className="main-area">
         <header className="header">
           <div className="header-title">
-            <h1>Cổng quản lý dự án sinh viên</h1>
+            <h1>TVU Student Project Portal</h1>
             <p>{getWorkspaceText()}</p>
           </div>
 
           <div className="header-user">
             <div className="avatar">
-              {(user?.fullName || user?.FullName || user?.email || user?.Email || 'U')
-                .charAt(0)
-                .toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
 
             <div className="user-info">
-              <strong>{user?.fullName || user?.FullName || 'Người dùng'}</strong>
+              <strong>{displayName}</strong>
               <span>{role}</span>
             </div>
 
             <button className="logout-btn" onClick={handleLogout}>
-              Đăng xuất
+              Logout
             </button>
           </div>
         </header>
