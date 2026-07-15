@@ -1,3 +1,6 @@
+BEGIN TRY
+  BEGIN TRANSACTION;
+
 IF OBJECT_ID('dbo.AcademicYears', 'U') IS NULL
 BEGIN
   CREATE TABLE dbo.AcademicYears (
@@ -111,3 +114,12 @@ BEGIN
 
   CREATE INDEX IX_CourseClassEnrollments_StudentId ON dbo.CourseClassEnrollments(StudentId);
 END;
+
+  COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+  IF @@TRANCOUNT > 0
+    ROLLBACK TRANSACTION;
+
+  THROW;
+END CATCH;
