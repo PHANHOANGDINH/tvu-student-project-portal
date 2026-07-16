@@ -274,7 +274,7 @@ function ProfilePage() {
                 className="btn-primary small"
                 onClick={() => navigate(getHomePath(role))}
               >
-                Xem Dashboard
+                Xem tổng quan
               </button>
             </div>
           </div>

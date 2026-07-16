@@ -11,7 +11,7 @@ import {
 import { NavLink } from "react-router-dom";
 
 const icons = {
-    Dashboard: LayoutDashboard,
+    "Tổng quan": LayoutDashboard,
     "Người dùng": Users,
     "Lớp học": GraduationCap,
     "Đề tài của tôi": FolderKanban,
@@ -48,7 +48,7 @@ export default function Sidebar({
                     <h2 className="font-bold text-xl">Project Portal</h2>
 
                     <p className="text-slate-400 text-sm">
-                        Student Project Portal
+                        Quản lý dự án sinh viên
                     </p>
                 </div>
             </div>
@@ -57,7 +57,7 @@ export default function Sidebar({
 
             <div className="flex-1 p-4">
                 <p className="uppercase text-xs text-slate-500 mb-3 px-2">
-                    MENU
+                    Menu
                 </p>
 
                 <div className="space-y-2">
@@ -99,7 +99,7 @@ export default function Sidebar({
                                 user?.fullName ||
                                 user?.FullName ||
                                 user?.email ||
-                                "U"
+                                "N"
                             )
                                 .charAt(0)
                                 .toUpperCase()}

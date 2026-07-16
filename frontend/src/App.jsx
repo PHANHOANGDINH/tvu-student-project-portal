@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 
 import MainLayout from './layouts/MainLayout'
@@ -6,7 +6,6 @@ import LoginPage from './pages/LoginPage'
 
 import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
-import ClassesPage from './pages/ClassesPage'
 import AcademicYearsPage from './pages/AcademicYearsPage'
 import SemestersPage from './pages/SemestersPage'
 import SubjectsPage from './pages/SubjectsPage'
@@ -109,15 +108,7 @@ function App() {
               </RoleRoute>
             }
           />
-
-          <Route
-            path="classes"
-            element={
-              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-                <ClassesPage />
-              </RoleRoute>
-            }
-          />
+          <Route path="classes" element={<Navigate to="/admin/course-classes" replace />} />
 
           <Route
             path="teacher/dashboard"
@@ -128,6 +119,23 @@ function App() {
             }
           />
 
+          <Route
+            path="lecturer/course-classes"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.LECTURER]}>
+                <CourseClassesPage mode="lecturer" />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="student/course-classes"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.STUDENT]}>
+                <CourseClassesPage mode="student" />
+              </RoleRoute>
+            }
+          />
           <Route
             path="profile"
             element={
