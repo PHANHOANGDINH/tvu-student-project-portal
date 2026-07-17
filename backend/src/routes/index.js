@@ -6,6 +6,7 @@ import usersRoutes from '../modules/users/users.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import teacherRoutes from '../modules/teacher/teacher.routes.js';
 import studentRoutes from '../modules/student/student.routes.js';
+import { classGroupRoutes, groupRoutes, lecturerTopicRoutes } from '../modules/groups/groups.routes.js';
 
 const router = express.Router();
 
@@ -21,5 +22,8 @@ router.use('/users', usersRoutes);
 router.use('/admin', adminRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/student', studentRoutes);
+router.use('/course-classes/:courseClassId/groups', classGroupRoutes);
+router.use('/groups', groupRoutes);
+router.use('/lecturer/topic-registrations', lecturerTopicRoutes);
 
 export default router;

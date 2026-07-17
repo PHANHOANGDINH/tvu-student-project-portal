@@ -1,5 +1,6 @@
 ﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import './group.css'
 
 import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/LoginPage'
@@ -10,6 +11,10 @@ import ClassesPage from './pages/ClassesPage'
 import ProfilePage from './pages/ProfilePage'
 
 import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
+import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
+import LecturerTopicRegistrationsPage from './pages/teacher/LecturerTopicRegistrationsPage'
+import StudentGroupsPage from './pages/student/StudentGroupsPage'
+import TopicRegistrationPage from './pages/student/TopicRegistrationPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -88,6 +93,12 @@ function App() {
               </RoleRoute>
             }
           />
+
+          <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
+          <Route path="student/groups/my-group" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
+          <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
+          <Route path="lecturer/groups" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerGroupsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-registrations" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRegistrationsPage /></RoleRoute>} />
 
           <Route
             path="profile"

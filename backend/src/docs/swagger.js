@@ -1,4 +1,5 @@
 ﻿import { USER_ROLES } from '../constants/roles.js';
+import { groupSwaggerPaths } from './groups.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -154,6 +155,7 @@ export const swaggerSpec = {
     },
   },
   paths: {
+    ...groupSwaggerPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

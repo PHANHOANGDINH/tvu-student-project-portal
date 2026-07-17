@@ -1,0 +1,10 @@
+import express from 'express';
+import auth from '../../middlewares/auth.middleware.js';
+import role from '../../middlewares/role.middleware.js';
+import { USER_ROLES as R } from '../../constants/roles.js';
+import * as c from './groups.controller.js';
+export const classGroupRoutes=express.Router({mergeParams:true});
+classGroupRoutes.use(auth,role(R.ADMIN,R.LECTURER,R.STUDENT));classGroupRoutes.get('/',c.listGroups);classGroupRoutes.post('/',role(R.STUDENT),c.createGroup);
+export const groupRoutes=express.Router();groupRoutes.use(auth,role(R.ADMIN,R.LECTURER,R.STUDENT));
+groupRoutes.get('/my-group',role(R.STUDENT),c.getMyGroup);groupRoutes.get('/:id',c.getGroup);groupRoutes.post('/:id/members',role(R.STUDENT),c.addMember);groupRoutes.delete('/:id/members/:studentId',role(R.STUDENT),c.removeMember);groupRoutes.patch('/:id/leader',role(R.STUDENT),c.transferLeader);groupRoutes.get('/:groupId/topic-registration',c.getTopic);groupRoutes.post('/:groupId/topic-registration',role(R.STUDENT),c.saveTopic);groupRoutes.put('/:groupId/topic-registration',role(R.STUDENT),c.saveTopic);
+export const lecturerTopicRoutes=express.Router();lecturerTopicRoutes.use(auth,role(R.LECTURER));lecturerTopicRoutes.get('/',c.listTopics);lecturerTopicRoutes.get('/:id',c.getLecturerTopic);lecturerTopicRoutes.patch('/:id/review',c.reviewTopic);
