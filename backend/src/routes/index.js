@@ -8,6 +8,7 @@ import teacherRoutes from '../modules/teacher/teacher.routes.js';
 import studentRoutes from '../modules/student/student.routes.js';
 import { classGroupRoutes, groupRoutes, lecturerTopicRoutes } from '../modules/groups/groups.routes.js';
 import { lecturerSubmissionRoutes, studentSubmissionRoutes } from '../modules/submissions/submissionRequirements.routes.js';
+import { lecturerSubmissionViewRoutes, studentSubmissionUploadRoutes } from '../modules/submissions/submissions.routes.js';
 
 const router = express.Router();
 
@@ -28,5 +29,7 @@ router.use('/groups', groupRoutes);
 router.use('/lecturer/topic-registrations', lecturerTopicRoutes);
 router.use('/lecturer/submission-requirements', lecturerSubmissionRoutes);
 router.use('/student/submission-requirements', studentSubmissionRoutes);
+router.use('/student', studentSubmissionUploadRoutes);
+router.use('/lecturer', lecturerSubmissionViewRoutes);
 
 export default router;

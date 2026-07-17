@@ -53,9 +53,10 @@ app.use((error, req, res, next) => {
   }
 
   console.error(error);
+  const statusCode = Number(error.statusCode) || 500;
   return sendError(res, {
-    statusCode: 500,
-    message: 'Lỗi hệ thống',
+    statusCode,
+    message: statusCode < 500 ? error.message : 'Lỗi hệ thống',
     errors: process.env.NODE_ENV === 'development' ? { system: [error.message] } : null,
   });
 });
