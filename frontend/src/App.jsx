@@ -15,6 +15,8 @@ import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
 import LecturerTopicRegistrationsPage from './pages/teacher/LecturerTopicRegistrationsPage'
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
 import TopicRegistrationPage from './pages/student/TopicRegistrationPage'
+import LecturerSubmissionRequirementsPage from './pages/teacher/SubmissionRequirementsPage'
+import StudentSubmissionRequirementsPage from './pages/student/SubmissionRequirementsPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -99,6 +101,9 @@ function App() {
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
           <Route path="lecturer/groups" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerGroupsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registrations" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRegistrationsPage /></RoleRoute>} />
+
+          <Route path="lecturer/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="student/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />
 
           <Route
             path="profile"
