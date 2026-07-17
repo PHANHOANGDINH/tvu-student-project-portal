@@ -22,6 +22,9 @@ import SubmitRequirementPage from './pages/student/SubmitRequirementPage'
 import SubmissionHistoryPage from './pages/student/SubmissionHistoryPage'
 import LecturerSubmissionsPage from './pages/teacher/SubmissionsPage'
 import LecturerSubmissionDetailPage from './pages/teacher/SubmissionDetailPage'
+import SubmissionReviewPage from './pages/teacher/SubmissionReviewPage'
+import EvaluationCriteriaPage from './pages/teacher/EvaluationCriteriaPage'
+import SubmissionResultPage from './pages/student/SubmissionResultPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -115,6 +118,10 @@ function App() {
           <Route path="student/submissions/:id/history" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionHistoryPage /></RoleRoute>} />
           <Route path="lecturer/submissions" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionsPage /></RoleRoute>} />
           <Route path="lecturer/submissions/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionDetailPage /></RoleRoute>} />
+
+          <Route path="lecturer/submissions/:id/review" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><SubmissionReviewPage /></RoleRoute>} />
+          <Route path="lecturer/submission-requirements/:id/criteria" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><EvaluationCriteriaPage /></RoleRoute>} />
+          <Route path="student/submissions/:id/result" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionResultPage /></RoleRoute>} />
 
           <Route
             path="profile"
