@@ -4,17 +4,20 @@ import sql from "mssql";
 
 dotenv.config();
 
+const dbPort = Number(process.env.DB_PORT);
+
 const dbConfig = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
 
     // Tên máy
-    server: "DESKTOP-LMCBPM1",
+    server: process.env.DB_SERVER || "localhost",
 
     database: process.env.DB_DATABASE,
+    ...(dbPort ? { port: dbPort } : {}),
 
     options: {
-        instanceName: "SQLEXPRESS", // Thêm dòng này
+        ...(dbPort ? {} : { instanceName: process.env.DB_INSTANCE || "SQLEXPRESS" }),
         encrypt: false,
         trustServerCertificate: true,
     },
