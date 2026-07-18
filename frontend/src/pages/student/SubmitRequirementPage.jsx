@@ -1,2 +1,86 @@
-import{useEffect,useState}from'react';import{useNavigate,useParams}from'react-router-dom';import{currentSubmission,uploadSubmission}from'../../api/submissionsApi';
-const FILES=['REPORT','SLIDE','SOURCE_CODE','OTHER'];export default function SubmitRequirementPage(){const{id}=useParams(),nav=useNavigate(),[data,setData]=useState(null),[selected,setSelected]=useState({}),[github,setGithub]=useState(''),[video,setVideo]=useState(''),[progress,setProgress]=useState(0),[loading,setLoading]=useState(true),[error,setError]=useState('');const load=()=>currentSubmission(id).then(r=>setData(r.data)).catch(e=>setError(e.message)).finally(()=>setLoading(false));useEffect(load,[id]);const submit=async e=>{e.preventDefault();if(!window.confirm('Xác nhận gửi lần nộp này?'))return;const f=new FormData();Object.entries(selected).forEach(([type,file])=>file&&f.append(type,file));if(github)f.append('githubUrl',github);if(video)f.append('videoUrl',video);try{setLoading(true);await uploadSubmission(id,f,setProgress);setSelected({});setGithub('');setVideo('');await load()}catch(e){setError(e.message)}finally{setLoading(false)}};if(!data)return <div className="panel">{loading?'Đang tải...':error}</div>;const r=data.requirement,a=data.attempts||[],late=Date.now()>new Date(r.deadline).getTime();return <div><div className="page-title"><h2>Nộp bài: {r.groupName}</h2><p>Đã nộp {a.length}/{r.maxAttempts} lần · Tối đa {r.maxFileSizeMb||20} MB/file.</p></div>{late&&<div className="alert error">Đã quá hạn. Lần nộp này sẽ được đánh dấu trễ nếu đợt cho phép.</div>}{error&&<div className="alert error">{error}</div>}<form className="panel" onSubmit={submit}>{r.requiredItems.filter(t=>FILES.includes(t)).map(t=><label key={t}>{t}<input type="file" required onChange={e=>setSelected({...selected,[t]:e.target.files[0]})}/></label>)}{r.requiredItems.includes('GITHUB_LINK')&&<input type="url" required placeholder="GitHub URL" value={github} onChange={e=>setGithub(e.target.value)}/>} {r.requiredItems.includes('VIDEO_LINK')&&<input type="url" required placeholder="Video URL" value={video} onChange={e=>setVideo(e.target.value)}/>}<button className="btn-primary" disabled={loading}>Gửi bài {progress?`(${progress}%)`:''}</button></form>{data.submission&&<button className="btn-light" onClick={()=>nav(`/student/submissions/${data.submission.id}/history`)}>Xem lịch sử nộp</button>}</div>}
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { currentSubmission, uploadSubmission } from '../../api/submissionsApi'
+
+const FILE_ITEMS = ['REPORT', 'SLIDE', 'SOURCE_CODE', 'OTHER']
+const ACCEPTED_TYPES = {
+  REPORT: '.pdf,.doc,.docx',
+  SLIDE: '.pdf,.ppt,.pptx',
+  SOURCE_CODE: '.zip,.rar,.7z',
+  OTHER: undefined
+}
+
+export default function SubmitRequirementPage() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const [data, setData] = useState(null)
+  const [selected, setSelected] = useState({})
+  const [github, setGithub] = useState('')
+  const [video, setVideo] = useState('')
+  const [progress, setProgress] = useState(0)
+  const [formKey, setFormKey] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  function load() {
+    setLoading(true)
+    setError('')
+    return currentSubmission(id)
+      .then((response) => setData(response.data))
+      .catch((requestError) => setError(requestError.message || 'Không thể tải yêu cầu nộp bài'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [id])
+
+  async function submit(event) {
+    event.preventDefault()
+    setError('')
+    const maxBytes = (data.requirement.maxFileSizeMb || 20) * 1024 * 1024
+    const oversized = Object.values(selected).find((file) => file?.size > maxBytes)
+    if (oversized) {
+      setError(`File “${oversized.name}” vượt quá dung lượng cho phép.`)
+      return
+    }
+    if (!window.confirm('Xác nhận gửi lần nộp này?')) return
+
+    const formData = new FormData()
+    Object.entries(selected).forEach(([type, file]) => { if (file) formData.append(type, file) })
+    if (github) formData.append('githubUrl', github)
+    if (video) formData.append('videoUrl', video)
+
+    try {
+      setLoading(true)
+      setProgress(0)
+      await uploadSubmission(id, formData, setProgress)
+      setSelected({})
+      setGithub('')
+      setVideo('')
+      setFormKey((value) => value + 1)
+      await load()
+    } catch (requestError) {
+      setError(requestError.message || 'Không thể gửi bài')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!data) return <div className="panel">{loading ? 'Đang tải...' : error || 'Không có dữ liệu.'}</div>
+
+  const requirement = data.requirement
+  const attempts = data.attempts || []
+  const isLate = Date.now() > new Date(requirement.deadline).getTime()
+
+  return <div>
+    <div className="page-title"><h2>Nộp bài: {requirement.groupName}</h2><p>Đã nộp {attempts.length}/{requirement.maxAttempts} lần · Tối đa {requirement.maxFileSizeMb || 20} MB/file.</p></div>
+    {isLate && <div className="alert error">Đã quá hạn. Lần nộp này sẽ được đánh dấu trễ nếu đợt cho phép.</div>}
+    {error && <div className="alert error">{error}</div>}
+    <form key={formKey} className="panel" onSubmit={submit}>
+      {requirement.requiredItems.filter((type) => FILE_ITEMS.includes(type)).map((type) => <label key={type}>{type}<input type="file" accept={ACCEPTED_TYPES[type]} required onChange={(event) => setSelected((current) => ({ ...current, [type]: event.target.files[0] }))} /></label>)}
+      {requirement.requiredItems.includes('GITHUB_LINK') && <input type="url" required placeholder="Liên kết GitHub" value={github} onChange={(event) => setGithub(event.target.value)} />}
+      {requirement.requiredItems.includes('VIDEO_LINK') && <input type="url" required placeholder="Liên kết video" value={video} onChange={(event) => setVideo(event.target.value)} />}
+      <button className="btn-primary" disabled={loading}>{loading ? 'Đang gửi...' : `Gửi bài${progress ? ` (${progress}%)` : ''}`}</button>
+    </form>
+    {data.submission && <button className="btn-light" onClick={() => navigate(`/student/submissions/${data.submission.id}/history`)}>Xem lịch sử nộp</button>}
+  </div>
+}

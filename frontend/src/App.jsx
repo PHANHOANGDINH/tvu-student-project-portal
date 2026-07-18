@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './group.css'
 import './notifications.css'
@@ -10,7 +10,6 @@ import UsersPage from './pages/UsersPage'
 import ClassesPage from './pages/ClassesPage'
 import ProfilePage from './pages/ProfilePage'
 
-import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
 import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
 import LecturerTopicRegistrationsPage from './pages/teacher/LecturerTopicRegistrationsPage'
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
@@ -26,6 +25,8 @@ import SubmissionReviewPage from './pages/teacher/SubmissionReviewPage'
 import EvaluationCriteriaPage from './pages/teacher/EvaluationCriteriaPage'
 import SubmissionResultPage from './pages/student/SubmissionResultPage'
 import RoleDashboardPage from './pages/dashboards/RoleDashboardPage'
+import AcademicSummaryPage from './pages/admin/AcademicSummaryPage'
+import StudentCourseClassesPage from './pages/student/StudentCourseClassesPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -88,7 +89,7 @@ function App() {
           <Route path="users" element={<Navigate to="/admin/users" replace />} />
 
           <Route
-            path="classes"
+            path="admin/course-classes"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <ClassesPage />
@@ -96,19 +97,18 @@ function App() {
             }
           />
 
+          <Route path="classes" element={<Navigate to="/admin/course-classes" replace />} />
+          <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
+          <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
+          <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" title="Môn học" /></RoleRoute>} />
+
           <Route path="admin/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><RoleDashboardPage role="admin" title="Dashboard Admin" /></RoleRoute>} />
           <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" title="Dashboard Giảng viên" /></RoleRoute>} />
           <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RoleDashboardPage role="student" title="Dashboard Sinh viên" /></RoleRoute>} />
 
-          <Route
-            path="teacher/dashboard"
-            element={
-              <RoleRoute allowedRoles={[USER_ROLES.LECTURER]}>
-                <TeacherDashboardPage />
-              </RoleRoute>
-            }
-          />
+          <Route path="teacher/dashboard" element={<Navigate to="/lecturer/dashboard" replace />} />
 
+          <Route path="student/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/groups/my-group" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />

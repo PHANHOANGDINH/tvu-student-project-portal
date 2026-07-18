@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getClassesApi, getDashboardApi, getUsersApi } from '../api/adminApi'
 import { normalizeRole, USER_ROLES } from '../constants/roles'
 import {
@@ -43,7 +43,7 @@ function DashboardPage() {
             setUsers(Array.isArray(userList) ? userList : []);
             setClasses(Array.isArray(classList) ? classList : []);
         } catch (err) {
-            setError(err.message || "KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u dashboard");
+            setError(err.message || "Không thể tải dữ liệu dashboard");
         } finally {
             setLoading(false);
         }
@@ -159,9 +159,9 @@ function DashboardPage() {
             case USER_ROLES.ADMIN:
                 return "Admin";
             case USER_ROLES.LECTURER:
-                return "Giáº£ng viĂªn";
+                return "Giảng viên";
             case USER_ROLES.STUDENT:
-                return "Sinh viĂªn";
+                return "Sinh viên";
             default:
                 return role || "-";
         }
@@ -172,7 +172,7 @@ function DashboardPage() {
     }
 
     function getStatusText(isActive) {
-        return isActive === false ? "ÄĂ£ khĂ³a" : "Hoáº¡t Ä‘á»™ng";
+        return isActive === false ? "Đã khóa" : "Hoạt động";
     }
 
     if (loading) {
@@ -180,11 +180,11 @@ function DashboardPage() {
             <div>
                 <div className="page-title">
                     <h2>Dashboard</h2>
-                    <p>Äang táº£i dá»¯ liá»‡u tá»•ng quan...</p>
+                    <p>Đang tải dữ liệu tổng quan...</p>
                 </div>
 
                 <div className="panel">
-                    <p>Äang táº£i dá»¯ liá»‡u...</p>
+                    <p>Đang tải dữ liệu...</p>
                 </div>
             </div>
         );
@@ -195,11 +195,11 @@ function DashboardPage() {
             <div className="page-title row-between">
                 <div>
                     <h2>Dashboard Admin</h2>
-                    <p>Tá»•ng quan há»‡ thá»‘ng TVU Student Project Portal.</p>
+                    <p>Tổng quan hệ thống TVU Student Project Portal.</p>
                 </div>
 
                 <button className="btn-light" onClick={loadDashboard}>
-                    LĂ m má»›i
+                    Làm mới
                 </button>
             </div>
 
@@ -212,9 +212,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Tá»•ng ngÆ°á»i dĂ¹ng</span>
+                        <span>Tổng người dùng</span>
                         <strong>{stats.totalUsers}</strong>
-                        <p>Táº¥t cáº£ tĂ i khoáº£n trong há»‡ thá»‘ng</p>
+                        <p>Tất cả tài khoản trong hệ thống</p>
                     </div>
                 </div>
 
@@ -224,9 +224,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Sinh viĂªn</span>
+                        <span>Sinh viên</span>
                         <strong>{stats.totalStudents}</strong>
-                        <p>TĂ i khoáº£n sinh viĂªn</p>
+                        <p>Tài khoản sinh viên</p>
                     </div>
                 </div>
 
@@ -236,9 +236,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Giáº£ng viĂªn</span>
+                        <span>Giảng viên</span>
                         <strong>{stats.totalTeachers}</strong>
-                        <p>Giáº£ng viĂªn hÆ°á»›ng dáº«n</p>
+                        <p>Giảng viên hướng dẫn</p>
                     </div>
                 </div>
 
@@ -248,9 +248,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Quáº£n trá»‹ viĂªn</span>
+                        <span>Quản trị viên</span>
                         <strong>{stats.totalAdmins}</strong>
-                        <p>TĂ i khoáº£n quáº£n trá»‹</p>
+                        <p>Tài khoản quản trị</p>
                     </div>
                 </div>
 
@@ -260,9 +260,9 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>Lá»›p há»c</span>
+                        <span>Lớp học</span>
                         <strong>{stats.totalClasses}</strong>
-                        <p>Lá»›p Ä‘ang quáº£n lĂ½</p>
+                        <p>Lớp đang quản lý</p>
                     </div>
                 </div>
 
@@ -272,72 +272,72 @@ function DashboardPage() {
                     </div>
 
                     <div>
-                        <span>TĂ i khoáº£n khĂ³a</span>
+                        <span>Tài khoản khóa</span>
                         <strong>{stats.totalInactiveUsers}</strong>
-                        <p>Äang bá»‹ vĂ´ hiá»‡u hĂ³a</p>
+                        <p>Đang bị vô hiệu hóa</p>
                     </div>
                 </div>
             </div>
 
             <div className="dashboard-grid">
                 <div className="panel">
-                    <h3>Tráº¡ng thĂ¡i tĂ i khoáº£n</h3>
+                    <h3>Trạng thái tài khoản</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>Äang hoáº¡t Ä‘á»™ng</span>
+                            <span>Đang hoạt động</span>
                             <strong>{stats.totalActiveUsers}</strong>
                         </div>
 
                         <div>
-                            <span>Bá»‹ khĂ³a</span>
+                            <span>Bị khóa</span>
                             <strong>{stats.totalInactiveUsers}</strong>
                         </div>
 
                         <div>
-                            <span>Tá»•ng tĂ i khoáº£n</span>
+                            <span>Tổng tài khoản</span>
                             <strong>{stats.totalUsers}</strong>
                         </div>
                     </div>
                 </div>
 
                 <div className="panel">
-                    <h3>Tráº¡ng thĂ¡i lá»›p há»c</h3>
+                    <h3>Trạng thái lớp học</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>Lá»›p hoáº¡t Ä‘á»™ng</span>
+                            <span>Lớp hoạt động</span>
                             <strong>{stats.totalActiveClasses}</strong>
                         </div>
 
                         <div>
-                            <span>Lá»›p bá»‹ khĂ³a</span>
+                            <span>Lớp bị khóa</span>
                             <strong>{stats.totalInactiveClasses}</strong>
                         </div>
 
                         <div>
-                            <span>Tá»•ng lá»›p</span>
+                            <span>Tổng lớp</span>
                             <strong>{stats.totalClasses}</strong>
                         </div>
                     </div>
                 </div>
 
                 <div className="panel">
-                    <h3>Xáº¿p lá»›p sinh viĂªn</h3>
+                    <h3>Xếp lớp sinh viên</h3>
 
                     <div className="mini-stat-list">
                         <div>
-                            <span>ÄĂ£ thuá»™c lá»›p</span>
+                            <span>Đã thuộc lớp</span>
                             <strong>{stats.assignedStudents}</strong>
                         </div>
 
                         <div>
-                            <span>ChÆ°a thuá»™c lá»›p</span>
+                            <span>Chưa thuộc lớp</span>
                             <strong>{stats.unassignedStudents}</strong>
                         </div>
 
                         <div>
-                            <span>Tá»•ng sinh viĂªn trong lá»›p</span>
+                            <span>Tổng sinh viên trong lớp</span>
                             <strong>{stats.totalStudentsInClasses}</strong>
                         </div>
                     </div>
@@ -346,14 +346,14 @@ function DashboardPage() {
 
             <div className="dashboard-grid">
                 <div className="panel">
-                    <h3>Lá»›p cĂ³ nhiá»u sinh viĂªn nháº¥t</h3>
+                    <h3>Lớp có nhiều sinh viên nhất</h3>
 
                     <table>
                         <thead>
                             <tr>
-                                <th>MĂ£ lá»›p</th>
-                                <th>TĂªn lá»›p</th>
-                                <th>Sá»‘ SV</th>
+                                <th>Mã lớp</th>
+                                <th>Tên lớp</th>
+                                <th>Số SV</th>
                             </tr>
                         </thead>
 
@@ -369,7 +369,7 @@ function DashboardPage() {
                             {topClasses.length === 0 && (
                                 <tr>
                                     <td colSpan="3">
-                                        ChÆ°a cĂ³ dá»¯ liá»‡u lá»›p há»c.
+                                        Chưa có dữ liệu lớp học.
                                     </td>
                                 </tr>
                             )}
@@ -378,14 +378,14 @@ function DashboardPage() {
                 </div>
 
                 <div className="panel">
-                    <h3>NgÆ°á»i dĂ¹ng má»›i táº¡o</h3>
+                    <h3>Người dùng mới tạo</h3>
 
                     <table>
                         <thead>
                             <tr>
-                                <th>Há» tĂªn</th>
+                                <th>Họ tên</th>
                                 <th>Vai trĂ²</th>
-                                <th>Tráº¡ng thĂ¡i</th>
+                                <th>Trạng thái</th>
                             </tr>
                         </thead>
 
@@ -421,7 +421,7 @@ function DashboardPage() {
                             {recentUsers.length === 0 && (
                                 <tr>
                                     <td colSpan="3">
-                                        ChÆ°a cĂ³ dá»¯ liá»‡u ngÆ°á»i dĂ¹ng.
+                                        Chưa có dữ liệu người dùng.
                                     </td>
                                 </tr>
                             )}

@@ -1,4 +1,4 @@
-﻿import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../constants/roles'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
 import NotificationBell from '../components/NotificationBell'
@@ -32,25 +32,21 @@ function MainLayout() {
   const menuItems = [
     { label: 'Dashboard', path: '/admin/dashboard', roles: [USER_ROLES.ADMIN] },
     { label: 'Người dùng', path: '/admin/users', roles: [USER_ROLES.ADMIN] },
-    { label: 'Lớp học', path: '/classes', roles: [USER_ROLES.ADMIN] },
+    { label: 'Năm học', path: '/admin/academic-years', roles: [USER_ROLES.ADMIN] },
+    { label: 'Học kỳ', path: '/admin/semesters', roles: [USER_ROLES.ADMIN] },
+    { label: 'Môn học', path: '/admin/subjects', roles: [USER_ROLES.ADMIN] },
+    { label: 'Lớp học phần', path: '/admin/course-classes', roles: [USER_ROLES.ADMIN] },
     { label: 'Dashboard', path: '/lecturer/dashboard', roles: [USER_ROLES.LECTURER] },
     { label: 'Nhóm sinh viên', path: '/lecturer/groups', roles: [USER_ROLES.LECTURER] },
     { label: 'Duyệt đề tài nhóm', path: '/lecturer/topic-registrations', roles: [USER_ROLES.LECTURER] },
     { label: 'Đợt nộp bài', path: '/lecturer/submission-requirements', roles: [USER_ROLES.LECTURER] },
     { label: 'Bài nộp sinh viên', path: '/lecturer/submissions', roles: [USER_ROLES.LECTURER] },
-    { label: 'Đề tài của tôi', path: '/teacher/projects', roles: [USER_ROLES.LECTURER] },
-    { label: 'Duyệt đăng ký', path: '/teacher/registrations', roles: [USER_ROLES.LECTURER] },
-    { label: 'Tiến độ sinh viên', path: '/teacher/progress', roles: [USER_ROLES.LECTURER] },
-    { label: 'Bài nộp cuối kỳ', path: '/teacher/final-submissions', roles: [USER_ROLES.LECTURER] },
     { label: 'Dashboard', path: '/student/dashboard', roles: [USER_ROLES.STUDENT] },
+    { label: 'Lớp đang tham gia', path: '/student/course-classes', roles: [USER_ROLES.STUDENT] },
     { label: 'Nhóm của tôi', path: '/student/groups/my-group', roles: [USER_ROLES.STUDENT] },
     { label: 'Đăng ký đề tài', path: '/student/topic-registration', roles: [USER_ROLES.STUDENT] },
     { label: 'Yêu cầu nộp bài', path: '/student/submission-requirements', roles: [USER_ROLES.STUDENT] },
     { label: 'Bài nộp của nhóm', path: '/student/submissions', roles: [USER_ROLES.STUDENT] },
-    { label: 'Danh sách đề tài', path: '/student/projects', roles: [USER_ROLES.STUDENT] },
-    { label: 'Dự án của tôi', path: '/student/my-project', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp tiến độ', path: '/student/progress', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp cuối kỳ', path: '/student/final-submissions', roles: [USER_ROLES.STUDENT] },
     { label: 'Hồ sơ', path: '/profile', roles: [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT] }
   ]
 

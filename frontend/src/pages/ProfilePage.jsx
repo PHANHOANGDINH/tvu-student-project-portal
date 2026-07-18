@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { changePasswordApi, getCurrentUserApi } from '../api/authApi'
 import { USER_ROLES } from '../constants/roles'
@@ -104,8 +104,8 @@ function ProfilePage() {
   }
 
   function getHomePath(role) {
-    if (role === USER_ROLES.ADMIN) return '/dashboard'
-    if (role === USER_ROLES.LECTURER) return '/teacher/dashboard'
+    if (role === USER_ROLES.ADMIN) return '/admin/dashboard'
+    if (role === USER_ROLES.LECTURER) return '/lecturer/dashboard'
     if (role === USER_ROLES.STUDENT) return '/student/dashboard'
 
     return '/dashboard'
