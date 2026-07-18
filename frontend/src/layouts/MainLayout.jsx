@@ -1,6 +1,7 @@
 ﻿import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { USER_ROLES } from '../constants/roles'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
+import NotificationBell from '../components/NotificationBell'
 
 function MainLayout() {
   const navigate = useNavigate()
@@ -13,8 +14,8 @@ function MainLayout() {
   }
 
   function getHomePath() {
-    if (role === USER_ROLES.ADMIN) return '/dashboard'
-    if (role === USER_ROLES.LECTURER) return '/teacher/dashboard'
+    if (role === USER_ROLES.ADMIN) return '/admin/dashboard'
+    if (role === USER_ROLES.LECTURER) return '/lecturer/dashboard'
     if (role === USER_ROLES.STUDENT) return '/student/dashboard'
 
     return '/login'
@@ -29,10 +30,10 @@ function MainLayout() {
   }
 
   const menuItems = [
-    { label: 'Dashboard', path: '/dashboard', roles: [USER_ROLES.ADMIN] },
+    { label: 'Dashboard', path: '/admin/dashboard', roles: [USER_ROLES.ADMIN] },
     { label: 'Người dùng', path: '/admin/users', roles: [USER_ROLES.ADMIN] },
     { label: 'Lớp học', path: '/classes', roles: [USER_ROLES.ADMIN] },
-    { label: 'Dashboard', path: '/teacher/dashboard', roles: [USER_ROLES.LECTURER] },
+    { label: 'Dashboard', path: '/lecturer/dashboard', roles: [USER_ROLES.LECTURER] },
     { label: 'Nhóm sinh viên', path: '/lecturer/groups', roles: [USER_ROLES.LECTURER] },
     { label: 'Duyệt đề tài nhóm', path: '/lecturer/topic-registrations', roles: [USER_ROLES.LECTURER] },
     { label: 'Đợt nộp bài', path: '/lecturer/submission-requirements', roles: [USER_ROLES.LECTURER] },
@@ -90,6 +91,7 @@ function MainLayout() {
           </div>
 
           <div className="header-user">
+            <NotificationBell role={role} />
             <div className="avatar">
               {(user?.fullName || user?.FullName || user?.email || user?.Email || 'U')
                 .charAt(0)

@@ -1,0 +1,1 @@
+import{request}from'./http';export const getNotifications=()=>request('/notifications');export const getUnreadCount=()=>request('/notifications/unread-count');export const markNotificationRead=id=>request(`/notifications/${id}/read`,{method:'PATCH'});export const markAllNotificationsRead=()=>request('/notifications/read-all',{method:'PATCH'});

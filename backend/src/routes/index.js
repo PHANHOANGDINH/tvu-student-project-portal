@@ -10,6 +10,8 @@ import { classGroupRoutes, groupRoutes, lecturerTopicRoutes } from '../modules/g
 import { lecturerSubmissionRoutes, studentSubmissionRoutes } from '../modules/submissions/submissionRequirements.routes.js';
 import { lecturerSubmissionViewRoutes, studentSubmissionUploadRoutes } from '../modules/submissions/submissions.routes.js';
 import { lecturerGradingRoutes, studentGradingRoutes } from '../modules/grading/grading.routes.js';
+import notificationsRoutes from '../modules/notifications/notifications.routes.js';
+import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 
 const router = express.Router();
 
@@ -22,6 +24,10 @@ router.get('/health', (req, res) => {
 
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
+router.use('/notifications', notificationsRoutes);
+router.use('/admin/dashboard', adminDashboardRoutes);
+router.use('/lecturer/dashboard', lecturerDashboardRoutes);
+router.use('/student/dashboard', studentDashboardRoutes);
 router.use('/admin', adminRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/student', studentRoutes);

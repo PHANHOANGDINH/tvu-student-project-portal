@@ -1,11 +1,11 @@
 ﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './group.css'
+import './notifications.css'
 
 import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/LoginPage'
 
-import DashboardPage from './pages/DashboardPage'
 import UsersPage from './pages/UsersPage'
 import ClassesPage from './pages/ClassesPage'
 import ProfilePage from './pages/ProfilePage'
@@ -25,6 +25,7 @@ import LecturerSubmissionDetailPage from './pages/teacher/SubmissionDetailPage'
 import SubmissionReviewPage from './pages/teacher/SubmissionReviewPage'
 import EvaluationCriteriaPage from './pages/teacher/EvaluationCriteriaPage'
 import SubmissionResultPage from './pages/student/SubmissionResultPage'
+import RoleDashboardPage from './pages/dashboards/RoleDashboardPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -42,13 +43,13 @@ function DashboardRedirect() {
   if (role === USER_ROLES.ADMIN) {
     return (
       <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-        <DashboardPage />
+        <RoleDashboardPage role="admin" title="Dashboard Admin" />
       </RoleRoute>
     )
   }
 
   if (role === USER_ROLES.LECTURER) {
-    return <Navigate to="/teacher/dashboard" replace />
+    return <Navigate to="/lecturer/dashboard" replace />
   }
 
   if (role === USER_ROLES.STUDENT) {
@@ -94,6 +95,10 @@ function App() {
               </RoleRoute>
             }
           />
+
+          <Route path="admin/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><RoleDashboardPage role="admin" title="Dashboard Admin" /></RoleRoute>} />
+          <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" title="Dashboard Giảng viên" /></RoleRoute>} />
+          <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RoleDashboardPage role="student" title="Dashboard Sinh viên" /></RoleRoute>} />
 
           <Route
             path="teacher/dashboard"

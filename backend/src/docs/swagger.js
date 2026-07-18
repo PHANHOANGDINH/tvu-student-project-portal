@@ -3,6 +3,7 @@ import { groupSwaggerPaths } from './groups.swagger.js';
 import { submissionSwaggerPaths } from './submissions.swagger.js';
 import { submissionUploadSwaggerPaths } from './submissionUploads.swagger.js';
 import { gradingSwaggerPaths } from './grading.swagger.js';
+import { notificationsDashboardPaths } from './notificationsDashboard.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -162,6 +163,7 @@ export const swaggerSpec = {
     ...submissionSwaggerPaths,
     ...submissionUploadSwaggerPaths,
     ...gradingSwaggerPaths,
+    ...notificationsDashboardPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

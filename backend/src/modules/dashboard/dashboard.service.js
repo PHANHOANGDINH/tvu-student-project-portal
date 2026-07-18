@@ -1,0 +1,1 @@
+import * as repo from'./dashboard.repository.js';const ok=data=>({success:true,statusCode:200,message:'Lấy dashboard thành công',data});export const adminDashboard=()=>repo.admin().then(ok);export const lecturerDashboard=user=>repo.lecturer(user.id).then(ok);export const studentDashboard=user=>repo.student(user.id).then(ok);
