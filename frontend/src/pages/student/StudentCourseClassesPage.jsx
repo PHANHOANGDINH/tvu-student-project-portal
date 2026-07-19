@@ -1,26 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { getRoleDashboard } from '../../api/dashboardApi'
-
-export default function StudentCourseClassesPage() {
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    getRoleDashboard('student')
-      .then((response) => setCount(response?.data?.stats?.classes ?? 0))
-      .catch((requestError) => setError(requestError.message || 'Không thể tải thông tin lớp đang tham gia'))
-      .finally(() => setLoading(false))
-  }, [])
-
-  return <div>
-    <div className="page-title"><h2>Lớp đang tham gia</h2><p>Tổng quan lớp học phần của sinh viên.</p></div>
-    {error && <div className="alert error">{error}</div>}
-    <div className="panel">
-      {loading ? <p>Đang tải dữ liệu...</p> : <div className="mini-stat-list"><div><span>Số lớp đang tham gia</span><strong>{count}</strong></div></div>}
-      <p className="muted-text">Thông tin nhóm, đề tài và yêu cầu nộp bài được phân quyền theo các lớp này.</p>
-      <div className="row-actions"><Link className="btn-light" to="/student/groups/my-group">Xem nhóm của tôi</Link><Link className="btn-light" to="/student/submission-requirements">Xem yêu cầu nộp bài</Link></div>
-    </div>
-  </div>
-}
+import { Link, useParams } from 'react-router-dom'
+import { getStudentCourseClass, listStudentCourseClasses } from '../../api/academicsApi'
+export default function StudentCourseClassesPage(){const{id}=useParams(),[items,setItems]=useState([]),[detail,setDetail]=useState(null),[search,setSearch]=useState(''),[page,setPage]=useState(1),[pages,setPages]=useState(1),[loading,setLoading]=useState(true),[error,setError]=useState('');const load=async()=>{try{setLoading(true);setError('');if(id){const r=await getStudentCourseClass(id);setDetail(r.data)}else{const r=await listStudentCourseClasses({page,pageSize:10,search});setItems(r.data.items||[]);setPages(r.data.totalPages||1)}}catch(e){setError(e.message)}finally{setLoading(false)}};useEffect(()=>{load()},[id,page]);if(loading)return <div className="panel">Đang tải lớp học phần...</div>;if(error)return <div className="alert error">{error}</div>;if(id)return <div><div className="page-title"><h2>{detail.code} — {detail.subjectName}</h2><p>Chi tiết lớp học phần sinh viên đang tham gia.</p></div><div className="panel info-list"><div><span>Môn học</span><strong>{detail.subjectCode} — {detail.subjectName}</strong></div><div><span>Số tín chỉ</span><strong>{detail.credits}</strong></div><div><span>Học kỳ</span><strong>{detail.semesterName} ({detail.semesterCode})</strong></div><div><span>Năm học</span><strong>{detail.academicYearName}</strong></div><div><span>Giảng viên</span><strong>{detail.lecturerName||'Chưa phân công'}</strong></div><div><span>Trạng thái</span><strong>{detail.status}</strong></div></div><Link className="btn-light" to="/student/course-classes">Quay lại danh sách</Link></div>;return <div><div className="page-title"><h2>Lớp đang tham gia</h2><p>Danh sách lớp học phần được phân quyền theo tài khoản sinh viên.</p></div><div className="panel"><form className="student-search-row" onSubmit={e=>{e.preventDefault();page===1?load():setPage(1)}}><input placeholder="Tìm mã lớp hoặc môn học" value={search} onChange={e=>setSearch(e.target.value)}/><button className="btn-light">Tìm kiếm</button></form>{!items.length?<p>Chưa tham gia lớp học phần nào.</p>:<div className="table-wrap"><table><thead><tr><th>Mã lớp</th><th>Môn học</th><th>Học kỳ</th><th>Năm học</th><th>Giảng viên</th><th>Trạng thái</th></tr></thead><tbody>{items.map(x=><tr key={x.id}><td><Link to={`/student/course-classes/${x.id}`}>{x.code}</Link></td><td>{x.subjectCode} — {x.subjectName}</td><td>{x.semesterName}</td><td>{x.academicYearName}</td><td>{x.lecturerName||'Chưa phân công'}</td><td>{x.status}</td></tr>)}</tbody></table></div>}<div className="pagination-bar"><button disabled={page<=1} onClick={()=>setPage(page-1)}>Trước</button><span>Trang {page}/{pages}</span><button disabled={page>=pages} onClick={()=>setPage(page+1)}>Sau</button></div></div></div>}

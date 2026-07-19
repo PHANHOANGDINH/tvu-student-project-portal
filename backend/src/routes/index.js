@@ -1,4 +1,4 @@
-﻿// src/routes/index.js
+// src/routes/index.js
 import express from 'express';
 
 import authRoutes from '../modules/auth/auth.routes.js';
@@ -12,6 +12,7 @@ import { lecturerSubmissionViewRoutes, studentSubmissionUploadRoutes } from '../
 import { lecturerGradingRoutes, studentGradingRoutes } from '../modules/grading/grading.routes.js';
 import notificationsRoutes from '../modules/notifications/notifications.routes.js';
 import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
+import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes } from '../modules/academics/academics.routes.js';
 
 const router = express.Router();
 
@@ -25,6 +26,10 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/notifications', notificationsRoutes);
+router.use('/academic-years', academicYearRoutes);
+router.use('/semesters', semesterRoutes);
+router.use('/subjects', subjectRoutes);
+router.use('/student/course-classes', studentCourseClassRoutes);
 router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);
 router.use('/student/dashboard', studentDashboardRoutes);
@@ -32,6 +37,7 @@ router.use('/admin', adminRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/student', studentRoutes);
 router.use('/course-classes/:courseClassId/groups', classGroupRoutes);
+router.use('/course-classes', courseClassRoutes);
 router.use('/groups', groupRoutes);
 router.use('/lecturer/topic-registrations', lecturerTopicRoutes);
 router.use('/lecturer/submission-requirements', lecturerSubmissionRoutes);

@@ -1,0 +1,10 @@
+import { sendError,sendSuccess } from '../../utils/apiResponse.util.js'
+import * as service from './academics.service.js'
+function send(res,r){return r.success?sendSuccess(res,{statusCode:r.statusCode,message:r.message,data:r.data}):sendError(res,{statusCode:r.statusCode,message:r.message,errors:r.errors})}
+export const list=(entity)=>async(req,res)=>{try{return send(res,await service.list(entity,req.query))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể tải dữ liệu học vụ'})}}
+export const detail=(entity)=>async(req,res)=>{try{return send(res,await service.detail(entity,req.params.id))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể tải chi tiết'})}}
+export const create=(entity)=>async(req,res)=>{try{return send(res,await service.create(entity,req.body))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể tạo dữ liệu'})}}
+export const update=(entity)=>async(req,res)=>{try{return send(res,await service.update(entity,req.params.id,req.body))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể cập nhật dữ liệu'})}}
+export const status=(entity)=>async(req,res)=>{try{return send(res,await service.status(entity,req.params.id,req.body?.isActive))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể cập nhật trạng thái'})}}
+export async function studentList(req,res){try{return send(res,await service.studentList(req.user.id,req.query))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể tải lớp học phần'})}}
+export async function studentDetail(req,res){try{return send(res,await service.studentDetail(req.user.id,req.params.id))}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Không thể tải chi tiết lớp'})}}

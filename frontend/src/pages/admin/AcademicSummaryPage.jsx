@@ -1,28 +1,27 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { getRoleDashboard } from '../../api/dashboardApi'
+import { createAcademic, listAcademic, setAcademicStatus, updateAcademic } from '../../api/academicsApi'
 
-export default function AcademicSummaryPage({ resource, title }) {
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+const configs={
+ 'academic-years':{fields:[['name','Tên năm học','text'],['startDate','Ngày bắt đầu','date'],['endDate','Ngày kết thúc','date']],columns:[['name','Tên'],['startDate','Bắt đầu'],['endDate','Kết thúc']]},
+ semesters:{fields:[['academicYearId','Năm học','academic-years'],['name','Tên học kỳ','text'],['code','Mã học kỳ','text'],['startDate','Ngày bắt đầu','date'],['endDate','Ngày kết thúc','date']],columns:[['code','Mã'],['name','Tên'],['academicYearId','Năm học'],['startDate','Bắt đầu'],['endDate','Kết thúc']]},
+ subjects:{fields:[['code','Mã môn','text'],['name','Tên môn','text'],['credits','Số tín chỉ','number'],['description','Mô tả','text']],columns:[['code','Mã'],['name','Tên'],['credits','Tín chỉ']]},
+ 'course-classes':{fields:[['code','Mã lớp','text'],['subjectId','Môn học','subjects'],['semesterId','Học kỳ','semesters'],['lecturerId','Mã giảng viên','number'],['maxStudents','Sĩ số tối đa','number'],['status','Trạng thái','status']],columns:[['code','Mã'],['subjectId','Môn học'],['semesterId','Học kỳ'],['lecturerName','Giảng viên'],['status','Trạng thái']]}
+}
+const initial={status:'PLANNED'}
+const date=v=>v?new Date(v).toLocaleDateString('vi-VN'):'-'
 
-  useEffect(() => {
-    setLoading(true)
-    setError('')
-    getRoleDashboard('admin')
-      .then((response) => setCount(response?.data?.stats?.[resource] ?? 0))
-      .catch((requestError) => setError(requestError.message || `Không thể tải dữ liệu ${title.toLowerCase()}`))
-      .finally(() => setLoading(false))
-  }, [resource, title])
-
-  return <div>
-    <div className="page-title"><h2>{title}</h2><p>Tổng quan danh mục đào tạo trong hệ thống.</p></div>
-    {error && <div className="alert error">{error}</div>}
-    <div className="panel">
-      {loading ? <p>Đang tải dữ liệu...</p> : <div className="mini-stat-list"><div><span>Tổng số {title.toLowerCase()}</span><strong>{count}</strong></div></div>}
-      <p className="muted-text">Danh mục này hiện được hiển thị ở chế độ tổng quan. Các thao tác quản trị chi tiết chưa có API tương ứng.</p>
-      <Link className="btn-light" to="/admin/course-classes">Xem lớp học phần</Link>
-    </div>
-  </div>
+export default function AcademicSummaryPage({resource,title}){
+ const key=resource==='academicYears'?'academic-years':resource==='courseClasses'?'course-classes':resource
+ const config=configs[key], [items,setItems]=useState([]),[refs,setRefs]=useState({}),[form,setForm]=useState(initial),[editing,setEditing]=useState(null),[open,setOpen]=useState(false),[search,setSearch]=useState(''),[page,setPage]=useState(1),[pages,setPages]=useState(1),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('')
+ const load=async()=>{try{setLoading(true);setError('');const r=await listAcademic(key,{page,pageSize:10,search});setItems(r.data.items||[]);setPages(r.data.totalPages||1)}catch(e){setError(e.message)}finally{setLoading(false)}}
+ useEffect(()=>{load()},[key,page])
+ useEffect(()=>{const resources=[...new Set(config.fields.map(f=>f[2]).filter(x=>configs[x]))];Promise.all(resources.map(x=>listAcademic(x,{pageSize:100}).then(r=>[x,r.data.items||[]]))).then(entries=>setRefs(Object.fromEntries(entries))).catch(e=>setError(e.message))},[key])
+ const display=(item,field)=>field==='startDate'||field==='endDate'?date(item[field]):field==='academicYearId'?item.academicYearName||item[field]:field==='subjectId'?item.subjectName||item[field]:field==='semesterId'?item.semesterName||item[field]:item[field]??'-'
+ const submit=async e=>{e.preventDefault();try{setSaving(true);setError('');editing?await updateAcademic(key,editing.id,form):await createAcademic(key,form);setOpen(false);setEditing(null);setForm(initial);await load()}catch(e){setError(e.message)}finally{setSaving(false)}}
+ const edit=item=>{const next={};config.fields.forEach(([f])=>next[f]=(f.endsWith('Date')&&item[f])?String(item[f]).slice(0,10):(item[f]??''));setForm(next);setEditing(item);setOpen(true)}
+ return <div><div className="page-title row-between"><div><h2>{title}</h2><p>Quản lý {title.toLowerCase()} trong hệ thống.</p></div><button className="btn-primary" onClick={()=>{setEditing(null);setForm(initial);setOpen(true)}}>Thêm mới</button></div>
+ {error&&<div className="alert error">{error}</div>}<div className="panel"><form className="student-search-row" onSubmit={e=>{e.preventDefault();page===1?load():setPage(1)}}><input placeholder="Tìm kiếm..." value={search} onChange={e=>setSearch(e.target.value)}/><button className="btn-light">Tìm kiếm</button></form>
+ {loading?<p>Đang tải...</p>:!items.length?<p>Chưa có dữ liệu.</p>:<div className="table-wrap"><table><thead><tr>{config.columns.map(c=><th key={c[0]}>{c[1]}</th>)}<th>Hoạt động</th></tr></thead><tbody>{items.map(item=><tr key={item.id}>{config.columns.map(c=><td key={c[0]}>{display(item,c[0])}</td>)}<td><div className="row-actions"><button className="btn-light" onClick={()=>edit(item)}>Sửa</button><button className="btn-light" onClick={async()=>{await setAcademicStatus(key,item.id,!item.isActive);load()}}>{item.isActive?'Khóa':'Mở'}</button></div></td></tr>)}</tbody></table></div>}
+ <div className="pagination-bar"><button disabled={page<=1} onClick={()=>setPage(page-1)}>Trước</button><span>Trang {page}/{pages}</span><button disabled={page>=pages} onClick={()=>setPage(page+1)}>Sau</button></div></div>
+ {open&&<div className="modal-overlay"><div className="modal-card"><div className="row-between"><h3>{editing?'Cập nhật':'Thêm'} {title.toLowerCase()}</h3><button onClick={()=>setOpen(false)}>×</button></div><form onSubmit={submit}>{config.fields.map(([field,label,type])=><label key={field}>{label}{configs[type]?<select required value={form[field]||''} onChange={e=>setForm({...form,[field]:e.target.value})}><option value="">-- Chọn --</option>{(refs[type]||[]).map(x=><option key={x.id} value={x.id}>{x.code?x.code+' - ':''}{x.name}</option>)}</select>:type==='status'?<select value={form[field]||'PLANNED'} onChange={e=>setForm({...form,[field]:e.target.value})}>{['PLANNED','OPEN','CLOSED','CANCELLED'].map(x=><option key={x}>{x}</option>)}</select>:<input required={field!=='description'&&field!=='lecturerId'&&field!=='maxStudents'} type={type} value={form[field]||''} onChange={e=>setForm({...form,[field]:e.target.value})}/>}</label>)}<div className="row-actions"><button type="button" className="btn-light" onClick={()=>setOpen(false)}>Hủy</button><button className="btn-primary" disabled={saving}>{saving?'Đang lưu...':'Lưu'}</button></div></form></div></div>}</div>
 }

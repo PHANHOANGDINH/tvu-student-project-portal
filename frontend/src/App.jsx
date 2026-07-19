@@ -7,7 +7,6 @@ import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/LoginPage'
 
 import UsersPage from './pages/UsersPage'
-import ClassesPage from './pages/ClassesPage'
 import ProfilePage from './pages/ProfilePage'
 
 import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
@@ -92,7 +91,7 @@ function App() {
             path="admin/course-classes"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-                <ClassesPage />
+                <AcademicSummaryPage resource="courseClasses" title="Lớp học phần" />
               </RoleRoute>
             }
           />
@@ -109,6 +108,7 @@ function App() {
           <Route path="teacher/dashboard" element={<Navigate to="/lecturer/dashboard" replace />} />
 
           <Route path="student/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
+          <Route path="student/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/groups/my-group" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
