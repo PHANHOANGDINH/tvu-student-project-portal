@@ -36,6 +36,7 @@ function MainLayout() {
     { label: 'Học kỳ', path: '/admin/semesters', roles: [USER_ROLES.ADMIN] },
     { label: 'Môn học', path: '/admin/subjects', roles: [USER_ROLES.ADMIN] },
     { label: 'Lớp học phần', path: '/admin/course-classes', roles: [USER_ROLES.ADMIN] },
+    { label: 'Import sinh viên', path: '/admin/students/import', roles: [USER_ROLES.ADMIN] },
     { label: 'Dashboard', path: '/lecturer/dashboard', roles: [USER_ROLES.LECTURER] },
     { label: 'Nhóm sinh viên', path: '/lecturer/groups', roles: [USER_ROLES.LECTURER] },
     { label: 'Duyệt đề tài nhóm', path: '/lecturer/topic-registrations', roles: [USER_ROLES.LECTURER] },

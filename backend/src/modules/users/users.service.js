@@ -35,7 +35,7 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function validatePassword(password) {
+export function validatePassword(password) {
   const errors = [];
 
   if (!password) errors.push('Mật khẩu không được để trống.');

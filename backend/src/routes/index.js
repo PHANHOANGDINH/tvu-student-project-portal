@@ -13,6 +13,7 @@ import { lecturerGradingRoutes, studentGradingRoutes } from '../modules/grading/
 import notificationsRoutes from '../modules/notifications/notifications.routes.js';
 import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes } from '../modules/academics/academics.routes.js';
+import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
 
 const router = express.Router();
 
@@ -34,9 +35,11 @@ router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);
 router.use('/student/dashboard', studentDashboardRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/students',adminStudentImportRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/student', studentRoutes);
 router.use('/course-classes/:courseClassId/groups', classGroupRoutes);
+router.use('/course-classes/:courseClassId/students',courseClassStudentRoutes);
 router.use('/course-classes', courseClassRoutes);
 router.use('/groups', groupRoutes);
 router.use('/lecturer/topic-registrations', lecturerTopicRoutes);

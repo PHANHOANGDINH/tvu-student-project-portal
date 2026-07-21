@@ -18,7 +18,7 @@ async function validate(entity,data,id){
  if(data.SubjectId&&!await repo.reference('Subjects',data.SubjectId))errors.subjectId=['Môn học không tồn tại.']
  if(data.SemesterId&&!await repo.reference('Semesters',data.SemesterId))errors.semesterId=['Học kỳ không tồn tại.']
  if(data.LecturerId&&!await repo.reference('Users',data.LecturerId,'LECTURER'))errors.lecturerId=['Giảng viên không tồn tại.']
- if(data.Status&&!['PLANNED','OPEN','CLOSED','CANCELLED'].includes(data.Status))errors.status=['Trạng thái không hợp lệ.']
+ if(data.Status&&!['ACTIVE','INACTIVE','COMPLETED','CANCELLED'].includes(data.Status))errors.status=['Trạng thái không hợp lệ.']
  return errors
 }
 export async function list(entity,q){if(!cfg[entity])return result(false,404,'Không tìm thấy tài nguyên');const p=page(q),r=await repo.listEntities(entity,p);return result(true,200,'Lấy danh sách thành công',{items:r.items,page:p.page,pageSize:p.pageSize,totalItems:r.total,totalPages:Math.ceil(r.total/p.pageSize)})}

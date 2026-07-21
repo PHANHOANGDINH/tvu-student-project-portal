@@ -5,6 +5,7 @@ import { submissionUploadSwaggerPaths } from './submissionUploads.swagger.js';
 import { gradingSwaggerPaths } from './grading.swagger.js';
 import { notificationsDashboardPaths } from './notificationsDashboard.swagger.js';
 import { academicsSwaggerPaths } from './academics.swagger.js';
+import { studentImportSwaggerPaths } from './studentImport.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -166,6 +167,7 @@ export const swaggerSpec = {
     ...gradingSwaggerPaths,
     ...notificationsDashboardPaths,
     ...academicsSwaggerPaths,
+    ...studentImportSwaggerPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

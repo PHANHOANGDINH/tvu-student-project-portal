@@ -1,0 +1,10 @@
+import { sendError,sendSuccess } from '../../utils/apiResponse.util.js';
+import * as service from './studentImport.service.js';
+
+function send(res,result){return result.success?sendSuccess(res,{statusCode:result.statusCode,message:result.message,data:result.data}):sendError(res,{statusCode:result.statusCode,message:result.message,errors:result.errors});}
+export function template(req,res){const csv=service.templateCsv();res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="student-import-template.csv"');return res.send(csv);}
+export async function preview(req,res){try{return send(res,await service.preview(req.file,req.body.courseClassId,req.user.id));}catch(error){console.error('Lỗi preview CSV:',error.message);return sendError(res,{statusCode:500,message:'Không thể kiểm tra file CSV.'});}}
+export async function confirm(req,res){try{return send(res,await service.confirm(req.body,req.user.id));}catch(error){console.error('Lỗi confirm CSV:',error.message);return sendError(res,{statusCode:500,message:'Không thể import sinh viên.'});}}
+export async function bulk(req,res){try{return send(res,await service.bulkEnroll(req.params.courseClassId,req.body));}catch(error){console.error('Lỗi bulk enrollment:',error.message);return sendError(res,{statusCode:500,message:'Không thể enrollment sinh viên.'});}}
+export async function list(req,res){try{return send(res,await service.list(req.params.courseClassId,req.query));}catch(error){console.error('Lỗi danh sách enrollment:',error.message);return sendError(res,{statusCode:500,message:'Không thể tải danh sách sinh viên.'});}}
+export async function exportStudents(req,res){try{const result=await service.exportCsv(req.params.courseClassId);if(!result.success)return send(res,result);res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="course-class-${Number(req.params.courseClassId)}-students.csv"`);return res.send(result.data.csv);}catch(error){console.error('Lỗi export enrollment:',error.message);return sendError(res,{statusCode:500,message:'Không thể xuất danh sách sinh viên.'});}}
