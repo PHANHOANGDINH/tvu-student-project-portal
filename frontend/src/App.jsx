@@ -65,7 +65,6 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<Navigate to="/login" replace />} />
 
         <Route
           path="/"
@@ -86,7 +85,6 @@ function App() {
               </RoleRoute>
             }
           />
-          <Route path="users" element={<Navigate to="/admin/users" replace />} />
 
           <Route
             path="admin/course-classes"
@@ -97,7 +95,6 @@ function App() {
             }
           />
 
-          <Route path="classes" element={<Navigate to="/admin/course-classes" replace />} />
           <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
           <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
           <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" title="Môn học" /></RoleRoute>} />
@@ -107,7 +104,6 @@ function App() {
           <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" title="Dashboard Giảng viên" /></RoleRoute>} />
           <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RoleDashboardPage role="student" title="Dashboard Sinh viên" /></RoleRoute>} />
 
-          <Route path="teacher/dashboard" element={<Navigate to="/lecturer/dashboard" replace />} />
 
           <Route path="student/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />

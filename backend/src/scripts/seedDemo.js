@@ -58,15 +58,15 @@ try {
 
     SELECT DISTINCT g.Id INTO #TestGroups FROM StudentGroups g
     LEFT JOIN GroupMembers gm ON gm.GroupId=g.Id
-    WHERE g.ClassId IN (SELECT Id FROM #TestClasses) OR g.LeaderId IN (SELECT Id FROM #SmokeUsers)
+    WHERE g.ClassId IN (SELECT Id FROM #TestClasses) OR g.ClassId IN (SELECT Id FROM #TestCourseClasses) OR g.LeaderId IN (SELECT Id FROM #SmokeUsers)
        OR gm.StudentId IN (SELECT Id FROM #SmokeUsers) OR g.Name LIKE '%Smoke%'
        OR g.Name LIKE '%E2E test%' OR g.Name LIKE 'SMK%' OR g.Name LIKE '%DEMO%';
     SELECT Id INTO #TestTopics FROM TopicRegistrations
-    WHERE GroupId IN (SELECT Id FROM #TestGroups) OR ClassId IN (SELECT Id FROM #TestClasses)
+    WHERE GroupId IN (SELECT Id FROM #TestGroups) OR ClassId IN (SELECT Id FROM #TestClasses) OR ClassId IN (SELECT Id FROM #TestCourseClasses)
        OR ReviewedBy IN (SELECT Id FROM #SmokeUsers) OR Title LIKE '%Smoke%'
        OR Title LIKE '%E2E test%' OR Title LIKE 'SMK%' OR Title LIKE '%DEMO%';
     SELECT Id INTO #TestRequirements FROM SubmissionRequirements
-    WHERE ClassId IN (SELECT Id FROM #TestClasses) OR CreatedBy IN (SELECT Id FROM #SmokeUsers)
+    WHERE ClassId IN (SELECT Id FROM #TestClasses) OR ClassId IN (SELECT Id FROM #TestCourseClasses) OR CreatedBy IN (SELECT Id FROM #SmokeUsers)
        OR Title LIKE '%Smoke%' OR Title LIKE '%E2E test%' OR Title LIKE 'SMK%' OR Title LIKE '%DEMO%';
     SELECT DISTINCT s.Id INTO #TestSubmissions FROM Submissions s
     LEFT JOIN SubmissionAttempts a ON a.SubmissionId=s.Id
@@ -150,40 +150,33 @@ try {
     WHEN MATCHED THEN UPDATE SET SubjectId=@SubjectId,SemesterId=@SemesterId,LecturerId=@LecturerId,MaxStudents=30,Status='ACTIVE',IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(Code,SubjectId,SemesterId,LecturerId,MaxStudents,Status,IsActive) VALUES(@Code,@SubjectId,@SemesterId,@LecturerId,30,'ACTIVE',1)
     OUTPUT INSERTED.Id id;`, [['Code',sql.NVarChar(50),'CNPM_DEMO_01'],['SubjectId',sql.Int,subject.id],['SemesterId',sql.Int,semester.id],['LecturerId',sql.Int,userIds.lecturer]]);
-  const legacyClass = await one(`
-    MERGE Classes WITH(HOLDLOCK) target USING(SELECT @Code ClassCode) source ON target.ClassCode=source.ClassCode
-    WHEN MATCHED THEN UPDATE SET ClassName=@Name,Department=@Department,AcademicYear='2026-2027',AdvisorTeacherId=@LecturerId,IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
-    WHEN NOT MATCHED THEN INSERT(ClassCode,ClassName,Department,AcademicYear,AdvisorTeacherId,IsActive) VALUES(@Code,@Name,@Department,'2026-2027',@LecturerId,1)
-    OUTPUT INSERTED.Id id;`, [['Code',sql.NVarChar(50),'CNPM_DEMO_01'],['Name',sql.NVarChar(100),'Lớp Công nghệ phần mềm Demo'],['Department',sql.NVarChar(100),'Công nghệ thông tin'],['LecturerId',sql.Int,userIds.lecturer]]);
-
   for (const studentId of [userIds.student1,userIds.student2]) {
     await one(`MERGE CourseClassEnrollments WITH(HOLDLOCK) target USING(SELECT @ClassId CourseClassId,@StudentId StudentId) source ON target.CourseClassId=source.CourseClassId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME() WHEN NOT MATCHED THEN INSERT(CourseClassId,StudentId,IsActive) VALUES(@ClassId,@StudentId,1) OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['StudentId',sql.Int,studentId]]);
-    await one(`MERGE StudentClassMembers WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@StudentId StudentId) source ON target.ClassId=source.ClassId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET DeletedAt=NULL WHEN NOT MATCHED THEN INSERT(ClassId,StudentId) VALUES(@ClassId,@StudentId) OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,legacyClass.id],['StudentId',sql.Int,studentId]]);
   }
 
   const group = await one(`
     MERGE StudentGroups WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@Name Name) source ON target.ClassId=source.ClassId AND target.Name=source.Name
     WHEN MATCHED THEN UPDATE SET LeaderId=@LeaderId,MaxMembers=5,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(ClassId,Name,LeaderId,MaxMembers) VALUES(@ClassId,@Name,@LeaderId,5)
-    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,legacyClass.id],['Name',sql.NVarChar(150),'Nhóm Demo'],['LeaderId',sql.Int,userIds.student1]]);
+    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Name',sql.NVarChar(150),'Nhóm Demo'],['LeaderId',sql.Int,userIds.student1]]);
   for (const studentId of [userIds.student1,userIds.student2]) {
-    await one(`MERGE GroupMembers WITH(HOLDLOCK) target USING(SELECT @GroupId GroupId,@StudentId StudentId) source ON target.GroupId=source.GroupId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET ClassId=@ClassId,DeletedAt=NULL WHEN NOT MATCHED THEN INSERT(GroupId,ClassId,StudentId) VALUES(@GroupId,@ClassId,@StudentId) OUTPUT INSERTED.Id id;`, [['GroupId',sql.Int,group.id],['ClassId',sql.Int,legacyClass.id],['StudentId',sql.Int,studentId]]);
+    await one(`MERGE GroupMembers WITH(HOLDLOCK) target USING(SELECT @GroupId GroupId,@StudentId StudentId) source ON target.GroupId=source.GroupId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET ClassId=@ClassId,DeletedAt=NULL WHEN NOT MATCHED THEN INSERT(GroupId,ClassId,StudentId) VALUES(@GroupId,@ClassId,@StudentId) OUTPUT INSERTED.Id id;`, [['GroupId',sql.Int,group.id],['ClassId',sql.Int,courseClass.id],['StudentId',sql.Int,studentId]]);
   }
   const topic = await one(`
     MERGE TopicRegistrations WITH(HOLDLOCK) target USING(SELECT @GroupId GroupId) source ON target.GroupId=source.GroupId
     WHEN MATCHED THEN UPDATE SET ClassId=@ClassId,Title=@Title,Description=@Description,Technologies=@Technologies,Objectives=@Objectives,Status='PENDING',ReviewedBy=NULL,ReviewedAt=NULL,ReviewComment=NULL,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(GroupId,ClassId,Title,Description,Technologies,Objectives,Status) VALUES(@GroupId,@ClassId,@Title,@Description,@Technologies,@Objectives,'PENDING')
-    OUTPUT INSERTED.Id id;`, [['GroupId',sql.Int,group.id],['ClassId',sql.Int,legacyClass.id],['Title',sql.NVarChar(250),'Đề tài Demo - Cổng quản lý dự án sinh viên'],['Description',sql.NVarChar(sql.MAX),'Đề tài demo ở trạng thái chờ duyệt.'],['Technologies',sql.NVarChar(500),'Node.js, React, SQL Server'],['Objectives',sql.NVarChar(sql.MAX),'Kiểm tra thủ công luồng nhóm và đăng ký đề tài.']]);
+    OUTPUT INSERTED.Id id;`, [['GroupId',sql.Int,group.id],['ClassId',sql.Int,courseClass.id],['Title',sql.NVarChar(250),'Đề tài Demo - Cổng quản lý dự án sinh viên'],['Description',sql.NVarChar(sql.MAX),'Đề tài demo ở trạng thái chờ duyệt.'],['Technologies',sql.NVarChar(500),'Node.js, React, SQL Server'],['Objectives',sql.NVarChar(sql.MAX),'Kiểm tra thủ công luồng nhóm và đăng ký đề tài.']]);
   const requirement = await one(`
     MERGE SubmissionRequirements WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@Title Title) source ON target.ClassId=source.ClassId AND target.Title=source.Title
     WHEN MATCHED THEN UPDATE SET Description=@Description,Instructions=@Instructions,AllowLate=0,AllowResubmission=1,MaxAttempts=3,MaxFileSizeMb=20,CreatedBy=@CreatedBy,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(ClassId,Title,Description,Instructions,AllowLate,AllowResubmission,MaxAttempts,MaxFileSizeMb,CreatedBy) VALUES(@ClassId,@Title,@Description,@Instructions,0,1,3,20,@CreatedBy)
-    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,legacyClass.id],['Title',sql.NVarChar(200),'Yêu cầu nộp Demo'],['Description',sql.NVarChar(sql.MAX),'Nộp báo cáo demo cho kiểm tra thủ công.'],['Instructions',sql.NVarChar(sql.MAX),'Chưa cần tạo bài nộp.'],['CreatedBy',sql.Int,userIds.lecturer]]);
+    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Title',sql.NVarChar(200),'Yêu cầu nộp Demo'],['Description',sql.NVarChar(sql.MAX),'Nộp báo cáo demo cho kiểm tra thủ công.'],['Instructions',sql.NVarChar(sql.MAX),'Chưa cần tạo bài nộp.'],['CreatedBy',sql.Int,userIds.lecturer]]);
   await one(`MERGE SubmissionRounds WITH(HOLDLOCK) target USING(SELECT @Id RequirementId) source ON target.RequirementId=source.RequirementId WHEN MATCHED THEN UPDATE SET StartAt=DATEADD(day,-1,SYSDATETIME()),Deadline=DATEADD(day,30,SYSDATETIME()),Status='OPEN',UpdatedAt=SYSDATETIME() WHEN NOT MATCHED THEN INSERT(RequirementId,StartAt,Deadline,Status) VALUES(@Id,DATEADD(day,-1,SYSDATETIME()),DATEADD(day,30,SYSDATETIME()),'OPEN') OUTPUT INSERTED.Id id;`, [['Id',sql.Int,requirement.id]]);
   await one(`MERGE RequiredSubmissionItems WITH(HOLDLOCK) target USING(SELECT @Id RequirementId,'REPORT' ItemType) source ON target.RequirementId=source.RequirementId AND target.ItemType=source.ItemType WHEN MATCHED THEN UPDATE SET Description=@Description WHEN NOT MATCHED THEN INSERT(RequirementId,ItemType,Description) VALUES(@Id,'REPORT',@Description) OUTPUT INSERTED.Id id;`, [['Id',sql.Int,requirement.id],['Description',sql.NVarChar(300),'Báo cáo PDF demo']]);
 
   await transaction.commit();
-  console.log(JSON.stringify({deleted:cleanup.recordset,created:{users:userIds,academicYearId:year.id,semesterId:semester.id,subjectId:subject.id,courseClassId:courseClass.id,legacyClassId:legacyClass.id,groupId:group.id,topicId:topic.id,requirementId:requirement.id}},null,2));
+  console.log(JSON.stringify({deleted:cleanup.recordset,created:{users:userIds,academicYearId:year.id,semesterId:semester.id,subjectId:subject.id,courseClassId:courseClass.id,groupId:group.id,topicId:topic.id,requirementId:requirement.id}},null,2));
 } catch (error) {
   try { await transaction.rollback(); } catch { /* already rolled back */ }
   throw error;

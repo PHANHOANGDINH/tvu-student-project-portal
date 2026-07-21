@@ -10,7 +10,7 @@ CREATE TABLE StudentGroups (
   CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_StudentGroups_CreatedAt DEFAULT SYSDATETIME(),
   UpdatedAt DATETIME2 NULL,
   DeletedAt DATETIME2 NULL,
-  CONSTRAINT FK_StudentGroups_Classes FOREIGN KEY (ClassId) REFERENCES Classes(Id),
+  CONSTRAINT FK_StudentGroups_CourseClasses FOREIGN KEY (ClassId) REFERENCES CourseClasses(Id),
   CONSTRAINT FK_StudentGroups_Leader FOREIGN KEY (LeaderId) REFERENCES Users(Id),
   CONSTRAINT CK_StudentGroups_MaxMembers CHECK (MaxMembers BETWEEN 2 AND 20)
 );
@@ -23,7 +23,7 @@ CREATE TABLE GroupMembers (
   JoinedAt DATETIME2 NOT NULL CONSTRAINT DF_GroupMembers_JoinedAt DEFAULT SYSDATETIME(),
   DeletedAt DATETIME2 NULL,
   CONSTRAINT FK_GroupMembers_Groups FOREIGN KEY (GroupId) REFERENCES StudentGroups(Id),
-  CONSTRAINT FK_GroupMembers_Classes FOREIGN KEY (ClassId) REFERENCES Classes(Id),
+  CONSTRAINT FK_GroupMembers_CourseClasses FOREIGN KEY (ClassId) REFERENCES CourseClasses(Id),
   CONSTRAINT FK_GroupMembers_Students FOREIGN KEY (StudentId) REFERENCES Users(Id)
 );
 
@@ -44,7 +44,7 @@ CREATE TABLE TopicRegistrations (
   UpdatedAt DATETIME2 NULL,
   DeletedAt DATETIME2 NULL,
   CONSTRAINT FK_TopicRegistrations_Groups FOREIGN KEY (GroupId) REFERENCES StudentGroups(Id),
-  CONSTRAINT FK_TopicRegistrations_Classes FOREIGN KEY (ClassId) REFERENCES Classes(Id),
+  CONSTRAINT FK_TopicRegistrations_CourseClasses FOREIGN KEY (ClassId) REFERENCES CourseClasses(Id),
   CONSTRAINT FK_TopicRegistrations_Reviewer FOREIGN KEY (ReviewedBy) REFERENCES Users(Id),
   CONSTRAINT CK_TopicRegistrations_Status CHECK (Status IN ('PENDING','APPROVED','REJECTED','REQUIRES_REVISION'))
 );

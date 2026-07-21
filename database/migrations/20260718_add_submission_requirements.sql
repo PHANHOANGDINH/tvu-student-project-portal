@@ -15,7 +15,7 @@ CREATE TABLE SubmissionRequirements (
   CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_SubmissionRequirements_CreatedAt DEFAULT SYSDATETIME(),
   UpdatedAt DATETIME2 NULL,
   DeletedAt DATETIME2 NULL,
-  CONSTRAINT FK_SubmissionRequirements_Classes FOREIGN KEY (ClassId) REFERENCES Classes(Id),
+  CONSTRAINT FK_SubmissionRequirements_CourseClasses FOREIGN KEY (ClassId) REFERENCES CourseClasses(Id),
   CONSTRAINT FK_SubmissionRequirements_Creator FOREIGN KEY (CreatedBy) REFERENCES Users(Id),
   CONSTRAINT CK_SubmissionRequirements_MaxAttempts CHECK (MaxAttempts > 0),
   CONSTRAINT CK_SubmissionRequirements_MaxFileSize CHECK (MaxFileSizeMb IS NULL OR MaxFileSizeMb > 0)
