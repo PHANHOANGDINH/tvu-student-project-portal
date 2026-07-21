@@ -13,7 +13,7 @@ import {
   updateUserStatus,
 } from './users.repository.js';
 
-const CREATE_ALLOWED_ROLES = [USER_ROLES.LECTURER, USER_ROLES.STUDENT];
+const CREATE_ALLOWED_ROLES = [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT];
 const UPDATE_ALLOWED_ROLES = [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT];
 const VALID_STATUSES = ['ACTIVE', 'INACTIVE'];
 const VALID_SORT_FIELDS = ['fullName', 'email', 'userCode', 'role', 'status', 'createdAt'];
@@ -50,7 +50,8 @@ export function validatePassword(password) {
 function getUserCodeLabel(role) {
   if (role === USER_ROLES.STUDENT) return 'MSSV';
   if (role === USER_ROLES.LECTURER) return 'Mã giảng viên';
-  return 'Mã người dùng';
+  if (role === USER_ROLES.ADMIN) return 'Mã quản trị viên';
+  return 'Mã tài khoản';
 }
 
 function sanitizeProfilePayload(data = {}) {
@@ -182,12 +183,8 @@ function validateProfilePayload(payload, { requirePassword = false, password = '
   if (payload.email && !isValidEmail(payload.email)) errors.email = ['Email không đúng định dạng.'];
   if (!payload.role) errors.role = ['Vai trò không hợp lệ.'];
 
-  if ((payload.role === USER_ROLES.STUDENT || payload.role === USER_ROLES.LECTURER) && !payload.userCode) {
+  if (!payload.userCode) {
     errors.userCode = [`${getUserCodeLabel(payload.role)} không được để trống.`];
-  }
-
-  if (payload.role === USER_ROLES.STUDENT && !payload.className) {
-    errors.className = ['Sinh viên cần có mã lớp.'];
   }
 
   if (requirePassword) {
@@ -216,7 +213,7 @@ export async function createAdminManagedUser(data = {}) {
   });
 
   if (payload.role && !CREATE_ALLOWED_ROLES.includes(payload.role)) {
-    errors.role = ['Admin chỉ được tạo tài khoản LECTURER hoặc STUDENT trong giai đoạn này.'];
+    errors.role = ['Vai trò không hợp lệ.'];
   }
 
   if (Object.keys(errors).length) {

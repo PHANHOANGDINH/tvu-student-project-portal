@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:demo": "node src/scripts/seedDemo.js",
+    "reset:admin-demo": "node src/scripts/resetAdminDemo.js",
     "test": "node --test src/**/*.test.js"
   },
   "keywords": [],

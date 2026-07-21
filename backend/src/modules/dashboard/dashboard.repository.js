@@ -7,10 +7,15 @@ export async function admin() {
     (SELECT COUNT(*) FROM Users WHERE Role='ADMIN' AND DeletedAt IS NULL) admins,
     (SELECT COUNT(*) FROM Users WHERE Role='LECTURER' AND DeletedAt IS NULL) lecturers,
     (SELECT COUNT(*) FROM Users WHERE Role='STUDENT' AND DeletedAt IS NULL) students,
+    (SELECT COUNT(*) FROM Users WHERE IsActive=1 AND DeletedAt IS NULL) activeUsers,
+    (SELECT COUNT(*) FROM Users WHERE IsActive=0 AND DeletedAt IS NULL) inactiveUsers,
     (SELECT COUNT(*) FROM AcademicYears) academicYears,
     (SELECT COUNT(*) FROM Semesters) semesters,
     (SELECT COUNT(*) FROM Subjects) subjects,
     (SELECT COUNT(*) FROM CourseClasses) classes,
+    (SELECT COUNT(*) FROM CourseClasses WHERE IsActive=1 AND Status='ACTIVE' AND DeletedAt IS NULL) activeClasses,
+    (SELECT COUNT(*) FROM CourseClasses WHERE LecturerId IS NULL AND DeletedAt IS NULL) unassignedClasses,
+    (SELECT COUNT(*) FROM Users u WHERE u.Role='STUDENT' AND u.DeletedAt IS NULL AND NOT EXISTS(SELECT 1 FROM CourseClassEnrollments e WHERE e.StudentId=u.Id AND e.IsActive=1 AND e.DeletedAt IS NULL)) unenrolledStudents,
     (SELECT COUNT(*) FROM StudentGroups WHERE DeletedAt IS NULL) groups,
     (SELECT COUNT(*) FROM TopicRegistrations WHERE DeletedAt IS NULL) topics,
     (SELECT COUNT(*) FROM TopicRegistrations WHERE Status='PENDING' AND DeletedAt IS NULL) topicsPending,
@@ -23,10 +28,9 @@ export async function admin() {
     (SELECT COUNT(*) FROM SubmissionAttempts WHERE IsLate=1) late,
     (SELECT COUNT(*) FROM Grades WHERE IsPublished=1) graded,
     (SELECT COUNT(*) FROM Submissions s WHERE NOT EXISTS(SELECT 1 FROM Grades g WHERE g.SubmissionId=s.Id AND g.IsPublished=1)) ungraded`);
-  const activity = await pool.request().query(`SELECT TOP 10 s.Id id,'SUBMISSION' type,g.Name title,s.Status status,s.UpdatedAt createdAt
-    FROM Submissions s JOIN StudentGroups g ON g.Id=s.GroupId
-    WHERE s.UpdatedAt IS NOT NULL ORDER BY s.UpdatedAt DESC`);
-  return { stats: stats.recordset[0], recentActivity: activity.recordset };
+  const activity = await pool.request().query(`SELECT TOP 8 Id id,'ACCOUNT' type,FullName title,Role status,CreatedAt createdAt FROM Users WHERE DeletedAt IS NULL ORDER BY CreatedAt DESC`);
+  const unassigned = await pool.request().query(`SELECT TOP 8 c.Id id,c.Code code,s.Name subjectName,sem.Name semesterName FROM CourseClasses c JOIN Subjects s ON s.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId WHERE c.LecturerId IS NULL AND c.DeletedAt IS NULL ORDER BY c.CreatedAt DESC`);
+  return { stats: stats.recordset[0], recentActivity: activity.recordset, unassignedClasses: unassigned.recordset };
 }
 
 export async function lecturer(userId) {

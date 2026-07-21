@@ -11,6 +11,7 @@ import notificationsRoutes from '../modules/notifications/notifications.routes.j
 import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes } from '../modules/academics/academics.routes.js';
 import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
+import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);
 router.use('/student/dashboard', studentDashboardRoutes);
 router.use('/admin/students',adminStudentImportRoutes);
+router.use('/admin/lecturers',lecturerImportRoutes);
 router.use('/course-classes/:courseClassId/groups', classGroupRoutes);
 router.use('/course-classes/:courseClassId/students',courseClassStudentRoutes);
 router.use('/course-classes', courseClassRoutes);
