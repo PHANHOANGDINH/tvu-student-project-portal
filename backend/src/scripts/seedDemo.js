@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 
 if (String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production') {
