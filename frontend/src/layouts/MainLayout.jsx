@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, School, UserRound, Users, X } from 'lucide-react'
+import { Bell, BookOpen, ChevronDown, FileCheck2, FolderKanban, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, School, UserRound, Users, X } from 'lucide-react'
 import { USER_ROLES } from '../constants/roles'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
 
@@ -45,11 +45,13 @@ function MainLayout() {
     { label: 'Duyệt đăng ký', path: '/teacher/registrations', roles: [USER_ROLES.LECTURER] },
     { label: 'Tiến độ sinh viên', path: '/teacher/progress', roles: [USER_ROLES.LECTURER] },
     { label: 'Bài nộp cuối kỳ', path: '/teacher/final-submissions', roles: [USER_ROLES.LECTURER] },
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard', roles: [USER_ROLES.STUDENT] },
-    { label: 'Danh sách đề tài', path: '/student/projects', roles: [USER_ROLES.STUDENT] },
-    { label: 'Dự án của tôi', path: '/student/my-project', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp tiến độ', path: '/student/progress', roles: [USER_ROLES.STUDENT] },
-    { label: 'Nộp cuối kỳ', path: '/student/final-submissions', roles: [USER_ROLES.STUDENT] },
+    { label: 'Tổng quan', icon: LayoutDashboard, path: '/student/dashboard', roles: [USER_ROLES.STUDENT] },
+    { label: 'Lớp học phần', icon: School, path: '/student/course-classes', roles: [USER_ROLES.STUDENT] },
+    { label: 'Nhóm của tôi', icon: Users, path: '/student/groups/my-group', roles: [USER_ROLES.STUDENT] },
+    { label: 'Đăng ký đề tài', icon: FolderKanban, path: '/student/topic-registration', roles: [USER_ROLES.STUDENT] },
+    { label: 'Báo cáo tiến độ', icon: BookOpen, path: '/student/progress', roles: [USER_ROLES.STUDENT] },
+    { label: 'Bài cuối kỳ', icon: FileCheck2, path: '/student/final-submissions', roles: [USER_ROLES.STUDENT] },
+    { label: 'Thông báo', icon: Bell, path: '/student/notifications', roles: [USER_ROLES.STUDENT] },
     { label: 'Hồ sơ', icon: UserRound, path: '/profile', roles: [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT] }
   ]
   const visibleMenus = menuItems.filter((item) => item.roles.includes(role))

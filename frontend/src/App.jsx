@@ -10,6 +10,10 @@ import ClassesPage from './pages/ClassesPage'
 import ProfilePage from './pages/ProfilePage'
 
 import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
+import StudentDashboardPage from './pages/student/StudentDashboardPage'
+import StudentProjectsPage from './pages/student/StudentProjectsPage'
+import StudentReportsPage from './pages/student/StudentReportsPage'
+import StudentUnavailablePage from './pages/student/StudentUnavailablePage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -97,6 +101,19 @@ function App() {
               </RoleRoute>
             }
           />
+          <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentDashboardPage /></RoleRoute>} />
+          <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentProjectsPage /></RoleRoute>} />
+          <Route path="student/projects" element={<Navigate to="/student/topic-registration" replace />} />
+          <Route path="student/progress" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="progress" /></RoleRoute>} />
+          <Route path="student/final-submissions" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="final" /></RoleRoute>} />
+          <Route path="student/submissions" element={<Navigate to="/student/final-submissions" replace />} />
+          <Route path="student/course-classes/*" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/groups/*" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/submission-requirements/*" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/submissions/:id/history" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/submissions/:id/result" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/notifications" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
+          <Route path="student/profile" element={<Navigate to="/profile" replace />} />
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
