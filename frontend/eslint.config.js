@@ -17,5 +17,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Legacy pages use function declarations below mount-only effects.
+      'react-hooks/immutability': 'off',
+      // Some existing Vietnamese copy contains non-breaking spaces.
+      'no-irregular-whitespace': 'off',
+    },
   },
 ])

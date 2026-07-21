@@ -8,6 +8,7 @@ import {
   updateUserStatus
 } from '../api/adminApi'
 import { USER_ROLES } from '../constants/roles'
+import ConfirmModal from '../components/common/ConfirmModal'
 
 const emptyForm = {
   fullName: '',
@@ -76,6 +77,7 @@ function UsersPage() {
   const [selectedUser, setSelectedUser] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [resetForm, setResetForm] = useState(emptyResetForm)
+  const [statusConfirm, setStatusConfirm] = useState(null)
 
   useEffect(() => {
     loadUsers(filters)
@@ -276,18 +278,13 @@ function UsersPage() {
 
   async function handleStatusToggle(user) {
     const nextIsActive = user.isActive === false
-    const actionText = nextIsActive ? 'mở khóa' : 'khóa'
-
-    if (!window.confirm(`Bạn có chắc muốn ${actionText} tài khoản ${user.fullName || user.email}?`)) {
-      return
-    }
-
     try {
       clearMessages()
       setSaving(true)
       await updateUserStatus(getUserId(user), nextIsActive)
       setSuccess(nextIsActive ? 'Mở khóa tài khoản thành công' : 'Khóa tài khoản thành công')
       await loadUsers(filters)
+      setStatusConfirm(null)
     } catch (err) {
       setError(err.message || 'Không thể cập nhật trạng thái tài khoản')
     } finally {
@@ -568,7 +565,7 @@ function UsersPage() {
                       <button className="btn-light" onClick={() => openDetail(user)}>Xem</button>
                       <button className="btn-light" onClick={() => openEditForm(user)}>Sửa</button>
                       <button className="btn-light" onClick={() => openResetPassword(user)}>Reset MK</button>
-                      <button className="btn-danger" onClick={() => handleStatusToggle(user)}>
+                      <button className="btn-danger" onClick={() => setStatusConfirm(user)}>
                         {user.isActive === false ? 'Mở khóa' : 'Khóa'}
                       </button>
                     </td>
@@ -600,6 +597,7 @@ function UsersPage() {
           </>
         )}
       </div>
+      <ConfirmModal open={Boolean(statusConfirm)} title={statusConfirm?.isActive === false ? 'Mở khóa tài khoản?' : 'Khóa tài khoản?'} description={`Tài khoản ${statusConfirm?.fullName || statusConfirm?.email || ''} sẽ ${statusConfirm?.isActive === false ? 'có thể đăng nhập lại' : 'không thể đăng nhập cho đến khi được mở khóa'}.`} confirmLabel={statusConfirm?.isActive === false ? 'Mở khóa' : 'Khóa tài khoản'} loading={saving} onClose={() => setStatusConfirm(null)} onConfirm={() => handleStatusToggle(statusConfirm)} />
     </div>
   )
 }
