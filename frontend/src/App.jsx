@@ -1,3 +1,4 @@
+import LecturerCourseClassesPage from './pages/teacher/LecturerCourseClassesPage.jsx'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './group.css'
@@ -45,7 +46,7 @@ function DashboardRedirect() {
   if (role === USER_ROLES.ADMIN) {
     return (
       <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-        <RoleDashboardPage role="admin" title="Tổng quan quản trị" />
+        <RoleDashboardPage role="admin" />
       </RoleRoute>
     )
   }
@@ -92,22 +93,24 @@ function App() {
             path="admin/course-classes"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-                <AcademicSummaryPage resource="courseClasses" title="Lớp học phần" />
+                <AcademicSummaryPage resource="courseClasses" />
               </RoleRoute>
             }
           />
 
-          <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
-          <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
-          <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" title="Môn học" /></RoleRoute>} />
+          <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" /></RoleRoute>} />
+          <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" /></RoleRoute>} />
+          <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" /></RoleRoute>} />
           <Route path="admin/students/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkStudentImportPage /></RoleRoute>} />
           <Route path="admin/lecturers/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkLecturerImportPage /></RoleRoute>} />
 
-          <Route path="admin/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><RoleDashboardPage role="admin" title="Tổng quan quản trị" /></RoleRoute>} />
-          <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" title="Dashboard Giảng viên" /></RoleRoute>} />
-          <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RoleDashboardPage role="student" title="Dashboard Sinh viên" /></RoleRoute>} />
+          <Route path="admin/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><RoleDashboardPage role="admin" /></RoleRoute>} />
+          <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" /></RoleRoute>} />
+          <Route path="student/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RoleDashboardPage role="student" /></RoleRoute>} />
 
 
+          <Route path="lecturer/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerCourseClassesPage /></RoleRoute>} />
+          <Route path="lecturer/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerCourseClassesPage /></RoleRoute>} />
           <Route path="student/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />

@@ -57,3 +57,11 @@ export async function findStudentClass(uid,id){
  const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+studentSelect+studentFrom+' AND c.Id=@Id')
  return r.recordset[0]||null
 }
+const lecturerSelect='c.Id id,c.Code code,sub.Code subjectCode,sub.Name subjectName,sub.Credits credits,sub.Description subjectDescription,sem.Name semesterName,sem.Code semesterCode,sem.StartDate semesterStartDate,sem.EndDate semesterEndDate,ay.Name academicYearName,c.Status status,c.IsActive isActive,c.MaxStudents maxStudents,(SELECT COUNT(*) FROM CourseClassEnrollments e WHERE e.CourseClassId=c.Id AND e.IsActive=1 AND e.DeletedAt IS NULL) studentCount'
+const lecturerFrom=' FROM CourseClasses c JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId WHERE c.LecturerId=@Uid AND c.DeletedAt IS NULL'
+export async function listLecturerClasses(uid,{page,pageSize,search,status}){
+ const pool=await poolPromise,pattern=search?'%'+search+'%':null,state=status||null,where=lecturerFrom+' AND (@Pattern IS NULL OR c.Code LIKE @Pattern OR sub.Name LIKE @Pattern) AND (@Status IS NULL OR c.Status=@Status)',bind=r=>r.input('Uid',sql.Int,uid).input('Pattern',sql.NVarChar(202),pattern).input('Status',sql.NVarChar(30),state)
+ const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+lecturerSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
+ const total=await bind(pool.request()).query('SELECT COUNT(*) total'+where);return{items:items.recordset,total:total.recordset[0].total}
+}
+export async function findLecturerClass(uid,id){const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+lecturerSelect+lecturerFrom+' AND c.Id=@Id');return r.recordset[0]||null}

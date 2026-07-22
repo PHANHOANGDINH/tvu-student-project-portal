@@ -14,3 +14,6 @@ export const listCourseClassStudents=(courseClassId,params={})=>request(`/course
 async function download(path){const response=await fetch(buildApiUrl(path),{headers:{Authorization:`Bearer ${localStorage.getItem('access_token')||''}`}});if(!response.ok){const data=await response.json().catch(()=>null);throw new Error(data?.message||'Không thể tải file')}return response.blob()}
 export const downloadStudentImportTemplate=()=>download('/admin/students/import-template')
 export const exportCourseClassStudents=(courseClassId)=>download(`/course-classes/${courseClassId}/students/export`)
+
+export const listLecturerCourseClasses=(params={})=>request(`/lecturer/course-classes?${query(params)}`)
+export const getLecturerCourseClass=(id)=>request(`/lecturer/course-classes/${id}`)
