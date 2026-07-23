@@ -6,6 +6,7 @@ import './notifications.css'
 
 import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/LoginPage'
+import PublicLandingPage from './pages/PublicLandingPage'
 
 import UsersPage from './pages/UsersPage'
 import ProfilePage from './pages/ProfilePage'
@@ -40,6 +41,11 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function GuestRoute({ children }) {
+  if (isLoggedIn()) return <Navigate to="/dashboard" replace />
+  return children
+}
+
 function DashboardRedirect() {
   const role = getUserRole()
 
@@ -66,17 +72,17 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<GuestRoute><PublicLandingPage /></GuestRoute>} />
+        <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
 
         <Route
-          path="/"
+          path=""
           element={
             <ProtectedRoute>
               <MainLayout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardRedirect />} />
 
           <Route
