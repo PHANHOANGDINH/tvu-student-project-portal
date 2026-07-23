@@ -4,6 +4,7 @@ import { BarChart3, BookOpen, ChevronDown, FileText, GraduationCap, KeyRound, La
 import { USER_ROLES } from '../constants/roles'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
 import NotificationBell from '../components/NotificationBell'
+import PrivateFooter from '../components/PrivateFooter'
 
 const roleText = { ADMIN: 'Quản trị viên', LECTURER: 'Giảng viên', STUDENT: 'Sinh viên' }
 const adminSections = [
@@ -54,6 +55,7 @@ function LmsLayout({ role, name, logout }) {
       </div>
     </header>
     <main className="lms-content"><Outlet/></main>
+    <PrivateFooter/>
   </div>
 }
 
@@ -61,7 +63,7 @@ function AdminLayout({ name, role, logout }) {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const link = item => { const Icon = item.icon; return <NavLink key={`${item.path}-${item.label}`} to={item.path} onClick={()=>setMobileOpen(false)} className={({isActive})=>isActive?'menu-link active':'menu-link'}><Icon size={18}/><span>{item.label}</span></NavLink> }
-  return <div className="app-shell admin-modern-shell"><aside className={`sidebar ${mobileOpen?'open':''}`}><div className="brand" onClick={()=>navigate('/admin/dashboard')}><div className="brand-logo">TVU</div><div className="brand-text"><h2>Cổng dự án</h2><p>Trường Đại học Trà Vinh</p></div><button className="mobile-close" onClick={e=>{e.stopPropagation();setMobileOpen(false)}}><X/></button></div><nav className="menu">{adminSections.map(section=><section className="menu-section" key={section.title}><p>{section.title}</p>{section.items.map(link)}</section>)}</nav></aside>{mobileOpen&&<button className="sidebar-backdrop" onClick={()=>setMobileOpen(false)}/>}<div className="main-area"><header className="header"><div className="header-leading"><button className="mobile-menu" onClick={()=>setMobileOpen(true)}><Menu/></button><div><h1>Khu vực quản trị</h1><div className="breadcrumbs"><span>Trang chủ</span></div></div></div><div className="header-user"><NotificationBell role={role}/><div className="avatar">{name.charAt(0).toUpperCase()}</div><div className="user-info"><strong>{name}</strong><span>{roleText[role]}</span></div><button className="logout-btn" onClick={logout}><LogOut size={17}/><span>Đăng xuất</span></button></div></header><main className="content"><Outlet/></main></div></div>
+  return <div className="app-shell admin-modern-shell"><aside className={`sidebar ${mobileOpen?'open':''}`}><div className="brand" onClick={()=>navigate('/admin/dashboard')}><div className="brand-logo">TVU</div><div className="brand-text"><h2>Cổng dự án</h2><p>Trường Đại học Trà Vinh</p></div><button className="mobile-close" onClick={e=>{e.stopPropagation();setMobileOpen(false)}}><X/></button></div><nav className="menu">{adminSections.map(section=><section className="menu-section" key={section.title}><p>{section.title}</p>{section.items.map(link)}</section>)}</nav></aside>{mobileOpen&&<button className="sidebar-backdrop" onClick={()=>setMobileOpen(false)}/>}<div className="main-area"><header className="header"><div className="header-leading"><button className="mobile-menu" onClick={()=>setMobileOpen(true)}><Menu/></button><div><h1>Khu vực quản trị</h1><div className="breadcrumbs"><span>Trang chủ</span></div></div></div><div className="header-user"><NotificationBell role={role}/><div className="avatar">{name.charAt(0).toUpperCase()}</div><div className="user-info"><strong>{name}</strong><span>{roleText[role]}</span></div><button className="logout-btn" onClick={logout}><LogOut size={17}/><span>Đăng xuất</span></button></div></header><main className="content"><Outlet/></main><PrivateFooter/></div></div>
 }
 
 export default function MainLayout() {
