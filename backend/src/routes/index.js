@@ -12,6 +12,7 @@ import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes }
 import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes, lecturerCourseClassRoutes } from '../modules/academics/academics.routes.js';
 import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
 import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
+import { lecturerTopicRoundRoutes, studentTopicRoundRoutes } from '../modules/topicRounds/topicRounds.routes.js';
 
 const router = express.Router();
 
@@ -40,8 +41,12 @@ router.use('/course-classes/:courseClassId/students',courseClassStudentRoutes);
 router.use('/course-classes', courseClassRoutes);
 router.use('/groups', groupRoutes);
 router.use('/lecturer/topic-registrations', lecturerTopicRoutes);
+router.use('/lecturer/topic-rounds', lecturerTopicRoundRoutes);
+router.use('/student/topic-rounds', studentTopicRoundRoutes);
 router.use('/lecturer/submission-requirements', lecturerSubmissionRoutes);
+router.use('/lecturer/progress-requirements', lecturerSubmissionRoutes);
 router.use('/student/submission-requirements', studentSubmissionRoutes);
+router.use('/student/progress-requirements', studentSubmissionRoutes);
 router.use('/student', studentSubmissionUploadRoutes);
 router.use('/lecturer', lecturerSubmissionViewRoutes);
 router.use('/lecturer', lecturerGradingRoutes);

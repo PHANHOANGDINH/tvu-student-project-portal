@@ -1,4 +1,6 @@
 import LecturerCourseClassesPage from './pages/teacher/LecturerCourseClassesPage.jsx'
+import LecturerTopicRoundsPage from './pages/teacher/TopicRoundsPage.jsx'
+import StudentTopicRoundsPage from './pages/student/TopicRoundsPage.jsx'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './group.css'
@@ -124,6 +126,10 @@ function App() {
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
           <Route path="lecturer/groups" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerGroupsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registrations" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRegistrationsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+          <Route path="student/topic-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />
+          <Route path="lecturer/progress" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="student/progress" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />
 
           <Route path="lecturer/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
           <Route path="student/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />
