@@ -9,6 +9,9 @@ BEGIN TRY
       ClassId INT NOT NULL,
       Name NVARCHAR(200) NOT NULL,
       Description NVARCHAR(MAX) NULL,
+      Requirements NVARCHAR(MAX) NULL,
+      AllowEditing BIT NOT NULL CONSTRAINT DF_TopicRegistrationRounds_AllowEditing DEFAULT 1,
+      MaxEditCount INT NOT NULL CONSTRAINT DF_TopicRegistrationRounds_MaxEditCount DEFAULT 3,
       StartAt DATETIME2 NOT NULL,
       EndAt DATETIME2 NOT NULL,
       Status NVARCHAR(20) NOT NULL CONSTRAINT DF_TopicRegistrationRounds_Status DEFAULT 'DRAFT',
@@ -38,9 +41,14 @@ BEGIN TRY
       CONSTRAINT DF_TopicRegistrations_RevisionCount DEFAULT 0;
 
   IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_TopicRegistrations_Round')
-    ALTER TABLE dbo.TopicRegistrations WITH CHECK ADD CONSTRAINT FK_TopicRegistrations_Round
-      FOREIGN KEY (RoundId) REFERENCES dbo.TopicRegistrationRounds(Id);
+    EXEC sp_executesql N'ALTER TABLE dbo.TopicRegistrations WITH CHECK ADD CONSTRAINT FK_TopicRegistrations_Round FOREIGN KEY (RoundId) REFERENCES dbo.TopicRegistrationRounds(Id)';
 
+  IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.TopicRegistrations') AND name='UX_TopicRegistrations_Group_Active')
+    DROP INDEX UX_TopicRegistrations_Group_Active ON dbo.TopicRegistrations;
+  IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.TopicRegistrations') AND name='UX_TopicRegistrations_Round_Group_Active')
+    EXEC sp_executesql N'CREATE UNIQUE INDEX UX_TopicRegistrations_Round_Group_Active ON dbo.TopicRegistrations(RoundId,GroupId) WHERE DeletedAt IS NULL AND RoundId IS NOT NULL';
+  IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.TopicRegistrations') AND name='IX_TopicRegistrations_Round_Status')
+    EXEC sp_executesql N'CREATE INDEX IX_TopicRegistrations_Round_Status ON dbo.TopicRegistrations(RoundId,Status) WHERE DeletedAt IS NULL';
   IF OBJECT_ID('dbo.TopicRegistrationRoundFiles', 'U') IS NULL
   BEGIN
     CREATE TABLE dbo.TopicRegistrationRoundFiles (
@@ -64,11 +72,9 @@ BEGIN TRY
   IF COL_LENGTH('dbo.SubmissionRequirements', 'WeekNumber') IS NULL
     ALTER TABLE dbo.SubmissionRequirements ADD WeekNumber INT NULL;
   IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_SubmissionRequirements_Type')
-    ALTER TABLE dbo.SubmissionRequirements ADD CONSTRAINT CK_SubmissionRequirements_Type
-      CHECK (RequirementType IN ('ASSIGNMENT','WEEKLY_PROGRESS'));
+    EXEC sp_executesql N'ALTER TABLE dbo.SubmissionRequirements ADD CONSTRAINT CK_SubmissionRequirements_Type CHECK (RequirementType IN (''ASSIGNMENT'',''WEEKLY_PROGRESS''))';
   IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_SubmissionRequirements_Week')
-    ALTER TABLE dbo.SubmissionRequirements ADD CONSTRAINT CK_SubmissionRequirements_Week
-      CHECK (WeekNumber IS NULL OR WeekNumber BETWEEN 1 AND 53);
+    EXEC sp_executesql N'ALTER TABLE dbo.SubmissionRequirements ADD CONSTRAINT CK_SubmissionRequirements_Week CHECK (WeekNumber IS NULL OR WeekNumber BETWEEN 1 AND 53)';
 
   IF COL_LENGTH('dbo.RequiredSubmissionItems', 'Name') IS NULL
     ALTER TABLE dbo.RequiredSubmissionItems ADD Name NVARCHAR(200) NULL;
@@ -89,7 +95,10 @@ BEGIN TRY
   WHERE cc.parent_object_id = OBJECT_ID('dbo.RequiredSubmissionItems')
     AND cc.definition LIKE '%ItemType%';
   IF @itemConstraint IS NOT NULL
-    EXEC('ALTER TABLE dbo.RequiredSubmissionItems DROP CONSTRAINT ' + QUOTENAME(@itemConstraint));
+  BEGIN
+    DECLARE @dropConstraintSql NVARCHAR(1000) = N'ALTER TABLE dbo.RequiredSubmissionItems DROP CONSTRAINT ' + QUOTENAME(@itemConstraint);
+    EXEC sp_executesql @dropConstraintSql;
+  END;
   ALTER TABLE dbo.RequiredSubmissionItems ADD CONSTRAINT CK_RequiredSubmissionItems_Type
     CHECK (ItemType IN (
       'TEXT','REPORT','SLIDE','SOURCE_CODE','FILE','GITHUB_LINK','JIRA_LINK',
