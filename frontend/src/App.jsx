@@ -138,6 +138,8 @@ function App() {
           <Route path="lecturer/submission-requirements/:id/criteria" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><EvaluationCriteriaPage /></RoleRoute>} />
           <Route path="student/submissions/:id/result" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionResultPage /></RoleRoute>} />
 
+          <Route path="change-password" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT]}><ProfilePage /></RoleRoute>} />
+
           <Route
             path="profile"
             element={

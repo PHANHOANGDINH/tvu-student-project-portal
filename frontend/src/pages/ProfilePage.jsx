@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability, react-hooks/exhaustive-deps */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { changePasswordApi, getCurrentUserApi } from '../api/authApi'
@@ -130,7 +131,7 @@ function ProfilePage() {
   const createdAt = profile?.createdAt || profile?.CreatedAt
 
   return (
-    <div>
+    <div className="profile-modern-page">
       <div className="page-title row-between">
         <div>
           <h2>Hồ sơ cá nhân</h2>
@@ -227,10 +228,10 @@ function ProfilePage() {
 
               <form onSubmit={handleChangePassword}>
                 <div className="form-group">
-                  <label>Mật khẩu hiện tại</label>
+                  <label htmlFor="currentPassword">Mật khẩu hiện tại</label>
                   <input
                     type="password"
-                    name="currentPassword"
+                    id="currentPassword" name="currentPassword"
                     value={passwordForm.currentPassword}
                     onChange={handlePasswordChange}
                     placeholder="Nhập mật khẩu hiện tại"
@@ -238,10 +239,10 @@ function ProfilePage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Mật khẩu mới</label>
+                  <label htmlFor="newPassword">Mật khẩu mới</label>
                   <input
                     type="password"
-                    name="newPassword"
+                    id="newPassword" name="newPassword"
                     value={passwordForm.newPassword}
                     onChange={handlePasswordChange}
                     placeholder="Tối thiểu 8 ký tự"
@@ -249,10 +250,10 @@ function ProfilePage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Xác nhận mật khẩu mới</label>
+                  <label htmlFor="confirmNewPassword">Xác nhận mật khẩu mới</label>
                   <input
                     type="password"
-                    name="confirmNewPassword"
+                    id="confirmNewPassword" name="confirmNewPassword"
                     value={passwordForm.confirmNewPassword}
                     onChange={handlePasswordChange}
                     placeholder="Nhập lại mật khẩu mới"
@@ -274,7 +275,7 @@ function ProfilePage() {
                 className="btn-primary small"
                 onClick={() => navigate(getHomePath(role))}
               >
-                Xem Dashboard
+                Về trang tổng quan
               </button>
             </div>
           </div>
