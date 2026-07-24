@@ -1,6 +1,6 @@
 import * as repo from './submissionRequirements.repository.js';
 import { notifyClass } from '../notifications/notifications.service.js';
-const TYPES=['TEXT','REPORT','SLIDE','SOURCE_CODE','FILE','GITHUB_LINK','JIRA_LINK','FIGMA_LINK','VIDEO_LINK','DEMO_LINK','DOCUMENT_LINK','OTHER_LINK','OTHER'],STATUSES=['DRAFT','OPEN','CLOSED','CANCELLED'];
+const TYPES=['TEXT','REPORT','SLIDE','SOURCE_CODE','FILE','GITHUB_LINK','JIRA_LINK','FIGMA_LINK','VIDEO_LINK','DEMO_LINK','DOCUMENT_LINK','OTHER_LINK','OTHER','TEXT_SUMMARY','COMPLETED_TASKS','BLOCKERS','NEXT_PLAN','GITHUB_REPOSITORY','GITHUB_PULL_REQUEST','JIRA_BOARD','FIGMA','DEMO_VIDEO','REPORT_FILE','OTHER_URL'],STATUSES=['DRAFT','OPEN','CLOSED','CANCELLED'];
 const ok=(data,message,statusCode=200)=>({success:true,data,message,statusCode}),fail=(statusCode,message,errors=null)=>({success:false,statusCode,message,errors});
 const idOf=v=>{const n=Number(v);return Number.isInteger(n)&&n>0?n:null},clean=v=>String(v??'').trim();
 function effective(x){const now=Date.now(),start=new Date(x.startAt).getTime(),end=new Date(x.deadline).getTime();if(x.status!=='OPEN')return x.status;if(now<start)return'SCHEDULED';if(now>end)return x.allowLate?'OPEN_LATE':'EXPIRED';return'OPEN';}

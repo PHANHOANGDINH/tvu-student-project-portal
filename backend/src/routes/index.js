@@ -18,7 +18,7 @@ const router = express.Router();
 
 router.get('/health', (req, res) => {
   res.json({
-    message: 'Backend TVU Student Project Portal Ä‘ang hoáº¡t Ä‘á»™ng',
+    message: 'Backend TVU Student Project Portal đang hoạt động',
     time: new Date().toISOString(),
   });
 });

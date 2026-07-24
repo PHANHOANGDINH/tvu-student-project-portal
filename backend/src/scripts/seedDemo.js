@@ -19,9 +19,9 @@ if (!Number.isInteger(saltRounds) || saltRounds < 4) throw new Error('Invalid BC
 
 const demoUsers = [
   { key: 'admin', email: 'admin.demo@tvu.edu.vn', code: 'DEMO_ADMIN', name: 'Quản trị viên Demo', role: 'ADMIN' },
-  { key: 'lecturer', email: 'lecturer.demo@tvu.edu.vn', code: 'GV_DEMO', name: 'Giảng viên Demo', role: 'LECTURER' },
-  { key: 'student1', email: 'student1.demo@tvu.edu.vn', code: 'SV_DEMO_01', name: 'Sinh viên Demo 01', role: 'STUDENT' },
-  { key: 'student2', email: 'student2.demo@tvu.edu.vn', code: 'SV_DEMO_02', name: 'Sinh viên Demo 02', role: 'STUDENT' },
+  { key: 'lecturer', email: 'thiennhd@tvu.edu.vn', code: 'GV001', name: 'ThS. Nguyễn Hoàng Duy Thiện', role: 'LECTURER' },
+  { key: 'student1', email: 'sv001@tvu.edu.vn', code: 'SV001', name: 'Sinh viên Demo 01', role: 'STUDENT' },
+  { key: 'student2', email: 'sv002@tvu.edu.vn', code: 'SV002', name: 'Sinh viên Demo 02', role: 'STUDENT' },
 ];
 const hashes = {
   admin: await bcrypt.hash(passwords.admin, saltRounds),
@@ -159,7 +159,7 @@ try {
     MERGE StudentGroups WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@Name Name) source ON target.ClassId=source.ClassId AND target.Name=source.Name
     WHEN MATCHED THEN UPDATE SET LeaderId=@LeaderId,MaxMembers=5,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(ClassId,Name,LeaderId,MaxMembers) VALUES(@ClassId,@Name,@LeaderId,5)
-    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Name',sql.NVarChar(150),'Nhóm Demo'],['LeaderId',sql.Int,userIds.student1]]);
+    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Name',sql.NVarChar(150),'Nhóm SV001 - SV002'],['LeaderId',sql.Int,userIds.student1]]);
   for (const studentId of [userIds.student1,userIds.student2]) {
     await one(`MERGE GroupMembers WITH(HOLDLOCK) target USING(SELECT @GroupId GroupId,@StudentId StudentId) source ON target.GroupId=source.GroupId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET ClassId=@ClassId,DeletedAt=NULL WHEN NOT MATCHED THEN INSERT(GroupId,ClassId,StudentId) VALUES(@GroupId,@ClassId,@StudentId) OUTPUT INSERTED.Id id;`, [['GroupId',sql.Int,group.id],['ClassId',sql.Int,courseClass.id],['StudentId',sql.Int,studentId]]);
   }

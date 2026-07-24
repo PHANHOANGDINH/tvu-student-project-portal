@@ -1,8 +1,8 @@
 import { poolPromise, sql } from '../../config/db.js'
 
 const base = `SELECT r.Id id,r.ClassId classId,c.Code classCode,s.Name className,r.Name name,
-r.Description description,r.StartAt startAt,r.EndAt endAt,r.Status status,c.LecturerId lecturerId,
-r.CreatedAt createdAt,r.UpdatedAt updatedAt FROM TopicRegistrationRounds r
+r.Description description,r.Requirements requirements,r.AllowEditing allowEditing,r.MaxEditCount maxEditCount,r.StartAt startAt,r.EndAt endAt,r.Status status,c.LecturerId lecturerId,
+r.CreatedAt createdAt,r.UpdatedAt updatedAt,(SELECT COUNT(*) FROM TopicRegistrations tr WHERE tr.RoundId=r.Id AND tr.DeletedAt IS NULL) registrationCount,(SELECT COUNT(*) FROM TopicRegistrations tr WHERE tr.RoundId=r.Id AND tr.Status='PENDING' AND tr.DeletedAt IS NULL) pendingCount FROM TopicRegistrationRounds r
 JOIN CourseClasses c ON c.Id=r.ClassId JOIN Subjects s ON s.Id=c.SubjectId`
 
 export async function listLecturer(userId) {
@@ -25,19 +25,19 @@ export async function find(id) {
 export async function create(data, userId) {
   const p = await poolPromise
   const result = await p.request().input('ClassId', sql.Int, data.classId)
-    .input('Name', sql.NVarChar(200), data.name).input('Description', sql.NVarChar(sql.MAX), data.description || null)
+    .input('Name', sql.NVarChar(200), data.name).input('Description', sql.NVarChar(sql.MAX), data.description || null).input('Requirements',sql.NVarChar(sql.MAX),data.requirements||null).input('AllowEditing',sql.Bit,data.allowEditing!==false).input('MaxEditCount',sql.Int,data.maxEditCount||3)
     .input('StartAt', sql.DateTime2, data.startAt).input('EndAt', sql.DateTime2, data.endAt)
     .input('Uid', sql.Int, userId).query(`INSERT TopicRegistrationRounds
-      (ClassId,Name,Description,StartAt,EndAt,CreatedBy) OUTPUT INSERTED.Id
-      VALUES(@ClassId,@Name,@Description,@StartAt,@EndAt,@Uid)`)
+      (ClassId,Name,Description,Requirements,AllowEditing,MaxEditCount,StartAt,EndAt,CreatedBy) OUTPUT INSERTED.Id
+      VALUES(@ClassId,@Name,@Description,@Requirements,@AllowEditing,@MaxEditCount,@StartAt,@EndAt,@Uid)`)
   return find(result.recordset[0].Id)
 }
 export async function update(id, data) {
   const p = await poolPromise
   await p.request().input('Id', sql.Int, id).input('Name', sql.NVarChar(200), data.name)
-    .input('Description', sql.NVarChar(sql.MAX), data.description || null)
+    .input('Description', sql.NVarChar(sql.MAX), data.description || null).input('Requirements',sql.NVarChar(sql.MAX),data.requirements||null).input('AllowEditing',sql.Bit,data.allowEditing!==false).input('MaxEditCount',sql.Int,data.maxEditCount||3)
     .input('StartAt', sql.DateTime2, data.startAt).input('EndAt', sql.DateTime2, data.endAt)
-    .query(`UPDATE TopicRegistrationRounds SET Name=@Name,Description=@Description,StartAt=@StartAt,
+    .query(`UPDATE TopicRegistrationRounds SET Name=@Name,Description=@Description,Requirements=@Requirements,AllowEditing=@AllowEditing,MaxEditCount=@MaxEditCount,StartAt=@StartAt,
       EndAt=@EndAt,UpdatedAt=SYSDATETIME() WHERE Id=@Id`)
   return find(id)
 }

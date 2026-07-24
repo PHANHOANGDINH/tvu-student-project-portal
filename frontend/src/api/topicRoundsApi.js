@@ -1,6 +1,7 @@
 import { buildApiUrl, request } from './http'
 export const listLecturerTopicRounds = () => request('/lecturer/topic-rounds')
 export const createTopicRound = data => request('/lecturer/topic-rounds', { method: 'POST', body: JSON.stringify(data) })
+export const updateTopicRound=(id,data)=>request(`/lecturer/topic-rounds/${id}`,{method:'PUT',body:JSON.stringify(data)})
 export const updateTopicRoundStatus = (id, status) => request(`/lecturer/topic-rounds/${id}/status`, {
   method: 'PATCH', body: JSON.stringify({ status }),
 })

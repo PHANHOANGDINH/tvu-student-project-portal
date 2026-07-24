@@ -24,7 +24,7 @@ async function owned(roundId, user) {
   return round.lecturerId === user.id ? { round } : { failure: error(403, 'Bạn không phụ trách lớp học phần này.') }
 }
 export const lecturerList = async user => success(await repo.listLecturer(user.id), 'Lấy danh sách vòng đăng ký thành công.')
-export const studentList = async user => success(await repo.listStudent(user.id), 'Lấy danh sách vòng đăng ký thành công.')
+export const studentList = async user => { const rows=await repo.listStudent(user.id); return success(await Promise.all(rows.map(async round=>{const context=await repo.studentContext(round.id,user.id);const registration=context?.groupId?await repo.registration(round.id,context.groupId):null;return{...round,registration,isLeader:context?.leaderId===user.id,groupId:context?.groupId||null}})),'Lấy danh sách vòng đăng ký thành công.') }
 export async function create(body, user) {
   const data = payload(body), errors = validate(data)
   if (Object.keys(errors).length) return error(400, 'Dữ liệu không hợp lệ.', errors)

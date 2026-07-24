@@ -16,7 +16,6 @@ import ProfilePage from './pages/ProfilePage'
 import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
 import LecturerTopicRegistrationsPage from './pages/teacher/LecturerTopicRegistrationsPage'
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
-import TopicRegistrationPage from './pages/student/TopicRegistrationPage'
 import LecturerSubmissionRequirementsPage from './pages/teacher/SubmissionRequirementsPage'
 import StudentSubmissionRequirementsPage from './pages/student/SubmissionRequirementsPage'
 import StudentSubmissionsPage from './pages/student/SubmissionsPage'
@@ -123,13 +122,24 @@ function App() {
           <Route path="student/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/groups/my-group" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
-          <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
+          <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />
+          <Route path="student/topic-registration/:roundId" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />
           <Route path="lecturer/groups" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerGroupsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registrations" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRegistrationsPage /></RoleRoute>} />
           <Route path="lecturer/topic-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-registration-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-registration-rounds/new" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-registration-rounds/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+          <Route path="lecturer/topic-registration-rounds/:id/edit" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
           <Route path="student/topic-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />
           <Route path="lecturer/progress" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="lecturer/progress-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="lecturer/progress-requirements/new" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="lecturer/progress-requirements/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="lecturer/progress-requirements/:id/submissions" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionsPage /></RoleRoute>} />
           <Route path="student/progress" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="student/progress/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmitRequirementPage /></RoleRoute>} />
+          <Route path="student/progress/:id/history" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionHistoryPage /></RoleRoute>} />
 
           <Route path="lecturer/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
           <Route path="student/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />

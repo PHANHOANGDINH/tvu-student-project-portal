@@ -15,7 +15,7 @@ const adminSections = [
 ]
 const lecturerMain = [['Trang chủ','/lecturer/dashboard'],['Bảng điều khiển','/lecturer/dashboard'],['Lớp phụ trách','/lecturer/course-classes'],['Nhóm & Đề tài','/lecturer/groups'],['Bài nộp','/lecturer/submissions'],['Chấm điểm','/lecturer/submissions']]
 const studentMain = [['Trang chủ','/student/dashboard'],['Bảng điều khiển','/student/dashboard'],['Các lớp học của tôi','/student/course-classes'],['Nhóm của tôi','/student/groups/my-group'],['Bài nộp','/student/submissions'],['Kết quả','/student/submissions']]
-const extras = { LECTURER:[['Vòng đăng ký đề tài','/lecturer/topic-rounds'],['Tiến độ tuần','/lecturer/progress'],['Yêu cầu nộp','/lecturer/submission-requirements'],['Đề tài chờ duyệt','/lecturer/topic-registrations']], STUDENT:[['Vòng đăng ký đề tài','/student/topic-rounds'],['Tiến độ tuần','/student/progress'],['Đề tài','/student/topic-registration'],['Yêu cầu nộp','/student/submission-requirements']] }
+const extras = { LECTURER:[['Vòng đăng ký đề tài','/lecturer/topic-registration-rounds'],['Tiến độ tuần','/lecturer/progress'],['Yêu cầu nộp','/lecturer/submission-requirements'],['Đề tài chờ duyệt','/lecturer/topic-registrations']], STUDENT:[['Vòng đăng ký đề tài','/student/topic-rounds'],['Tiến độ tuần','/student/progress'],['Đề tài','/student/topic-registration'],['Yêu cầu nộp','/student/submission-requirements']] }
 
 function AccountMenu({ name, role, logout }) {
   const [open,setOpen]=useState(false)
