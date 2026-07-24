@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage'
 
 import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
 import LecturerTopicRegistrationsPage from './pages/teacher/LecturerTopicRegistrationsPage'
+import TopicRegistrationReviewPage from './pages/teacher/TopicRegistrationReviewPage.jsx'
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
 import LecturerSubmissionRequirementsPage from './pages/teacher/SubmissionRequirementsPage'
 import StudentSubmissionRequirementsPage from './pages/student/SubmissionRequirementsPage'
@@ -131,6 +132,7 @@ function App() {
           <Route path="lecturer/topic-registration-rounds/new" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registration-rounds/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registration-rounds/:id/edit" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRoundsPage /></RoleRoute>} />
+<Route path="lecturer/topic-registration-rounds/:roundId/registrations/:registrationId" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><TopicRegistrationReviewPage /></RoleRoute>} />
           <Route path="student/topic-rounds" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />
           <Route path="lecturer/progress" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />
           <Route path="lecturer/progress-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />

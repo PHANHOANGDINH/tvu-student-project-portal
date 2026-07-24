@@ -9,3 +9,5 @@ export const getTopic=(groupId)=>request(`/groups/${groupId}/topic-registration`
 export const saveTopic=(groupId,data,exists=false)=>request(`/groups/${groupId}/topic-registration`,{method:exists?'PUT':'POST',body:JSON.stringify(data)})
 export const listLecturerTopics=(status='')=>request(`/lecturer/topic-registrations${status?`?status=${status}`:''}`)
 export const reviewTopic=(id,data)=>request(`/lecturer/topic-registrations/${id}/review`,{method:'PATCH',body:JSON.stringify(data)})
+
+export const getLecturerTopic=id=>request(`/lecturer/topic-registrations/${id}`)
