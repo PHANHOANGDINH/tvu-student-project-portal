@@ -1,12 +1,11 @@
 import 'dotenv/config';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../utils/password.util.js';
 
 if (String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production') {
   throw new Error('seed:demo is disabled when NODE_ENV=production.');
 }
 
 const passwords = {
-  admin: process.env.DEMO_ADMIN_PASSWORD,
   lecturer: process.env.DEMO_LECTURER_PASSWORD,
   student: process.env.DEMO_STUDENT_PASSWORD,
 };
@@ -14,20 +13,16 @@ for (const [role, password] of Object.entries(passwords)) {
   if (!password) throw new Error(`Missing DEMO_${role.toUpperCase()}_PASSWORD.`);
 }
 
-const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
-if (!Number.isInteger(saltRounds) || saltRounds < 4) throw new Error('Invalid BCRYPT_SALT_ROUNDS.');
-
 const demoUsers = [
-  { key: 'admin', email: 'admin.demo@tvu.edu.vn', code: 'DEMO_ADMIN', name: 'Quản trị viên Demo', role: 'ADMIN' },
-  { key: 'lecturer', email: 'thiennhd@tvu.edu.vn', code: 'GV001', name: 'ThS. Nguyễn Hoàng Duy Thiện', role: 'LECTURER' },
-  { key: 'student1', email: 'sv001@tvu.edu.vn', code: 'SV001', name: 'Sinh viên Demo 01', role: 'STUDENT' },
-  { key: 'student2', email: 'sv002@tvu.edu.vn', code: 'SV002', name: 'Sinh viên Demo 02', role: 'STUDENT' },
+  { key: 'lecturer1', passwordKey: 'lecturer', email: 'thiennhd@tvu.edu.vn', code: 'GV001', name: 'ThS. Nguyễn Hoàng Duy Thiện', role: 'LECTURER' },
+  { key: 'lecturer2', passwordKey: 'lecturer', email: 'annb@tvu.edu.vn', code: 'GV002', name: 'TS. Nguyễn Bảo Ân', role: 'LECTURER' },
+  { key: 'student1', passwordKey: 'student', email: 'sv001@tvu.edu.vn', code: 'SV001', name: 'Sinh viên Demo 01', role: 'STUDENT' },
+  { key: 'student2', passwordKey: 'student', email: 'sv002@tvu.edu.vn', code: 'SV002', name: 'Sinh viên Demo 02', role: 'STUDENT' },
+  { key: 'student3', passwordKey: 'student', email: 'sv003@tvu.edu.vn', code: 'SV003', name: 'Sinh viên Demo 03', role: 'STUDENT' },
 ];
 const hashes = {
-  admin: await bcrypt.hash(passwords.admin, saltRounds),
-  lecturer: await bcrypt.hash(passwords.lecturer, saltRounds),
-  student1: await bcrypt.hash(passwords.student, saltRounds),
-  student2: await bcrypt.hash(passwords.student, saltRounds),
+  lecturer: await hashPassword(passwords.lecturer),
+  student: await hashPassword(passwords.student),
 };
 
 const { poolPromise, sql } = await import('../config/db.js');
@@ -56,6 +51,8 @@ try {
     SELECT Id INTO #TestCourseClasses FROM CourseClasses
     WHERE (Code LIKE 'SMK%' OR Code LIKE '%SMOKE%' OR Code LIKE '%DEMO%')
       AND (Id <> 1 OR Code LIKE 'SMK%' OR Code LIKE '%SMOKE%' OR Code LIKE '%DEMO%');
+    SELECT Id INTO #TestTopicRounds FROM TopicRegistrationRounds
+    WHERE ClassId IN (SELECT Id FROM #TestCourseClasses);
 
     SELECT DISTINCT g.Id INTO #TestGroups FROM StudentGroups g
     LEFT JOIN GroupMembers gm ON gm.GroupId=g.Id
@@ -64,6 +61,7 @@ try {
        OR g.Name LIKE '%E2E test%' OR g.Name LIKE 'SMK%' OR g.Name LIKE '%DEMO%';
     SELECT Id INTO #TestTopics FROM TopicRegistrations
     WHERE GroupId IN (SELECT Id FROM #TestGroups) OR ClassId IN (SELECT Id FROM #TestClasses) OR ClassId IN (SELECT Id FROM #TestCourseClasses)
+       OR RoundId IN (SELECT Id FROM #TestTopicRounds)
        OR ReviewedBy IN (SELECT Id FROM #SmokeUsers) OR Title LIKE '%Smoke%'
        OR Title LIKE '%E2E test%' OR Title LIKE 'SMK%' OR Title LIKE '%DEMO%';
     SELECT Id INTO #TestRequirements FROM SubmissionRequirements
@@ -87,8 +85,17 @@ try {
     DELETE Grades WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions) OR GradedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('Grades',@@ROWCOUNT);
     DELETE Feedback WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions) OR CreatedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('Feedback',@@ROWCOUNT);
     DELETE SubmissionReviewHistory WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions) OR ActorId IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('SubmissionReviewHistory',@@ROWCOUNT);
-    DELETE SubmissionFiles WHERE SubmissionAttemptId IN (SELECT Id FROM SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions)) OR UploadedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('SubmissionFiles',@@ROWCOUNT);
+    DELETE SubmissionItemResponses
+    WHERE SubmissionAttemptId IN (SELECT Id FROM SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions))
+       OR SubmissionFileId IN (
+         SELECT Id FROM SubmissionFiles
+         WHERE SubmissionAttemptId IN (SELECT Id FROM SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions))
+            OR UploadedBy IN (SELECT Id FROM #SmokeUsers)
+       )
+       OR RequiredSubmissionItemId IN (SELECT Id FROM RequiredSubmissionItems WHERE RequirementId IN (SELECT Id FROM #TestRequirements));
+    INSERT @Deleted VALUES('SubmissionItemResponses',@@ROWCOUNT);
     DELETE SubmissionLinks WHERE SubmissionAttemptId IN (SELECT Id FROM SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions)); INSERT @Deleted VALUES('SubmissionLinks',@@ROWCOUNT);
+    DELETE SubmissionFiles WHERE SubmissionAttemptId IN (SELECT Id FROM SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions)) OR UploadedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('SubmissionFiles',@@ROWCOUNT);
     DELETE SubmissionHistory WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions) OR ActorId IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('SubmissionHistory',@@ROWCOUNT);
     DELETE SubmissionAttempts WHERE SubmissionId IN (SELECT Id FROM #TestSubmissions) OR SubmittedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('SubmissionAttempts',@@ROWCOUNT);
     DELETE Submissions WHERE Id IN (SELECT Id FROM #TestSubmissions); INSERT @Deleted VALUES('Submissions',@@ROWCOUNT);
@@ -98,6 +105,8 @@ try {
     DELETE SubmissionRequirements WHERE Id IN (SELECT Id FROM #TestRequirements); INSERT @Deleted VALUES('SubmissionRequirements',@@ROWCOUNT);
     DELETE TopicReviewHistory WHERE TopicRegistrationId IN (SELECT Id FROM #TestTopics) OR ReviewedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('TopicReviewHistory',@@ROWCOUNT);
     DELETE TopicRegistrations WHERE Id IN (SELECT Id FROM #TestTopics); INSERT @Deleted VALUES('TopicRegistrations',@@ROWCOUNT);
+    DELETE TopicRegistrationRoundFiles WHERE RoundId IN (SELECT Id FROM #TestTopicRounds) OR UploadedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('TopicRegistrationRoundFiles',@@ROWCOUNT);
+    DELETE TopicRegistrationRounds WHERE Id IN (SELECT Id FROM #TestTopicRounds); INSERT @Deleted VALUES('TopicRegistrationRounds',@@ROWCOUNT);
     DELETE GroupMembers WHERE GroupId IN (SELECT Id FROM #TestGroups) OR StudentId IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('GroupMembers',@@ROWCOUNT);
     DELETE StudentGroups WHERE Id IN (SELECT Id FROM #TestGroups); INSERT @Deleted VALUES('StudentGroups',@@ROWCOUNT);
     DELETE FinalSubmissions WHERE ProjectId IN (SELECT Id FROM #TestProjects) OR StudentId IN (SELECT Id FROM #SmokeUsers) OR ReviewedBy IN (SELECT Id FROM #SmokeUsers); INSERT @Deleted VALUES('FinalSubmissions',@@ROWCOUNT);
@@ -126,7 +135,7 @@ try {
       OUTPUT INSERTED.Id id;`, [
       ['Email',sql.NVarChar(150),user.email],['FullName',sql.NVarChar(100),user.name],
       ['UserCode',sql.NVarChar(50),user.code],['Role',sql.NVarChar(20),user.role],
-      ['PasswordHash',sql.NVarChar(255),hashes[user.key]],
+      ['PasswordHash',sql.NVarChar(255),hashes[user.passwordKey]],
     ]);
     userIds[user.key]=row.id;
   }
@@ -150,10 +159,17 @@ try {
     MERGE CourseClasses WITH(HOLDLOCK) target USING(SELECT @Code Code) source ON target.Code=source.Code
     WHEN MATCHED THEN UPDATE SET SubjectId=@SubjectId,SemesterId=@SemesterId,LecturerId=@LecturerId,MaxStudents=30,Status='ACTIVE',IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(Code,SubjectId,SemesterId,LecturerId,MaxStudents,Status,IsActive) VALUES(@Code,@SubjectId,@SemesterId,@LecturerId,30,'ACTIVE',1)
-    OUTPUT INSERTED.Id id;`, [['Code',sql.NVarChar(50),'CNPM_DEMO_01'],['SubjectId',sql.Int,subject.id],['SemesterId',sql.Int,semester.id],['LecturerId',sql.Int,userIds.lecturer]]);
+    OUTPUT INSERTED.Id id;`, [['Code',sql.NVarChar(50),'CNPM_DEMO_01'],['SubjectId',sql.Int,subject.id],['SemesterId',sql.Int,semester.id],['LecturerId',sql.Int,userIds.lecturer1]]);
   for (const studentId of [userIds.student1,userIds.student2]) {
     await one(`MERGE CourseClassEnrollments WITH(HOLDLOCK) target USING(SELECT @ClassId CourseClassId,@StudentId StudentId) source ON target.CourseClassId=source.CourseClassId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME() WHEN NOT MATCHED THEN INSERT(CourseClassId,StudentId,IsActive) VALUES(@ClassId,@StudentId,1) OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['StudentId',sql.Int,studentId]]);
   }
+
+  const crossClass = await one(`
+    MERGE CourseClasses WITH(HOLDLOCK) target USING(SELECT @Code Code) source ON target.Code=source.Code
+    WHEN MATCHED THEN UPDATE SET SubjectId=@SubjectId,SemesterId=@SemesterId,LecturerId=@LecturerId,MaxStudents=30,Status='ACTIVE',IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
+    WHEN NOT MATCHED THEN INSERT(Code,SubjectId,SemesterId,LecturerId,MaxStudents,Status,IsActive) VALUES(@Code,@SubjectId,@SemesterId,@LecturerId,30,'ACTIVE',1)
+    OUTPUT INSERTED.Id id;`, [['Code',sql.NVarChar(50),'CNPM_DEMO_02'],['SubjectId',sql.Int,subject.id],['SemesterId',sql.Int,semester.id],['LecturerId',sql.Int,userIds.lecturer2]]);
+  await one(`MERGE CourseClassEnrollments WITH(HOLDLOCK) target USING(SELECT @ClassId CourseClassId,@StudentId StudentId) source ON target.CourseClassId=source.CourseClassId AND target.StudentId=source.StudentId WHEN MATCHED THEN UPDATE SET IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME() WHEN NOT MATCHED THEN INSERT(CourseClassId,StudentId,IsActive) VALUES(@ClassId,@StudentId,1) OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,crossClass.id],['StudentId',sql.Int,userIds.student3]]);
 
   const group = await one(`
     MERGE StudentGroups WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@Name Name) source ON target.ClassId=source.ClassId AND target.Name=source.Name
@@ -172,12 +188,12 @@ try {
     MERGE SubmissionRequirements WITH(HOLDLOCK) target USING(SELECT @ClassId ClassId,@Title Title) source ON target.ClassId=source.ClassId AND target.Title=source.Title
     WHEN MATCHED THEN UPDATE SET Description=@Description,Instructions=@Instructions,AllowLate=0,AllowResubmission=1,MaxAttempts=3,MaxFileSizeMb=20,CreatedBy=@CreatedBy,DeletedAt=NULL,UpdatedAt=SYSDATETIME()
     WHEN NOT MATCHED THEN INSERT(ClassId,Title,Description,Instructions,AllowLate,AllowResubmission,MaxAttempts,MaxFileSizeMb,CreatedBy) VALUES(@ClassId,@Title,@Description,@Instructions,0,1,3,20,@CreatedBy)
-    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Title',sql.NVarChar(200),'Yêu cầu nộp Demo'],['Description',sql.NVarChar(sql.MAX),'Nộp báo cáo demo cho kiểm tra thủ công.'],['Instructions',sql.NVarChar(sql.MAX),'Chưa cần tạo bài nộp.'],['CreatedBy',sql.Int,userIds.lecturer]]);
+    OUTPUT INSERTED.Id id;`, [['ClassId',sql.Int,courseClass.id],['Title',sql.NVarChar(200),'Yêu cầu nộp Demo'],['Description',sql.NVarChar(sql.MAX),'Nộp báo cáo demo cho kiểm tra thủ công.'],['Instructions',sql.NVarChar(sql.MAX),'Chưa cần tạo bài nộp.'],['CreatedBy',sql.Int,userIds.lecturer1]]);
   await one(`MERGE SubmissionRounds WITH(HOLDLOCK) target USING(SELECT @Id RequirementId) source ON target.RequirementId=source.RequirementId WHEN MATCHED THEN UPDATE SET StartAt=DATEADD(day,-1,SYSDATETIME()),Deadline=DATEADD(day,30,SYSDATETIME()),Status='OPEN',UpdatedAt=SYSDATETIME() WHEN NOT MATCHED THEN INSERT(RequirementId,StartAt,Deadline,Status) VALUES(@Id,DATEADD(day,-1,SYSDATETIME()),DATEADD(day,30,SYSDATETIME()),'OPEN') OUTPUT INSERTED.Id id;`, [['Id',sql.Int,requirement.id]]);
   await one(`MERGE RequiredSubmissionItems WITH(HOLDLOCK) target USING(SELECT @Id RequirementId,'REPORT' ItemType) source ON target.RequirementId=source.RequirementId AND target.ItemType=source.ItemType WHEN MATCHED THEN UPDATE SET Description=@Description WHEN NOT MATCHED THEN INSERT(RequirementId,ItemType,Description) VALUES(@Id,'REPORT',@Description) OUTPUT INSERTED.Id id;`, [['Id',sql.Int,requirement.id],['Description',sql.NVarChar(300),'Báo cáo PDF demo']]);
 
   await transaction.commit();
-  console.log(JSON.stringify({deleted:cleanup.recordset,created:{users:userIds,academicYearId:year.id,semesterId:semester.id,subjectId:subject.id,courseClassId:courseClass.id,groupId:group.id,topicId:topic.id,requirementId:requirement.id}},null,2));
+  console.log(JSON.stringify({deleted:cleanup.recordset,created:{users:userIds,academicYearId:year.id,semesterId:semester.id,subjectId:subject.id,courseClassId:courseClass.id,crossClassId:crossClass.id,groupId:group.id,topicId:topic.id,requirementId:requirement.id}},null,2));
 } catch (error) {
   try { await transaction.rollback(); } catch { /* already rolled back */ }
   throw error;
