@@ -8,12 +8,22 @@ const success = (data, message, statusCode = 200) => ({ success: true, data, mes
 const error = (statusCode, message, errors) => ({ success: false, statusCode, message, errors })
 const clean = value => String(value ?? '').trim()
 const id = value => Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : null
-const payload = body => ({ classId: id(body.classId), name: clean(body.name), description: clean(body.description),
-  startAt: new Date(body.startAt), endAt: new Date(body.endAt) })
+const payload = body => ({
+  classId: id(body.classId),
+  name: clean(body.name),
+  description: clean(body.description),
+  requirements: clean(body.requirements),
+  allowEditing: body.allowEditing !== false,
+  maxEditCount: Number(body.maxEditCount),
+  startAt: new Date(body.startAt),
+  endAt: new Date(body.endAt),
+})
 function validate(data) {
   const errors = {}
   if (!data.classId) errors.classId = ['Vui lòng chọn lớp học phần.']
   if (!data.name) errors.name = ['Tên vòng đăng ký là bắt buộc.']
+  if (!Number.isInteger(data.maxEditCount) || data.maxEditCount < 0 || data.maxEditCount > 20)
+    errors.maxEditCount = ['Số lần chỉnh sửa tối đa phải từ 0 đến 20.']
   if (Number.isNaN(data.startAt.getTime()) || Number.isNaN(data.endAt.getTime()) || data.startAt >= data.endAt)
     errors.time = ['Thời gian bắt đầu phải trước thời gian kết thúc.']
   return errors

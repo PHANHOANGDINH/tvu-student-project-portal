@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getLecturerTopic, reviewTopic } from '../../api/groupsApi'
 
 export default function TopicRegistrationReviewPage() {
   const { registrationId } = useParams(), navigate = useNavigate()
   const [topic, setTopic] = useState(null), [error, setError] = useState('')
-  const load = () => getLecturerTopic(registrationId).then(r => setTopic(r.data)).catch(e => setError(e.message))
-  useEffect(load, [registrationId])
+  const load = useCallback(() => getLecturerTopic(registrationId).then(r => setTopic(r.data)).catch(e => setError(e.message)), [registrationId])
+  useEffect(() => { void load() }, [load])
   const review = async status => {
     const needsReason = status !== 'APPROVED'
     const comment = needsReason ? window.prompt(status === 'REJECTED' ? 'Nhập lý do từ chối:' : 'Nhập nội dung cần chỉnh sửa:') : ''
@@ -22,14 +22,17 @@ export default function TopicRegistrationReviewPage() {
       <div><small>Trạng thái</small><strong>{topic.status}</strong></div>
       <div><small>Số lần chỉnh sửa</small><strong>{topic.revisionCount || 0}</strong></div>
       <div><small>Thời gian gửi</small><strong>{new Date(topic.createdAt).toLocaleString('vi-VN')}</strong></div>
-      <section><h3>Mô tả</h3><p>{topic.description}</p><h3>Mục tiêu</h3><p>{topic.objectives || '—'}</p>
+      <section><h3>Nhóm thực hiện</h3><p><strong>Trưởng nhóm:</strong> {topic.leader?.fullName || '—'}</p>
+        <ul>{(topic.members || []).map(member => <li key={member.studentId}>{member.fullName} ({member.userCode}){member.isLeader ? ' — Trưởng nhóm' : ''}</li>)}</ul>
+        <h3>Mô tả</h3><p>{topic.description}</p><h3>Mục tiêu</h3><p>{topic.objectives || '—'}</p>
         <h3>Phạm vi</h3><p>{topic.scope || '—'}</p><h3>Công nghệ dự kiến</h3><p>{topic.technologies || '—'}</p>
         <h3>Kết quả dự kiến</h3><p>{topic.expectedResults || '—'}</p>
         {topic.referenceUrl && <p><a href={topic.referenceUrl} target="_blank" rel="noopener noreferrer">Mở link tham khảo</a></p>}
         {topic.reviewComment && <div className="alert"><strong>Phản hồi:</strong> {topic.reviewComment}</div>}</section>
     </div>
-    <div className="panel form-actions"><button className="btn-primary" onClick={() => review('APPROVED')}>Duyệt</button>
+    <div className="panel"><h3>Lịch sử duyệt</h3>{(topic.history || []).map(item => <div key={item.id} className="registration-state"><strong>{item.previousStatus} → {item.newStatus}</strong><p>{item.comment || 'Không có nhận xét.'}</p><small>{item.reviewerName} · {new Date(item.createdAt).toLocaleString('vi-VN')}</small></div>)}{!topic.history?.length && <p>Chưa có lịch sử duyệt.</p>}</div>
+    {topic.status !== 'APPROVED' && <div className="panel form-actions"><button className="btn-primary" onClick={() => review('APPROVED')}>Duyệt</button>
       <button onClick={() => review('REQUIRES_REVISION')}>Yêu cầu chỉnh sửa</button>
-      <button onClick={() => review('REJECTED')}>Từ chối</button></div>
+      <button onClick={() => review('REJECTED')}>Từ chối</button></div>}
   </div>
 }
