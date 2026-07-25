@@ -9,6 +9,7 @@ import { studentImportSwaggerPaths } from './studentImport.swagger.js';
 import { lecturerImportSwaggerPaths } from './lecturerImport.swagger.js';
 import { topicRoundSwaggerPaths } from './topicRounds.swagger.js';
 import { weeklyProgressSwaggerPaths } from './weeklyProgress.swagger.js';
+import { courseClassLecturerPaths,courseClassLecturerSchemas } from './courseClassLecturers.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -32,6 +33,7 @@ export const swaggerSpec = {
       },
     },
     schemas: {
+      ...courseClassLecturerSchemas,
       ApiError: {
         type: 'object',
         properties: {
@@ -174,6 +176,7 @@ export const swaggerSpec = {
     ...lecturerImportSwaggerPaths,
     ...topicRoundSwaggerPaths,
     ...weeklyProgressSwaggerPaths,
+    ...courseClassLecturerPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

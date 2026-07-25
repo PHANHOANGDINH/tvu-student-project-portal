@@ -37,20 +37,20 @@ export async function lecturer(userId) {
   const pool = await poolPromise;
   const stats = await pool.request().input('Uid', sql.Int, userId).query(`SELECT
     (SELECT COUNT(*) FROM CourseClasses WHERE LecturerId=@Uid AND DeletedAt IS NULL) classes,
-    (SELECT COUNT(*) FROM StudentGroups g JOIN CourseClasses c ON c.Id=g.ClassId WHERE c.LecturerId=@Uid AND g.DeletedAt IS NULL) groups,
-    (SELECT COUNT(*) FROM TopicRegistrations t JOIN CourseClasses c ON c.Id=t.ClassId WHERE c.LecturerId=@Uid AND t.Status='PENDING' AND t.DeletedAt IS NULL) topicsPending,
-    (SELECT COUNT(*) FROM SubmissionRequirements rq JOIN SubmissionRounds rr ON rr.RequirementId=rq.Id JOIN CourseClasses cc ON cc.Id=rq.ClassId JOIN StudentGroups gg ON gg.ClassId=rq.ClassId AND gg.DeletedAt IS NULL WHERE cc.LecturerId=@Uid AND rr.Status='OPEN' AND NOT EXISTS(SELECT 1 FROM Submissions ss WHERE ss.RequirementId=rq.Id AND ss.GroupId=gg.Id)) notSubmitted,
-    (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE c.LecturerId=@Uid) submitted,
-    (SELECT COUNT(*) FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE c.LecturerId=@Uid AND a.IsLate=1) late,
-    (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE c.LecturerId=@Uid AND s.Status IN('SUBMITTED','LATE','RESUBMITTED','UNDER_REVIEW')) waitingGrade,
-    (SELECT COUNT(*) FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE c.LecturerId=@Uid AND g.IsPublished=1) graded,
-    (SELECT COUNT(*) FROM SubmissionRequirements r JOIN CourseClasses c ON c.Id=r.ClassId JOIN SubmissionRounds sr ON sr.RequirementId=r.Id WHERE c.LecturerId=@Uid AND sr.Status='OPEN') openRequirements`);
+    (SELECT COUNT(*) FROM StudentGroups g JOIN CourseClasses c ON c.Id=g.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND g.DeletedAt IS NULL) groups,
+    (SELECT COUNT(*) FROM TopicRegistrations t JOIN CourseClasses c ON c.Id=t.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND t.Status='PENDING' AND t.DeletedAt IS NULL) topicsPending,
+    (SELECT COUNT(*) FROM SubmissionRequirements rq JOIN SubmissionRounds rr ON rr.RequirementId=rq.Id JOIN CourseClasses cc ON cc.Id=rq.ClassId JOIN StudentGroups gg ON gg.ClassId=rq.ClassId AND gg.DeletedAt IS NULL WHERE cEXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND rr.Status='OPEN' AND NOT EXISTS(SELECT 1 FROM Submissions ss WHERE ss.RequirementId=rq.Id AND ss.GroupId=gg.Id)) notSubmitted,
+    (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1)) submitted,
+    (SELECT COUNT(*) FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND a.IsLate=1) late,
+    (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND s.Status IN('SUBMITTED','LATE','RESUBMITTED','UNDER_REVIEW')) waitingGrade,
+    (SELECT COUNT(*) FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND g.IsPublished=1) graded,
+    (SELECT COUNT(*) FROM SubmissionRequirements r JOIN CourseClasses c ON c.Id=r.ClassId JOIN SubmissionRounds sr ON sr.RequirementId=r.Id WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND sr.Status='OPEN') openRequirements`);
   const upcoming = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 8 r.Id id,r.Title title,c.Code classCode,sr.Deadline deadline
     FROM SubmissionRequirements r JOIN SubmissionRounds sr ON sr.RequirementId=r.Id JOIN CourseClasses c ON c.Id=r.ClassId
-    WHERE c.LecturerId=@Uid AND sr.Status='OPEN' AND sr.Deadline>=SYSDATETIME() ORDER BY sr.Deadline`);
+    WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND sr.Status='OPEN' AND sr.Deadline>=SYSDATETIME() ORDER BY sr.Deadline`);
   const activity = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 10 s.Id id,g.Name title,s.Status status,s.UpdatedAt createdAt
     FROM Submissions s JOIN StudentGroups g ON g.Id=s.GroupId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId
-    WHERE c.LecturerId=@Uid ORDER BY s.UpdatedAt DESC`);
+    WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) ORDER BY s.UpdatedAt DESC`);
   return { stats: stats.recordset[0], upcoming: upcoming.recordset, recentActivity: activity.recordset };
 }
 

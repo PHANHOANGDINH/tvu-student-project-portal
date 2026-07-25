@@ -1,3 +1,4 @@
+import { hasActiveAssignment } from '../courseClassLecturers/courseClassAccess.repository.js'
 import * as repo from './topicRounds.repository.js'
 import * as requirementsRepo from '../submissions/submissionRequirements.repository.js'
 import { notifyClass } from '../notifications/notifications.service.js'
@@ -31,7 +32,7 @@ function validate(data) {
 async function owned(roundId, user) {
   const round = await repo.find(id(roundId))
   if (!round) return { failure: error(404, 'Không tìm thấy vòng đăng ký đề tài.') }
-  return round.lecturerId === user.id ? { round } : { failure: error(403, 'Bạn không phụ trách lớp học phần này.') }
+  return await hasActiveAssignment(round.classId,user.id) ? { round } : { failure: error(403, 'Bạn không phụ trách lớp học phần này.') }
 }
 export const lecturerList = async user => success(await repo.listLecturer(user.id), 'Lấy danh sách vòng đăng ký thành công.')
 export const studentList = async user => { const rows=await repo.listStudent(user.id); return success(await Promise.all(rows.map(async round=>{const context=await repo.studentContext(round.id,user.id);const registration=context?.groupId?await repo.registration(round.id,context.groupId):null;return{...round,registration,isLeader:context?.leaderId===user.id,groupId:context?.groupId||null}})),'Lấy danh sách vòng đăng ký thành công.') }
@@ -40,7 +41,7 @@ export async function create(body, user) {
   if (Object.keys(errors).length) return error(400, 'Dữ liệu không hợp lệ.', errors)
   const courseClass = await requirementsRepo.findClass(data.classId)
   if (!courseClass) return error(404, 'Không tìm thấy lớp học phần.')
-  if (courseClass.lecturerId !== user.id) return error(403, 'Bạn không phụ trách lớp học phần này.')
+  if (!(await hasActiveAssignment(data.classId,user.id))) return error(403, 'Bạn không phụ trách lớp học phần này.')
   return success(await repo.create(data, user.id), 'Tạo vòng đăng ký đề tài thành công.', 201)
 }
 export async function update(roundId, body, user) {
@@ -63,10 +64,10 @@ export async function status(roundId, body, user) {
   return success(updated, 'Cập nhật trạng thái vòng đăng ký thành công.')
 }
 
-export async function files(roundId,user){const round=await repo.find(id(roundId));if(!round)return error(404,'Không tìm thấy vòng đăng ký.');const allowed=user.role==='LECTURER'?round.lecturerId===user.id:await repo.studentCanAccess(round.id,user.id);return allowed?success(await repo.listFiles(round.id),'Lấy danh sách file thành công.'):error(403,'Bạn không có quyền truy cập vòng đăng ký này.')}
+export async function files(roundId,user){const round=await repo.find(id(roundId));if(!round)return error(404,'Không tìm thấy vòng đăng ký.');const allowed=user.role==='LECTURER'?await hasActiveAssignment(round.classId,user.id):await repo.studentCanAccess(round.id,user.id);return allowed?success(await repo.listFiles(round.id),'Lấy danh sách file thành công.'):error(403,'Bạn không có quyền truy cập vòng đăng ký này.')}
 export async function uploadFile(roundId,file,user){const access=await owned(roundId,user);if(access.failure){await cleanupFiles(file?[file]:[]);return access.failure}if(access.round.status!=='DRAFT'){await cleanupFiles(file?[file]:[]);return error(409,'Chỉ được tải file lên khi vòng đăng ký còn ở trạng thái nháp.')}if(!file)return error(400,'Vui lòng chọn file.');try{return success(await repo.addFile(access.round.id,{...file,relativePath:relativeUploadPath(file.filename)},user.id),'Tải file hướng dẫn thành công.',201)}catch(cause){await cleanupFiles([file]);throw cause}}
-export async function downloadFile(fileId,user){const file=await repo.findFile(id(fileId));if(!file)return error(404,'Không tìm thấy file.');const allowed=user.role==='LECTURER'?file.lecturerId===user.id:await repo.studentCanAccess(file.roundId,user.id);return allowed?success({...file,absolutePath:resolveStoredFile(file.relativePath)},'Tải file thành công.'):error(403,'Bạn không có quyền tải file này.')}
-export async function removeFile(fileId,user){const file=await repo.findFile(id(fileId));if(!file)return error(404,'Không tìm thấy file.');if(file.lecturerId!==user.id)return error(403,'Bạn không có quyền xóa file này.');if(file.status!=='DRAFT'||file.registrationCount>0)return error(409,'Không thể xóa file sau khi vòng đã mở hoặc đã có đăng ký.');await repo.deleteFile(file.id);await unlink(resolveStoredFile(file.relativePath)).catch(()=>null);return success(null,'Xóa file thành công.')}
+export async function downloadFile(fileId,user){const file=await repo.findFile(id(fileId));if(!file)return error(404,'Không tìm thấy file.');const allowed=user.role==='LECTURER'?await hasActiveAssignment(file.classId,user.id):await repo.studentCanAccess(file.roundId,user.id);return allowed?success({...file,absolutePath:resolveStoredFile(file.relativePath)},'Tải file thành công.'):error(403,'Bạn không có quyền tải file này.')}
+export async function removeFile(fileId,user){const file=await repo.findFile(id(fileId));if(!file)return error(404,'Không tìm thấy file.');if(!(await hasActiveAssignment(file.classId,user.id)))return error(403,'Bạn không có quyền xóa file này.');if(file.status!=='DRAFT'||file.registrationCount>0)return error(409,'Không thể xóa file sau khi vòng đã mở hoặc đã có đăng ký.');await repo.deleteFile(file.id);await unlink(resolveStoredFile(file.relativePath)).catch(()=>null);return success(null,'Xóa file thành công.')}
 function topicPayload(body){return{title:clean(body.title),description:clean(body.description),objectives:clean(body.objectives),scope:clean(body.scope),technologies:clean(body.technologies),expectedResults:clean(body.expectedResults),referenceUrl:clean(body.referenceUrl)}}
 function validUrl(value){if(!value)return true;if(value.length>1000)return false;try{return['http:','https:'].includes(new URL(value).protocol)}catch{return false}}
 async function registrationContext(roundId,user){const context=await repo.studentContext(id(roundId),user.id);if(!context)return{failure:error(404,'Không tìm thấy vòng đăng ký trong lớp của bạn.')};if(!context.groupId)return{failure:error(409,'Bạn chưa thuộc nhóm trong lớp học phần này.')};if(context.leaderId!==user.id)return{failure:error(403,'Chỉ trưởng nhóm được gửi hoặc chỉnh sửa đề tài.')};const now=Date.now();if(context.status!=='OPEN'||now<new Date(context.startAt).getTime()||now>new Date(context.endAt).getTime())return{failure:error(409,now<new Date(context.startAt).getTime()?'Chưa đến thời gian đăng ký.':'Đợt đăng ký đã kết thúc.')};return{context}}

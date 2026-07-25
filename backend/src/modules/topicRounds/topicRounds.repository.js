@@ -8,7 +8,7 @@ JOIN CourseClasses c ON c.Id=r.ClassId JOIN Subjects s ON s.Id=c.SubjectId`
 export async function listLecturer(userId) {
   const p = await poolPromise
   return (await p.request().input('Uid', sql.Int, userId)
-    .query(`${base} WHERE c.LecturerId=@Uid AND r.DeletedAt IS NULL ORDER BY r.StartAt DESC`)).recordset
+    .query(`${base} WHERE EXISTS(SELECT 1 FROM CourseClassLecturers assignment WHERE assignment.CourseClassId=c.Id AND assignment.LecturerId=@Uid AND assignment.IsActive=1) AND r.DeletedAt IS NULL ORDER BY r.StartAt DESC`)).recordset
 }
 export async function listStudent(userId) {
   const p = await poolPromise

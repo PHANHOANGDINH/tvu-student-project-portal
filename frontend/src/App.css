@@ -881,3 +881,19 @@ th {
 @media(max-width:768px){.builder-grid.two,.builder-grid.three,.submission-item-grid{grid-template-columns:1fr}.page-title.row-between{align-items:flex-start;gap:12px}.builder-actions{justify-content:flex-start}.review-info-grid{grid-template-columns:1fr}.submitted-item{flex-wrap:wrap}.submitted-item>.btn-light{margin-left:34px}}
 @media(max-width:480px){.builder-grid.four{grid-template-columns:1fr}.page-title.row-between{flex-direction:column}.page-title.row-between>.form-actions{width:100%;flex-wrap:wrap}.toggle-row{flex-direction:column;gap:10px}.pending-file-list>div{flex-wrap:wrap}.pending-file-list span{flex-basis:calc(100% - 50px)}.builder-actions button{width:auto}.attempt-heading{flex-direction:column}.link-action{align-items:flex-start;flex-direction:column}.submitted-item>.btn-light{margin-left:0}.review-actions button{width:100%}}
 @media(max-width:480px){.lms-topbar-inner{gap:6px;padding-inline:8px}.lms-brand div{display:none}.account-trigger{padding:4px}.account-trigger>svg{display:none}.lms-user-actions{min-width:0}.response-item a{overflow-wrap:anywhere;word-break:break-word}.response-item{min-width:0;overflow:hidden}}
+
+
+.lecturer-assignment-fields{margin:0 0 1rem;padding:1rem;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc}
+.lecturer-assignment-fields h4{margin:0 0 .75rem}
+.lecturer-assignment-fields label{display:grid;gap:.4rem;margin:.65rem 0}
+.lecturer-search-results{max-height:12rem;overflow-y:auto;border:1px solid #dbe4ef;border-radius:8px;background:#fff}
+.lecturer-search-results button{display:block;width:100%;padding:.65rem;text-align:left;border:0;border-bottom:1px solid #edf2f7;background:#fff}
+.lecturer-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.lecturer-chips>span{display:inline-flex;align-items:center;gap:.35rem;max-width:100%;padding:.35rem .6rem;border-radius:999px;background:#e7f0ff;color:#174ea6}
+.lecturer-chips button{border:0;background:transparent;font-size:1.1rem}
+.class-lecturer-list{display:grid;gap:.35rem;min-width:12rem}
+.class-lecturer-list span{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.class-lecturer-list small{padding:.15rem .4rem;border-radius:999px;background:#eef2ff;color:#3730a3}
+.class-lecturer-list em{font-style:normal;color:#475569}
+.shared-lecturers{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:768px){.admin-modal{width:100%;max-width:none;height:100%;max-height:none;border-radius:0;overflow-y:auto}.lecturer-assignment-fields{min-width:0}.table-wrap{overflow-x:auto}}

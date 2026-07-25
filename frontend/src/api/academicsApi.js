@@ -17,3 +17,9 @@ export const exportCourseClassStudents=(courseClassId)=>download(`/course-classe
 
 export const listLecturerCourseClasses=(params={})=>request(`/lecturer/course-classes?${query(params)}`)
 export const getLecturerCourseClass=(id)=>request(`/lecturer/course-classes/${id}`)
+
+export const listCourseClassLecturers=id=>request(`/admin/course-classes/${id}/lecturers`)
+export const assignCourseClassLecturer=(id,data)=>request(`/admin/course-classes/${id}/lecturers`,{method:'POST',body:JSON.stringify(data)})
+export const updateCourseClassLecturer=(id,lecturerId,data)=>request(`/admin/course-classes/${id}/lecturers/${lecturerId}`,{method:'PATCH',body:JSON.stringify(data)})
+export const removeCourseClassLecturer=(id,lecturerId)=>request(`/admin/course-classes/${id}/lecturers/${lecturerId}`,{method:'DELETE'})
+export const replaceCourseClassLecturers=(id,lecturers)=>request(`/admin/course-classes/${id}/lecturers`,{method:'PUT',body:JSON.stringify({lecturers})})

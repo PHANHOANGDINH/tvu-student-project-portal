@@ -32,6 +32,7 @@ import AcademicSummaryPage from './pages/admin/AcademicSummaryPage'
 import StudentCourseClassesPage from './pages/student/StudentCourseClassesPage'
 import BulkStudentImportPage from './pages/admin/BulkStudentImportPage'
 import BulkLecturerImportPage from './pages/admin/BulkLecturerImportPage'
+import LecturerAssignmentsPage from './pages/admin/LecturerAssignmentsPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -105,6 +106,8 @@ function App() {
               </RoleRoute>
             }
           />
+
+          <Route path="admin/course-class-lecturers" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><LecturerAssignmentsPage /></RoleRoute>} />
 
           <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
           <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
