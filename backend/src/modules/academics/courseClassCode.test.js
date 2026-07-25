@@ -1,0 +1,2 @@
+import test from'node:test';import assert from'node:assert/strict';import{buildSemesterCode,buildCourseClassCode,getNextSectionNumber}from'./courseClassCode.js'
+test('course class code follows semester-subject-section rule',()=>{assert.equal(buildSemesterCode({semesterName:'Học kỳ 2',academicYearName:'2025-2026'}),'22526');assert.equal(buildCourseClassCode({semesterCode:'22526',subjectCode:'420000',sectionNumber:1}),'22526-420000-01');assert.equal(getNextSectionNumber(1),2)})

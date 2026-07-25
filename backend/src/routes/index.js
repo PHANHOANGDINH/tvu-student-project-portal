@@ -13,6 +13,7 @@ import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, s
 import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
 import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
 import { lecturerTopicRoundRoutes, studentTopicRoundRoutes } from '../modules/topicRounds/topicRounds.routes.js';
+import {adminEnrollmentRoutes,studentEnrollmentRoutes} from '../modules/courseEnrollments/courseEnrollments.routes.js';
 
 const router = express.Router();
 
@@ -30,6 +31,8 @@ router.use('/academic-years', academicYearRoutes);
 router.use('/semesters', semesterRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/student/course-classes', studentCourseClassRoutes);
+router.use('/student/course-class-enrollment',studentEnrollmentRoutes);
+router.use('/admin/course-enrollments',adminEnrollmentRoutes);
 router.use('/lecturer/course-classes', lecturerCourseClassRoutes);
 router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);

@@ -58,7 +58,7 @@ export async function importStudents(courseClassId, rows) {
           VALUES(@FullName,@Email,@PasswordHash,'STUDENT',1,@Code,@ClassName)`);
       const user = inserted.recordset[0];
       await new sql.Request(transaction).input('ClassId',sql.Int,courseClass.id).input('StudentId',sql.Int,user.id)
-        .query('INSERT CourseClassEnrollments(CourseClassId,StudentId,IsActive) VALUES(@ClassId,@StudentId,1)');
+        .query("INSERT CourseClassEnrollments(CourseClassId,StudentId,EnrollmentStatus,EnrollmentSource,EnrolledAt,IsActive) VALUES(@ClassId,@StudentId,'ACTIVE','CSV_IMPORT',SYSDATETIME(),1)");
       created.push(user);
     }
     await transaction.commit();
@@ -87,8 +87,8 @@ export async function bulkEnroll(courseClassId, studentIds) {
     }
     await assertCapacity(transaction, courseClass, enrolled.length);
     for (const student of enrolled) {
-      if (student.enrollmentId) await new sql.Request(transaction).input('Id',sql.Int,student.enrollmentId).query('UPDATE CourseClassEnrollments SET IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME() WHERE Id=@Id');
-      else await new sql.Request(transaction).input('ClassId',sql.Int,courseClass.id).input('StudentId',sql.Int,student.id).query('INSERT CourseClassEnrollments(CourseClassId,StudentId,IsActive) VALUES(@ClassId,@StudentId,1)');
+      if (student.enrollmentId) await new sql.Request(transaction).input('Id',sql.Int,student.enrollmentId).query("UPDATE CourseClassEnrollments SET EnrollmentStatus='ACTIVE',EnrollmentSource='ADMIN',EnrolledAt=SYSDATETIME(),IsActive=1,DeletedAt=NULL,UpdatedAt=SYSDATETIME() WHERE Id=@Id");
+      else await new sql.Request(transaction).input('ClassId',sql.Int,courseClass.id).input('StudentId',sql.Int,student.id).query("INSERT CourseClassEnrollments(CourseClassId,StudentId,EnrollmentStatus,EnrollmentSource,EnrolledAt,IsActive) VALUES(@ClassId,@StudentId,'ACTIVE','ADMIN',SYSDATETIME(),1)");
       delete student.enrollmentId;
     }
     await transaction.commit();
@@ -100,7 +100,7 @@ export async function listEnrollments(courseClassId,{page=1,pageSize=20,search='
   const pool=await poolPromise, pattern=search?`%${search}%`:null, offset=(page-1)*pageSize;
   const bind=(request)=>request.input('Id',sql.Int,courseClassId).input('Pattern',sql.NVarChar(202),pattern);
   const where=`e.CourseClassId=@Id AND e.IsActive=1 AND e.DeletedAt IS NULL AND u.DeletedAt IS NULL AND (@Pattern IS NULL OR u.FullName LIKE @Pattern OR u.Email LIKE @Pattern OR u.UserCode LIKE @Pattern)`;
-  const items=await bind(pool.request()).input('Offset',sql.Int,offset).input('Size',sql.Int,pageSize).query(`SELECT u.Id id,u.UserCode studentCode,u.FullName fullName,u.Email email,e.CreatedAt enrolledAt FROM CourseClassEnrollments e JOIN Users u ON u.Id=e.StudentId WHERE ${where} ORDER BY u.UserCode OFFSET @Offset ROWS FETCH NEXT @Size ROWS ONLY`);
+  const items=await bind(pool.request()).input('Offset',sql.Int,offset).input('Size',sql.Int,pageSize).query(`SELECT u.Id id,u.UserCode studentCode,u.FullName fullName,u.Email email,e.EnrollmentStatus enrollmentStatus,e.EnrollmentSource enrollmentSource,e.EnrolledAt enrolledAt FROM CourseClassEnrollments e JOIN Users u ON u.Id=e.StudentId WHERE ${where} ORDER BY u.UserCode OFFSET @Offset ROWS FETCH NEXT @Size ROWS ONLY`);
   const total=await bind(pool.request()).query(`SELECT COUNT(*) total FROM CourseClassEnrollments e JOIN Users u ON u.Id=e.StudentId WHERE ${where}`);
   return {items:items.recordset,total:Number(total.recordset[0].total)};
 }

@@ -1,0 +1,5 @@
+import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs'
+const source=fs.readFileSync(new URL('./courseEnrollments.repository.js',import.meta.url),'utf8'),migration=fs.readFileSync(new URL('../../../../database/migrations/20260726_simplify_single_lecturer_course_classes.sql',import.meta.url),'utf8')
+test('self enrollment has no administrative class dependency',()=>{assert.doesNotMatch(source,/AdministrativeClass/);assert.match(source,/SELF_ENROLLMENT/);assert.match(source,/CAPACITY/);assert.match(source,/DUPLICATE/)})
+test('transfer locks workflow data and is transactional',()=>{for(const x of['GroupMembers','TopicRegistrations','Submissions','Grades'])assert.match(source,new RegExp(x));assert.match(source,/TRANSFERRED/);assert.match(source,/SERIALIZABLE/)})
+test('migration keeps one lecturer and permits multi course and multi enrollment',()=>{assert.match(migration,/CourseClasses ADD LecturerId/);assert.doesNotMatch(migration,/UNIQUE.*LecturerId/i);assert.match(migration,/CourseClassId,StudentId/);assert.doesNotMatch(migration,/StudentId.*SemesterId/)})

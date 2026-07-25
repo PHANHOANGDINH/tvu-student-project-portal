@@ -32,6 +32,8 @@ import AcademicSummaryPage from './pages/admin/AcademicSummaryPage'
 import StudentCourseClassesPage from './pages/student/StudentCourseClassesPage'
 import BulkStudentImportPage from './pages/admin/BulkStudentImportPage'
 import BulkLecturerImportPage from './pages/admin/BulkLecturerImportPage'
+import CourseClassEnrollmentPage from './pages/student/CourseClassEnrollmentPage'
+import CourseClassTransferPage from './pages/admin/CourseClassTransferPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -106,9 +108,11 @@ function App() {
             }
           />
 
+          <Route path="admin/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="courseClasses" title="Lớp học phần" /></RoleRoute>} />
           <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
           <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
           <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" title="Môn học" /></RoleRoute>} />
+          <Route path="admin/course-enrollments/transfer" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><CourseClassTransferPage /></RoleRoute>} />
           <Route path="admin/students/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkStudentImportPage /></RoleRoute>} />
           <Route path="admin/lecturers/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkLecturerImportPage /></RoleRoute>} />
 
@@ -121,6 +125,7 @@ function App() {
           <Route path="lecturer/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerCourseClassesPage /></RoleRoute>} />
           <Route path="student/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
           <Route path="student/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentCourseClassesPage /></RoleRoute>} />
+          <Route path="student/course-class-enrollment" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><CourseClassEnrollmentPage /></RoleRoute>} />
           <Route path="student/groups" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/groups/my-group" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentGroupsPage /></RoleRoute>} />
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentTopicRoundsPage /></RoleRoute>} />

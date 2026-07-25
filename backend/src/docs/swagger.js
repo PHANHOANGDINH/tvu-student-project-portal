@@ -8,6 +8,7 @@ import { academicsSwaggerPaths } from './academics.swagger.js';
 import { studentImportSwaggerPaths } from './studentImport.swagger.js';
 import { lecturerImportSwaggerPaths } from './lecturerImport.swagger.js';
 import { topicRoundSwaggerPaths } from './topicRounds.swagger.js';
+import { courseEnrollmentSwaggerPaths } from './courseEnrollment.swagger.js';
 import { weeklyProgressSwaggerPaths } from './weeklyProgress.swagger.js';
 
 const apiErrorResponse = {
@@ -174,6 +175,7 @@ export const swaggerSpec = {
     ...lecturerImportSwaggerPaths,
     ...topicRoundSwaggerPaths,
     ...weeklyProgressSwaggerPaths,
+    ...courseEnrollmentSwaggerPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],
