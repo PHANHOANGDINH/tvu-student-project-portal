@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  Link2,
+  MessageSquareText,
+} from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   changeReviewStatus,
@@ -7,24 +14,28 @@ import {
   saveGrade,
 } from "../../api/gradingApi";
 import { downloadSubmissionFile } from "../../api/submissionsApi";
-
+import {
+  getStatusBadgeVariant,
+  getStatusLabel,
+} from "../../constants/statusLabels";
+import { getSubmissionItemLabel } from "../../constants/submissionItemLabels";
+import { formatDateTime } from "../../utils/dateTime";
 const NOT_FOUND = "Không tìm thấy bài nộp hoặc bạn không có quyền truy cập";
-
+const size = (value) => `${(Number(value || 0) / 1024 / 1024).toFixed(2)} MB`;
 export default function SubmissionReviewPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const submissionId = Number(id);
-  const validId = Number.isInteger(submissionId) && submissionId > 0;
-  const [data, setData] = useState(null);
-  const [comment, setComment] = useState("");
-  const [revision, setRevision] = useState(false);
-  const [reason, setReason] = useState("");
-  const [scores, setScores] = useState({});
-  const [total, setTotal] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { id } = useParams(),
+    navigate = useNavigate(),
+    submissionId = Number(id),
+    validId = Number.isInteger(submissionId) && submissionId > 0;
+  const [data, setData] = useState(null),
+    [comment, setComment] = useState(""),
+    [revision, setRevision] = useState(false),
+    [reason, setReason] = useState(""),
+    [scores, setScores] = useState({}),
+    [total, setTotal] = useState(""),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState("");
   const mountedRef = useRef(true);
-
   const load = useCallback(
     async ({ active = () => mountedRef.current, showLoading = true } = {}) => {
       if (showLoading && active()) setLoading(true);
@@ -50,24 +61,27 @@ export default function SubmissionReviewPage() {
         );
         setScores(
           Object.fromEntries(
-            (review.grade?.scores ?? []).map((x) => [x.criterionId, x.score]),
+            (review.grade?.scores ?? []).map((item) => [
+              item.criterionId,
+              item.score,
+            ]),
           ),
         );
       } catch (requestError) {
-        if (!active()) return;
-        setData(null);
-        setError(
-          [403, 404].includes(requestError.status)
-            ? NOT_FOUND
-            : requestError.message || "Không thể tải bài nộp.",
-        );
+        if (active()) {
+          setData(null);
+          setError(
+            [403, 404].includes(requestError.status)
+              ? NOT_FOUND
+              : requestError.message || "Không thể tải bài nộp.",
+          );
+        }
       } finally {
         if (active()) setLoading(false);
       }
     },
     [submissionId, validId],
   );
-
   useEffect(() => {
     mountedRef.current = true;
     let mounted = true;
@@ -79,26 +93,31 @@ export default function SubmissionReviewPage() {
       mountedRef.current = false;
     };
   }, [load]);
-
   const sum = useMemo(
-    () => Object.values(scores).reduce((n, x) => n + (Number(x) || 0), 0),
+    () =>
+      Object.values(scores).reduce(
+        (value, score) => value + (Number(score) || 0),
+        0,
+      ),
     [scores],
   );
+  const latest = (data?.attempts ?? [])[0];
   const act = async (action) => {
     try {
       setError("");
       await action();
       await load();
     } catch (actionError) {
-      setError(actionError.message || "Không thể thực hiện thao tác.");
+      if (mountedRef.current)
+        setError(actionError.message || "Không thể thực hiện thao tác.");
     }
   };
   const download = async (file) => {
     try {
       setError("");
-      const blob = await downloadSubmissionFile(file.id, "lecturer");
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
+      const blob = await downloadSubmissionFile(file.id, "lecturer"),
+        url = URL.createObjectURL(blob),
+        anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = file.originalName || `submission-file-${file.id}`;
       document.body.appendChild(anchor);
@@ -106,53 +125,45 @@ export default function SubmissionReviewPage() {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (downloadError) {
-      setError(downloadError.message || "Không thể tải file.");
+      if (mountedRef.current)
+        setError(downloadError.message || "Không thể tải tệp.");
     }
   };
   const grade = (publish) => {
-    const criteria = data.criteria ?? [];
-    const body = criteria.length
-      ? {
-          scores: criteria.map((c) => ({
-            criterionId: c.id,
-            score: Number(scores[c.id] || 0),
-          })),
-          isPublished: publish,
-        }
-      : { totalScore: Number(total), isPublished: publish };
+    const criteria = data.criteria ?? [],
+      body = criteria.length
+        ? {
+            scores: criteria.map((item) => ({
+              criterionId: item.id,
+              score: Number(scores[item.id] || 0),
+            })),
+            isPublished: publish,
+          }
+        : { totalScore: Number(total), isPublished: publish };
     if (publish && !window.confirm("Công bố kết quả cho sinh viên?")) return;
     void act(() => saveGrade(submissionId, body));
   };
-
   if (loading) return <div className="panel">Đang tải bài nộp...</div>;
   if (!data)
     return (
       <div className="panel">
         <div className="alert error">{error || NOT_FOUND}</div>
         <div className="form-actions">
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => void load()}
-          >
+          <button className="btn-primary" onClick={() => void load()}>
             Thử lại
           </button>
-          <button
-            type="button"
-            onClick={() => navigate("/lecturer/submissions")}
-          >
+          <button onClick={() => navigate("/lecturer/submissions")}>
             Quay lại danh sách bài nộp
           </button>
         </div>
       </div>
     );
-
   return (
-    <div>
+    <div className="workflow-page submission-review">
       <div className="page-title">
         <h2>Chấm bài: {data.groupName}</h2>
         <p>
-          {data.requirementTitle} · {data.classCode} · {data.status}
+          {data.requirementTitle} · {data.classCode}
         </p>
         {data.topicTitle && (
           <p>
@@ -160,79 +171,197 @@ export default function SubmissionReviewPage() {
           </p>
         )}
       </div>
-      {error && <div className="alert error">{error}</div>}
-      <div className="panel">
-        <h3>Lịch sử bài nộp</h3>
-        {(data.attempts ?? []).map((a) => (
-          <div key={a.id}>
-            <p>
-              <strong>
-                Lần {a.attemptNumber} · {a.status}
-              </strong>{" "}
-              · Mã lần nộp: {a.id}
-              {a.submittedAt &&
-                ` · ${new Date(a.submittedAt).toLocaleString("vi-VN")}`}
-            </p>
-            {(a.files ?? []).map((f) => (
-              <div className="form-actions" key={f.id}>
-                <small>
-                  {f.type}: {f.originalName} (
-                  {(Number(f.size || 0) / 1024 / 1024).toFixed(2)} MB)
-                </small>
-                <button type="button" onClick={() => void download(f)}>
-                  Tải file
-                </button>
+      {error && (
+        <div className="alert error">
+          <span>{error}</span>
+          <button onClick={() => setError("")}>×</button>
+        </div>
+      )}
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <h3>Thông tin bài nộp</h3>
+            <p>Tổng quan về nhóm và lần nộp gần nhất.</p>
+          </div>
+          <span
+            className={`status-badge ${getStatusBadgeVariant(data.status)}`}
+          >
+            {getStatusLabel(data.status)}
+          </span>
+        </div>
+        <div className="review-info-grid">
+          <div>
+            <small>Nhóm</small>
+            <strong>{data.groupName}</strong>
+          </div>
+          <div>
+            <small>Lớp học phần</small>
+            <strong>{data.classCode}</strong>
+          </div>
+          <div>
+            <small>Tuần hoặc yêu cầu</small>
+            <strong>{data.requirementTitle}</strong>
+          </div>
+          <div>
+            <small>Thời gian nộp</small>
+            <strong>
+              {latest?.submittedAt
+                ? formatDateTime(latest.submittedAt)
+                : "Chưa nộp"}
+            </strong>
+          </div>
+          <div>
+            <small>Số lần nộp</small>
+            <strong>{data.attempts?.length || 0}</strong>
+          </div>
+          <div>
+            <small>Trạng thái</small>
+            <strong>{getStatusLabel(data.status)}</strong>
+          </div>
+        </div>
+      </section>
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <h3>Nội dung sinh viên đã nộp</h3>
+            <p>Các nội dung được sắp theo từng lần nộp, mới nhất trước.</p>
+          </div>
+        </div>
+        <div className="attempt-list">
+          {(data.attempts ?? []).map((attempt) => (
+            <article className="attempt-card" key={attempt.id}>
+              <div className="attempt-heading">
+                <div>
+                  <strong>Lần nộp {attempt.attemptNumber}</strong>
+                  <small>{formatDateTime(attempt.submittedAt)}</small>
+                </div>
+                <span
+                  className={`status-badge ${getStatusBadgeVariant(attempt.status)}`}
+                >
+                  {getStatusLabel(attempt.status)}
+                </span>
               </div>
-            ))}
-            {(a.links ?? []).map((l) => (
-              <p key={l.id}>
-                <a href={l.url} target="_blank" rel="noopener noreferrer">
-                  {l.type}: {l.url}
-                </a>
-              </p>
-            ))}
-            {(a.responses ?? []).map((x) => (
-              <div className="response-item" key={x.id}>
-                <strong>{x.name}</strong>
-                {x.textValue && <p>{x.textValue}</p>}
-                {x.urlValue && (
-                  <a
-                    href={x.urlValue}
-                    target="_blank"
-                    rel="noopener noreferrer"
+              <div className="submitted-content-list">
+                {(attempt.responses ?? []).map((item) => (
+                  <div className="submitted-item" key={item.id}>
+                    {item.urlValue ? <Link2 /> : <MessageSquareText />}
+                    <div>
+                      <strong>
+                        {getSubmissionItemLabel(item.type || item.itemType) ||
+                          item.name}
+                      </strong>
+                      {item.textValue && <p>{item.textValue}</p>}
+                      {item.urlValue && (
+                        <div className="link-action">
+                          <a
+                            href={item.urlValue}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {item.urlValue}
+                          </a>
+                          <a
+                            className="btn-light"
+                            href={item.urlValue}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink size={16} /> Mở liên kết
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(attempt.links ?? []).map((link) => (
+                  <div className="submitted-item" key={link.id}>
+                    <Link2 />
+                    <div>
+                      <strong>{getSubmissionItemLabel(link.type)}</strong>
+                      <div className="link-action">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {link.url}
+                        </a>
+                        <a
+                          className="btn-light"
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink size={16} /> Mở liên kết
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {(attempt.files ?? []).map((file) => (
+                  <div className="submitted-item" key={file.id}>
+                    <FileText />
+                    <div>
+                      <strong>{getSubmissionItemLabel(file.type)}</strong>
+                      <p>
+                        {file.originalName} · {size(file.size)}
+                      </p>
+                    </div>
+                    <button
+                      className="btn-light"
+                      onClick={() => void download(file)}
+                    >
+                      <Download size={16} /> Tải xuống
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+          {!(data.attempts ?? []).length && (
+            <div className="empty-state">Chưa có lần nộp nào.</div>
+          )}
+        </div>
+      </section>
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <h3>Lịch sử xem xét</h3>
+            <p>Các thay đổi trạng thái và nhận xét của giảng viên.</p>
+          </div>
+        </div>
+        <div className="review-timeline">
+          {(data.history ?? []).map((item) => (
+            <article key={item.id}>
+              <i />
+              <div>
+                <small>{formatDateTime(item.createdAt)}</small>
+                <div className="status-transition">
+                  <span
+                    className={`status-badge ${getStatusBadgeVariant(item.fromStatus)}`}
                   >
-                    {x.urlValue}
-                  </a>
+                    {getStatusLabel(item.fromStatus)}
+                  </span>
+                  <strong>→</strong>
+                  <span
+                    className={`status-badge ${getStatusBadgeVariant(item.toStatus)}`}
+                  >
+                    {getStatusLabel(item.toStatus)}
+                  </span>
+                </div>
+                {item.comment && <p>{item.comment}</p>}
+                {item.actorName && (
+                  <small>Thực hiện bởi {item.actorName}</small>
                 )}
-                {x.originalName && <small>{x.originalName}</small>}
               </div>
-            ))}
-          </div>
-        ))}
-        {!(data.attempts ?? []).length && <p>Chưa có lần nộp nào.</p>}
-      </div>
-      <div className="panel">
-        <h3>Lịch sử xem xét</h3>
-        {(data.history ?? []).map((x) => (
-          <div className="response-item" key={x.id}>
-            <strong>{x.action || x.status || "Cập nhật"}</strong>
-            {(x.fromStatus || x.toStatus) && (
-              <p>
-                {x.fromStatus || "?"} ? {x.toStatus || "?"}
-              </p>
-            )}
-            {x.comment && <p>{x.comment}</p>}
-            {x.createdAt && (
-              <small>{new Date(x.createdAt).toLocaleString("vi-VN")}</small>
-            )}
-          </div>
-        ))}
-        {!(data.history ?? []).length && <p>Chưa có lịch sử xem xét.</p>}
-      </div>
-      <div className="panel">
-        <div className="form-actions">
+            </article>
+          ))}
+          {!(data.history ?? []).length && <p>Chưa có lịch sử xem xét.</p>}
+        </div>
+      </section>
+      <section className="panel">
+        <div className="form-actions review-actions">
           <button
-            type="button"
             onClick={() =>
               void act(() => changeReviewStatus(submissionId, "UNDER_REVIEW"))
             }
@@ -240,7 +369,6 @@ export default function SubmissionReviewPage() {
             Bắt đầu xem xét
           </button>
           <button
-            type="button"
             onClick={() =>
               void act(() => changeReviewStatus(submissionId, "COMPLETED"))
             }
@@ -248,7 +376,6 @@ export default function SubmissionReviewPage() {
             Xác nhận hoàn thành
           </button>
           <button
-            type="button"
             onClick={() => {
               const value = window.prompt("Nhập lý do yêu cầu chỉnh sửa:");
               if (value)
@@ -260,7 +387,6 @@ export default function SubmissionReviewPage() {
             Yêu cầu chỉnh sửa
           </button>
           <button
-            type="button"
             onClick={() => {
               const value = window.prompt("Nhập lý do chưa đạt:");
               if (value)
@@ -278,7 +404,7 @@ export default function SubmissionReviewPage() {
           onChange={(e) => setComment(e.target.value)}
           placeholder="Nhận xét chung"
         />
-        <label>
+        <label className="switch-label">
           <input
             type="checkbox"
             checked={revision}
@@ -295,7 +421,6 @@ export default function SubmissionReviewPage() {
           />
         )}
         <button
-          type="button"
           onClick={() =>
             void act(() =>
               saveFeedback(submissionId, {
@@ -308,21 +433,21 @@ export default function SubmissionReviewPage() {
         >
           Lưu nhận xét
         </button>
-      </div>
-      <div className="panel">
+      </section>
+      <section className="panel">
         <h3>Chấm điểm</h3>
         {(data.criteria ?? []).length ? (
-          data.criteria.map((c) => (
-            <label key={c.id}>
-              {c.name} (tối đa {c.maxScore})
+          data.criteria.map((item) => (
+            <label key={item.id}>
+              {item.name} (tối đa {item.maxScore})
               <input
                 type="number"
                 min="0"
-                max={c.maxScore}
+                max={item.maxScore}
                 step="0.01"
-                value={scores[c.id] ?? ""}
+                value={scores[item.id] ?? ""}
                 onChange={(e) =>
-                  setScores({ ...scores, [c.id]: e.target.value })
+                  setScores({ ...scores, [item.id]: e.target.value })
                 }
               />
             </label>
@@ -345,17 +470,13 @@ export default function SubmissionReviewPage() {
             Tổng điểm: {(data.criteria ?? []).length ? sum : total || 0}/10
           </strong>
         </p>
-        <button type="button" onClick={() => grade(false)}>
-          Lưu nháp
-        </button>
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => grade(true)}
-        >
-          Công bố
-        </button>
-      </div>
+        <div className="form-actions">
+          <button onClick={() => grade(false)}>Lưu nháp</button>
+          <button className="btn-primary" onClick={() => grade(true)}>
+            Công bố
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
