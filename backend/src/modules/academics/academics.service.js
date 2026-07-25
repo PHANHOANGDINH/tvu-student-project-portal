@@ -1,21 +1,23 @@
 import * as repo from './academics.repository.js'
 import { listForCourseClasses } from '../courseClassLecturers/courseClassAccess.repository.js'
+import { eligibleForCourses } from '../courseEnrollments/courseEnrollments.repository.js'
 const cfg={
  academicYears:{required:['Name','StartDate','EndDate'],fields:['Name','StartDate','EndDate']},
  semesters:{required:['AcademicYearId','Name','Code','StartDate','EndDate'],fields:['AcademicYearId','Name','Code','StartDate','EndDate']},
  subjects:{required:['Code','Name','Credits'],fields:['Code','Name','Credits','Description']},
- courseClasses:{required:['Code','SubjectId','SemesterId','Status'],fields:['Code','SubjectId','SemesterId','LecturerId','MaxStudents','Status']}
+ courseClasses:{required:['SubjectId','SemesterId','Status'],fields:['SubjectId','SemesterId','LecturerId','MaxStudents','Status','EnrollmentOpenAt','EnrollmentCloseAt','AllowSelfEnrollment']}
 }
 const result=(success,statusCode,message,data=null,errors=null)=>({success,statusCode,message,data,errors})
 const number=(v,optional=false)=>optional&&(v===null||v===''||v===undefined)?null:(Number.isInteger(Number(v))&&Number(v)>0?Number(v):NaN)
 const page=q=>({page:number(q.page)||1,pageSize:Math.min(number(q.pageSize||q.limit)||10,100),search:String(q.search||'').trim()})
 async function withLecturers(items){
- const list=Array.isArray(items)?items:[items],links=await listForCourseClasses(list.filter(Boolean).map(x=>x.id)),byClass=new Map()
- for(const link of links){const lecturer={id:link.lecturerId,code:link.code,fullName:link.fullName,email:link.email,assignmentRole:link.assignmentRole,assignmentRoleLabel:link.assignmentRole==='PRIMARY'?'Giảng viên chính':'Giảng viên phối hợp',isActive:link.isActive};byClass.set(link.courseClassId,[...(byClass.get(link.courseClassId)||[]),lecturer])}
- const mapped=list.map(item=>{if(!item)return item;const lecturers=byClass.get(item.id)||[],primary=lecturers.find(x=>x.assignmentRole==='PRIMARY'&&x.isActive);return{...item,lecturers,lecturerId:primary?.id??item.lecturerId??null,lecturerName:primary?.fullName??item.lecturerName??null}})
+ const list=Array.isArray(items)?items:[items],ids=list.filter(Boolean).map(x=>x.id),[links,eligible]=await Promise.all([listForCourseClasses(ids),eligibleForCourses(ids)]),byClass=new Map(),eligibleByClass=new Map()
+ for(const item of eligible)eligibleByClass.set(item.courseClassId,[...(eligibleByClass.get(item.courseClassId)||[]),item] )
+ for(const link of links){const lecturer={id:link.lecturerId,code:link.code,fullName:link.fullName,email:link.email,isActive:link.isActive};byClass.set(link.courseClassId,[...(byClass.get(link.courseClassId)||[]),lecturer])}
+ const mapped=list.map(item=>{if(!item)return item;const lecturers=byClass.get(item.id)||[];return{...item,lecturers,eligibleAdministrativeClasses:eligibleByClass.get(item.id)||[],capacity:item.capacity??item.maxStudents,enrollmentCount:item.enrollmentCount??item.studentCount??0}})
  return Array.isArray(items)?mapped:mapped[0]
 }
-function map(entity,body){const data={};for(const f of cfg[entity].fields){const k=f[0].toLowerCase()+f.slice(1);if(!(k in body))continue;if(f.endsWith('Id')||f==='Credits'||f==='MaxStudents')data[f]=number(body[k],f==='LecturerId'||f==='MaxStudents');else data[f]=String(body[k]??'').trim();if(f==='Code'||f==='Status')data[f]=data[f].toUpperCase()}return data}
+function map(entity,body){const data={};for(const f of cfg[entity].fields){const k=f[0].toLowerCase()+f.slice(1);if(!(k in body))continue;if(f==='AllowSelfEnrollment')data[f]=Boolean(body[k]);else if(f.endsWith('Id')||f==='Credits'||f==='MaxStudents')data[f]=number(body[k],f==='LecturerId'||f==='MaxStudents');else data[f]=String(body[k]??'').trim();if(f==='Code'||f==='Status')data[f]=data[f].toUpperCase()}return data}
 async function validate(entity,data,id){
  const errors={};for(const f of cfg[entity].required)if(!data[f]||Number.isNaN(data[f]))errors[f[0].toLowerCase()+f.slice(1)]=['Trường này là bắt buộc.']
  if(data.StartDate&&data.EndDate&&new Date(data.StartDate)>=new Date(data.EndDate))errors.endDate=['Ngày kết thúc phải sau ngày bắt đầu.']
@@ -30,10 +32,10 @@ async function validate(entity,data,id){
 }
 export async function list(entity,q){if(!cfg[entity])return result(false,404,'Không tìm thấy tài nguyên');const p=page(q),r=await repo.listEntities(entity,p),items=entity==='courseClasses'?await withLecturers(r.items):r.items;return result(true,200,'Lấy danh sách thành công',{items,page:p.page,pageSize:p.pageSize,totalItems:r.total,totalPages:Math.ceil(r.total/p.pageSize)})}
 export async function detail(entity,id){const key=number(id);if(!key)return result(false,400,'Id không hợp lệ');const item=await repo.findEntity(entity,key);return item?result(true,200,'Lấy chi tiết thành công',entity==='courseClasses'?await withLecturers(item):item):result(false,404,'Không tìm thấy dữ liệu')}
-export async function create(entity,body){const data=map(entity,body),errors=await validate(entity,data);if(Object.keys(errors).length)return result(false,400,'Dữ liệu không hợp lệ',null,errors);return result(true,201,'Tạo mới thành công',await repo.saveEntity(entity,null,data))}
+export async function create(entity,body){const data=map(entity,body),errors=await validate(entity,data);if(Object.keys(errors).length)return result(false,400,'Dữ liệu không hợp lệ',null,errors);try{return result(true,201,'Tạo mới thành công',entity==='courseClasses'?await repo.createCourseClass({...data,SectionNumber:number(body.sectionNumber,true)}):await repo.saveEntity(entity,null,data))}catch(e){if([2601,2627].includes(e.number))return result(false,409,'Mã hoặc số thứ tự lớp học phần đã tồn tại');throw e}}
 export async function update(entity,id,body){const key=number(id);if(!key)return result(false,400,'Id không hợp lệ');const current=await repo.findEntity(entity,key);if(!current)return result(false,404,'Không tìm thấy dữ liệu');const data=map(entity,{...current,...body}),errors=await validate(entity,data,key);if(Object.keys(errors).length)return result(false,400,'Dữ liệu không hợp lệ',null,errors);return result(true,200,'Cập nhật thành công',await repo.saveEntity(entity,key,data))}
 export async function status(entity,id,isActive){const key=number(id);if(!key||typeof isActive!=='boolean')return result(false,400,'Trạng thái không hợp lệ');if(!await repo.findEntity(entity,key))return result(false,404,'Không tìm thấy dữ liệu');return result(true,200,'Cập nhật trạng thái thành công',await repo.setStatus(entity,key,isActive))}
 export async function studentList(uid,q){const p=page(q),r=await repo.listStudentClasses(uid,p);return result(true,200,'Lấy danh sách lớp thành công',{items:await withLecturers(r.items),page:p.page,pageSize:p.pageSize,totalItems:r.total,totalPages:Math.ceil(r.total/p.pageSize)})}
 export async function studentDetail(uid,id){const key=number(id);if(!key)return result(false,400,'Id không hợp lệ');const item=await repo.findStudentClass(uid,key);return item?result(true,200,'Lấy chi tiết lớp thành công',await withLecturers(item)):result(false,404,'Không tìm thấy lớp hoặc sinh viên không tham gia lớp')}
-export async function lecturerList(uid,q){const p=page(q),r=await repo.listLecturerClasses(uid,{...p,status:String(q.status||'').trim().toUpperCase()});return result(true,200,'Lấy danh sách lớp phụ trách thành công',{items:await withLecturers(r.items),page:p.page,pageSize:p.pageSize,totalItems:r.total,totalPages:Math.ceil(r.total/p.pageSize)})}
-export async function lecturerDetail(uid,id){const key=number(id);if(!key)return result(false,400,'Id không hợp lệ');const item=await repo.findLecturerClass(uid,key);return item?result(true,200,'Lấy chi tiết lớp thành công',await withLecturers(item)):result(false,404,'Không tìm thấy lớp hoặc giảng viên không phụ trách lớp')}
+export async function lecturerList(uid,q){const p=page(q),r=await repo.listLecturerClasses(uid,{...p,status:String(q.status||'').trim().toUpperCase()});return result(true,200,'Lấy danh sách lớp giảng dạy thành công',{items:await withLecturers(r.items),page:p.page,pageSize:p.pageSize,totalItems:r.total,totalPages:Math.ceil(r.total/p.pageSize)})}
+export async function lecturerDetail(uid,id){const key=number(id);if(!key)return result(false,400,'Id không hợp lệ');const item=await repo.findLecturerClass(uid,key);return item?result(true,200,'Lấy chi tiết lớp thành công',await withLecturers(item)):result(false,404,'Không tìm thấy lớp hoặc giảng viên không giảng dạy lớp')}

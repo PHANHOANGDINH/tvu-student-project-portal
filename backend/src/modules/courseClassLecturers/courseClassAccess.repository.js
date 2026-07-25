@@ -32,7 +32,7 @@ export async function listByCourseClass(courseClassId) {
       FROM CourseClassLecturers link
       JOIN Users u ON u.Id=link.LecturerId
       WHERE link.CourseClassId=@CourseClassId
-      ORDER BY CASE link.AssignmentRole WHEN 'PRIMARY' THEN 0 ELSE 1 END,u.FullName`)
+      ORDER BY u.FullName`)
   return result.recordset
 }
 
@@ -62,6 +62,6 @@ export async function listForCourseClasses(courseClassIds) {
     FROM CourseClassLecturers link
     JOIN Users u ON u.Id=link.LecturerId
     WHERE link.CourseClassId IN (${parameters.join(',')})
-    ORDER BY link.CourseClassId,CASE link.AssignmentRole WHEN 'PRIMARY' THEN 0 ELSE 1 END,u.FullName`)
+    ORDER BY link.CourseClassId,u.FullName`)
   return result.recordset
 }

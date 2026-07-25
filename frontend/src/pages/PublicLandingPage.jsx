@@ -10,7 +10,7 @@ const features = [
   [FolderClock, 'Nộp bài và lưu lịch sử', 'Quản lý phiên bản bài nộp và tra cứu lịch sử thuận tiện.'],
   [FileCheck2, 'Chấm điểm và phản hồi', 'Ghi nhận kết quả, tiêu chí đánh giá và phản hồi rõ ràng.']
 ]
-const roles = [[UserRoundCog, 'Quản trị viên', 'Quản lý hệ thống, tài khoản, học vụ và lớp học phần.'], [School, 'Giảng viên', 'Quản lý lớp phụ trách, đề tài, yêu cầu nộp và chấm điểm.'], [GraduationCap, 'Sinh viên', 'Tham gia lớp, lập nhóm, đăng ký đề tài, nộp bài và xem kết quả.']]
+const roles = [[UserRoundCog, 'Quản trị viên', 'Quản lý hệ thống, tài khoản, học vụ và lớp học phần.'], [School, 'Giảng viên', 'Quản lý lớp giảng dạy, đề tài, yêu cầu nộp và chấm điểm.'], [GraduationCap, 'Sinh viên', 'Tham gia lớp, lập nhóm, đăng ký đề tài, nộp bài và xem kết quả.']]
 const steps = ['Đăng nhập', 'Tham gia lớp', 'Lập nhóm và đăng ký đề tài', 'Nhận yêu cầu nộp', 'Nộp bài', 'Nhận phản hồi và kết quả']
 
 export default function PublicLandingPage() {

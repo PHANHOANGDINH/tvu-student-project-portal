@@ -10,6 +10,7 @@ import { lecturerImportSwaggerPaths } from './lecturerImport.swagger.js';
 import { topicRoundSwaggerPaths } from './topicRounds.swagger.js';
 import { weeklyProgressSwaggerPaths } from './weeklyProgress.swagger.js';
 import { courseClassLecturerPaths,courseClassLecturerSchemas } from './courseClassLecturers.swagger.js';
+import { academicEnrollmentPaths,academicEnrollmentSchemas } from './academicEnrollment.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -34,6 +35,7 @@ export const swaggerSpec = {
     },
     schemas: {
       ...courseClassLecturerSchemas,
+      ...academicEnrollmentSchemas,
       ApiError: {
         type: 'object',
         properties: {
@@ -177,6 +179,7 @@ export const swaggerSpec = {
     ...topicRoundSwaggerPaths,
     ...weeklyProgressSwaggerPaths,
     ...courseClassLecturerPaths,
+    ...academicEnrollmentPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

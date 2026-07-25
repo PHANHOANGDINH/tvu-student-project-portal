@@ -14,6 +14,8 @@ import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/st
 import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
 import { lecturerTopicRoundRoutes, studentTopicRoundRoutes } from '../modules/topicRounds/topicRounds.routes.js';
 import courseClassLecturerRoutes from '../modules/courseClassLecturers/courseClassLecturers.routes.js';
+import { adminAdministrativeClassRoutes,studentAdministrativeClassRoutes } from '../modules/administrativeClasses/administrativeClasses.routes.js';
+import { adminCourseEnrollmentRoutes,studentSelfEnrollmentRoutes } from '../modules/courseEnrollments/courseEnrollments.routes.js';
 
 const router = express.Router();
 
@@ -38,6 +40,10 @@ router.use('/student/dashboard', studentDashboardRoutes);
 router.use('/admin/students',adminStudentImportRoutes);
 router.use('/admin/lecturers',lecturerImportRoutes);
 router.use('/admin/course-classes/:courseClassId/lecturers',courseClassLecturerRoutes);
+router.use('/admin/administrative-classes',adminAdministrativeClassRoutes);
+router.use('/student/administrative-class',studentAdministrativeClassRoutes);
+router.use('/admin/course-classes',adminCourseEnrollmentRoutes);
+router.use('/student/course-class-enrollment',studentSelfEnrollmentRoutes);
 router.use('/course-classes/:courseClassId/groups', classGroupRoutes);
 router.use('/course-classes/:courseClassId/students',courseClassStudentRoutes);
 router.use('/course-classes', courseClassRoutes);

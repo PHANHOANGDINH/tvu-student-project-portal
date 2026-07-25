@@ -33,9 +33,9 @@ try {
           VALUES(@CourseCode,@SubjectId,@SemesterId,@LecturerId,30,'ACTIVE',1);`)
   }
   const assignments=[
-    ['CNPM_DEMO_01','GV001','PRIMARY'],
-    ['CNPM_DEMO_01','GV002','CO_LECTURER'],
-    ['CNPM_DEMO_02','GV002','PRIMARY'],
+    ['CNPM_DEMO_01','GV001','LECTURER'],
+    ['CNPM_DEMO_01','GV002','LECTURER'],
+    ['CNPM_DEMO_02','GV002','LECTURER'],
   ]
   for(const [courseCode,userCode,role] of assignments){
     const item=await resolve(courseCode,userCode)
