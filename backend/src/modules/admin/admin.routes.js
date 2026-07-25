@@ -1,8 +1,9 @@
-// src/modules/admin/admin.routes.js
+﻿// src/modules/admin/admin.routes.js
 import express from 'express';
 
 import authMiddleware from '../../middlewares/auth.middleware.js';
 import roleMiddleware from '../../middlewares/role.middleware.js';
+import { USER_ROLES } from '../../constants/roles.js';
 
 import adminUsersRoutes from './admin.users.routes.js';
 import adminClassesRoutes from './admin.classes.routes.js';
@@ -21,7 +22,7 @@ const router = express.Router();
 router.get(
   '/dashboard',
   authMiddleware,
-  roleMiddleware('Admin'),
+  roleMiddleware(USER_ROLES.ADMIN),
   async (req, res) => {
     try {
       const [
@@ -39,7 +40,7 @@ router.get(
       ]);
 
       return res.json({
-        message: 'Truy cập Admin Dashboard thành công',
+        message: 'Truy cáº­p Admin Dashboard thĂ nh cĂ´ng',
         user: req.user,
         data: {
           users: {
@@ -90,10 +91,10 @@ router.get(
         },
       });
     } catch (error) {
-      console.error('Lỗi Admin Dashboard:', error);
+      console.error('Lá»—i Admin Dashboard:', error);
 
       return res.status(500).json({
-        message: 'Lỗi server khi lấy dữ liệu dashboard',
+        message: 'Lá»—i server khi láº¥y dá»¯ liá»‡u dashboard',
       });
     }
   }
@@ -104,3 +105,4 @@ router.use('/classes', adminClassesRoutes);
 router.use('/projects', adminProjectsRoutes);
 
 export default router;
+

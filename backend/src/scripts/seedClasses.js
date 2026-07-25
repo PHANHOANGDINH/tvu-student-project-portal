@@ -1,4 +1,4 @@
-// src/scripts/seedClasses.js
+﻿// src/scripts/seedClasses.js
 import dotenv from 'dotenv';
 
 import { sql, poolPromise } from '../config/db.js';
@@ -8,15 +8,15 @@ dotenv.config();
 const sampleClasses = [
   {
     classCode: 'DA23TTA',
-    className: 'Công nghệ thông tin A - Khóa 2023',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    className: 'CĂ´ng nghá»‡ thĂ´ng tin A - KhĂ³a 2023',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     academicYear: '2023-2027',
     advisorEmail: 'teacher01@tvu.edu.vn',
   },
   {
     classCode: 'DA23TTB',
-    className: 'Công nghệ thông tin B - Khóa 2023',
-    department: 'Khoa Kỹ thuật và Công nghệ',
+    className: 'CĂ´ng nghá»‡ thĂ´ng tin B - KhĂ³a 2023',
+    department: 'Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡',
     academicYear: '2023-2027',
     advisorEmail: 'teacher02@tvu.edu.vn',
   },
@@ -30,7 +30,7 @@ async function findTeacherIdByEmail(pool, email) {
       SELECT TOP 1 Id
       FROM Users
       WHERE Email = @Email
-        AND Role = 'Teacher'
+        AND Role = 'LECTURER'
         AND DeletedAt IS NULL
     `);
 
@@ -52,7 +52,7 @@ async function seedClasses() {
         `);
 
       if (checkResult.recordset.length > 0) {
-        console.log(`Bỏ qua vì lớp đã tồn tại: ${item.classCode}`);
+        console.log(`Bá» qua vĂ¬ lá»›p Ä‘Ă£ tá»“n táº¡i: ${item.classCode}`);
         continue;
       }
 
@@ -82,13 +82,13 @@ async function seedClasses() {
           )
         `);
 
-      console.log(`Đã tạo lớp: ${item.classCode}`);
+      console.log(`ÄĂ£ táº¡o lá»›p: ${item.classCode}`);
     }
 
-    console.log('Seed lớp học mẫu hoàn tất');
+    console.log('Seed lá»›p há»c máº«u hoĂ n táº¥t');
     process.exit(0);
   } catch (error) {
-    console.error('Lỗi seed classes:', error);
+    console.error('Lá»—i seed classes:', error);
     process.exit(1);
   }
 }

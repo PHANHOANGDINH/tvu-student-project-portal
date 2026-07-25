@@ -1,5 +1,7 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { getDashboardApi, getUsersApi, getClassesApi } from "../api/adminApi";
+import { normalizeRole, USER_ROLES } from '../constants/roles'
 
 import {
     FaUsers,
@@ -45,7 +47,10 @@ function DashboardPage() {
             setUsers(Array.isArray(userList) ? userList : []);
             setClasses(Array.isArray(classList) ? classList : []);
         } catch (err) {
+
             setError(err.message || "Không thể tải dữ liệu Dashboard.");
+
+
         } finally {
             setLoading(false);
         }
@@ -60,17 +65,39 @@ function DashboardPage() {
         const totalStudents =
             dashboard?.totalStudents ||
             dashboard?.TotalStudents ||
+
             users.filter((u) => u.Role === "Student").length;
+
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.STUDENT).length;
+
 
         const totalTeachers =
             dashboard?.totalTeachers ||
             dashboard?.TotalTeachers ||
+
             users.filter((u) => u.Role === "Teacher").length;
+
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.LECTURER).length;
+
 
         const totalAdmins =
             dashboard?.totalAdmins ||
             dashboard?.TotalAdmins ||
+
             users.filter((u) => u.Role === "Admin").length;
+
+            users.filter((user) => normalizeRole(user.Role) === USER_ROLES.ADMIN).length;
+
+        const totalActiveUsers =
+            dashboard?.totalActiveUsers ||
+            dashboard?.TotalActiveUsers ||
+            users.filter((user) => user.IsActive !== false).length;
+
+        const totalInactiveUsers =
+            dashboard?.totalInactiveUsers ||
+            dashboard?.TotalInactiveUsers ||
+            users.filter((user) => user.IsActive === false).length;
+
 
         const totalClasses =
             dashboard?.totalClasses ||
@@ -97,16 +124,26 @@ function DashboardPage() {
             dashboard?.TotalInactiveClasses ||
             classes.filter((c) => c.IsActive === false).length;
 
+
         const assignedStudents = users.filter((u) => {
             if (u.Role !== "Student") return false;
+
+        const assignedStudents = users.filter((user) => {
+            if (normalizeRole(user.Role) !== USER_ROLES.STUDENT) return false;
+
 
             return (
                 !!u.ActiveClassId || !!u.ActiveClassCode || !!u.ActiveClassName
             );
         }).length;
 
+
         const unassignedStudents = users.filter((u) => {
             if (u.Role !== "Student") return false;
+
+        const unassignedStudents = users.filter((user) => {
+            if (normalizeRole(user.Role) !== USER_ROLES.STUDENT) return false;
+
 
             return !u.ActiveClassId && !u.ActiveClassCode && !u.ActiveClassName;
         }).length;
@@ -156,8 +193,9 @@ function DashboardPage() {
 
     function getRoleText(role) {
         switch (role) {
-            case "Admin":
+            case USER_ROLES.ADMIN:
                 return "Admin";
+
 
             case "Teacher":
                 return "Giảng viên";
@@ -165,13 +203,19 @@ function DashboardPage() {
             case "Student":
                 return "Sinh viên";
 
+
+            case USER_ROLES.LECTURER:
+                return "Giáº£ng viĂªn";
+            case USER_ROLES.STUDENT:
+                return "Sinh viĂªn";
+
             default:
                 return role || "-";
         }
     }
 
     function getStatusText(isActive) {
-        return isActive === false ? "Đã khóa" : "Hoạt động";
+        return isActive === false ? "ÄĂ£ khĂ³a" : "Hoáº¡t Ä‘á»™ng";
     }
 
     function getStatusClass(isActive) {
@@ -180,17 +224,27 @@ function DashboardPage() {
 
     if (loading) {
         return (
+
             <div className="loading-page">
                 <h2>Đang tải Dashboard...</h2>
+
+            <div>
+                <div className="page-title">
+                    <h2>Dashboard</h2>
+                    <p>Äang táº£i dá»¯ liá»‡u tá»•ng quan...</p>
+                </div>
+
+
             </div>
         );
-    }
+    
     return (
         <div className="dashboard-container">
             {/* ================= HEADER ================= */}
 
             <div className="dashboard-header">
                 <div>
+
                     <h1>Dashboard Admin 👋</h1>
 
                     <p>
@@ -202,6 +256,9 @@ function DashboardPage() {
                 <button className="refresh-btn" onClick={loadDashboard}>
                     <FaSyncAlt />
                     <span>Làm mới</span>
+
+
+
                 </button>
             </div>
 
@@ -215,13 +272,19 @@ function DashboardPage() {
                         <FaUsers />
                     </div>
 
+
                     <div className="stat-content">
                         <span>Tổng người dùng</span>
 
                         <h2>{stats.totalUsers}</h2>
 
                         <small>Toàn bộ tài khoản hệ thống</small>
+
+                    <div>
+
                     </div>
+                </div>
+                </div>
                 </div>
 
                 <div className="stat-card green">
@@ -229,19 +292,24 @@ function DashboardPage() {
                         <FaUserGraduate />
                     </div>
 
+
                     <div className="stat-content">
                         <span>Sinh viên</span>
 
                         <h2>{stats.totalStudents}</h2>
 
                         <small>Đang học trong hệ thống</small>
+
+                    <div>
+
                     </div>
                 </div>
-
+                </div>
                 <div className="stat-card orange">
                     <div className="stat-icon">
                         <FaChalkboardTeacher />
                     </div>
+
 
                     <div className="stat-content">
                         <span>Giảng viên</span>
@@ -249,7 +317,11 @@ function DashboardPage() {
                         <h2>{stats.totalTeachers}</h2>
 
                         <small>Hướng dẫn đồ án</small>
+
+                    <div>
+
                     </div>
+                </div>
                 </div>
 
                 <div className="stat-card purple">
@@ -257,12 +329,16 @@ function DashboardPage() {
                         <FaUserShield />
                     </div>
 
+
                     <div className="stat-content">
                         <span>Quản trị viên</span>
 
                         <h2>{stats.totalAdmins}</h2>
 
                         <small>Administrator</small>
+
+                    <div>
+
                     </div>
                 </div>
 
@@ -271,12 +347,16 @@ function DashboardPage() {
                         <FaSchool />
                     </div>
 
+
                     <div className="stat-content">
                         <span>Lớp học</span>
 
                         <h2>{stats.totalClasses}</h2>
 
                         <small>Đang quản lý</small>
+
+                    <div>
+
                     </div>
                 </div>
 
@@ -284,6 +364,7 @@ function DashboardPage() {
                     <div className="stat-icon">
                         <FaLock />
                     </div>
+
 
                     <div className="stat-content">
                         <span>Tài khoản khóa</span>
@@ -416,9 +497,11 @@ function DashboardPage() {
                         <span>Tổng SV trong lớp</span>
 
                         <h2>{stats.totalStudentsInClasses}</h2>
+
                     </div>
                 </div>
             </div>
+
 
             {/* ================= TABLE ================= */}
 
@@ -426,7 +509,9 @@ function DashboardPage() {
                 <div className="table-card">
                     <div className="table-header">
                         <h3>🏫 Lớp có nhiều sinh viên nhất</h3>
-                    </div>
+            </div>
+            
+
 
                     <table className="modern-table">
                         <thead>
@@ -436,6 +521,34 @@ function DashboardPage() {
                                 <th>Tên lớp</th>
 
                                 <th>Số SV</th>
+
+                <div className="panel">
+                    <h3>Tráº¡ng thĂ¡i lá»›p há»c</h3>
+
+                    <div className="mini-stat-list">
+                        <div>
+                            <span>Lá»›p hoáº¡t Ä‘á»™ng</span>
+                            <strong>{stats.totalActiveClasses}</strong>
+                        </div>
+
+                        <div>
+                            <span>Lá»›p bá»‹ khĂ³a</span>
+                            <strong>{stats.totalInactiveClasses}</strong>
+                        </div>
+
+                        <div>
+                            <span>Tá»•ng lá»›p</span>
+                            <strong>{stats.totalClasses}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="panel">
+                    <h3>Xáº¿p lá»›p sinh viĂªn</h3>
+
+                    <div className="mini-stat-list">
+                    </div>
+                </div>
                             </tr>
                         </thead>
 
@@ -456,26 +569,32 @@ function DashboardPage() {
                                 ))
                             ) : (
                                 <tr>
+
                                     <td colSpan="3">Chưa có dữ liệu.</td>
+
+
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="table-card">
+               <div className="table-card">
                     <div className="table-header">
                         <h3>👥 Người dùng mới</h3>
                     </div>
 
+
                     <table className="modern-table">
                         <thead>
                             <tr>
-                                <th>Họ tên</th>
+                              <th>Họ tên</th>
 
                                 <th>Vai trò</th>
 
                                 <th>Trạng thái</th>
+
+
                             </tr>
                         </thead>
 
@@ -526,7 +645,10 @@ function DashboardPage() {
                                 ))
                             ) : (
                                 <tr>
+
                                     <td colSpan="3">Chưa có dữ liệu.</td>
+
+
                                 </tr>
                             )}
                         </tbody>
@@ -535,5 +657,5 @@ function DashboardPage() {
             </div>
         </div>
     );
-}
+
 export default DashboardPage;

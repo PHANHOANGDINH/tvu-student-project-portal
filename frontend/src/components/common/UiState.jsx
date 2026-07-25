@@ -1,0 +1,6 @@
+import { AlertCircle, Inbox, LoaderCircle, RefreshCw } from 'lucide-react'
+
+export function LoadingState({ label = 'Đang tải dữ liệu...' }) { return <div className="ui-state" aria-live="polite"><LoaderCircle className="spin-icon" /><strong>{label}</strong><span>Vui lòng chờ trong giây lát.</span></div> }
+export function EmptyState({ title = 'Chưa có dữ liệu', description = 'Dữ liệu sẽ xuất hiện tại đây khi có thông tin.', action }) { return <div className="ui-state"><Inbox /><strong>{title}</strong><span>{description}</span>{action}</div> }
+export function ErrorState({ message, onRetry }) { return <div className="ui-state error-state" role="alert"><AlertCircle /><strong>Không thể tải dữ liệu</strong><span>{message}</span>{onRetry && <button className="btn-light" onClick={onRetry}><RefreshCw size={16} /> Tải lại</button>}</div> }
+export function StatusBadge({ status }) { const value = String(status || 'Unknown'); const map = { Approved:['Đã duyệt','green'],Pending:['Chờ duyệt','warning'],Rejected:['Bị từ chối','red'],Cancelled:['Đã hủy','muted'],Submitted:['Đã nộp','blue'],Reviewed:['Đã nhận xét','green'],Draft:['Bản nháp','muted'] }; const [label,tone] = map[value] || [value || 'Chưa xác định','muted']; return <span className={`badge ${tone}`}>{label}</span> }

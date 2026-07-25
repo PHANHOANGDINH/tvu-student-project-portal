@@ -1,8 +1,9 @@
-// src/modules/admin/admin.classes.routes.js
+﻿// src/modules/admin/admin.classes.routes.js
 import express from 'express';
 
 import authMiddleware from '../../middlewares/auth.middleware.js';
 import roleMiddleware from '../../middlewares/role.middleware.js';
+import { USER_ROLES } from '../../constants/roles.js';
 
 import {
   getAdminClasses,
@@ -20,7 +21,7 @@ import {
 const router = express.Router();
 
 router.use(authMiddleware);
-router.use(roleMiddleware('Admin'));
+router.use(roleMiddleware(USER_ROLES.ADMIN));
 
 router.get('/', getAdminClasses);
 router.post('/', createAdminClass);
@@ -36,3 +37,4 @@ router.post('/:id/students', addAdminClassStudent);
 router.delete('/:id/students/:studentId', removeAdminClassStudent);
 
 export default router;
+

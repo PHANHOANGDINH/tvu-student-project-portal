@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { normalizeRole, USER_ROLES } from '../constants/roles'
 import {
   addClassStudentApi,
   createClassApi,
@@ -73,7 +74,7 @@ function ClassesPage() {
       setClasses(Array.isArray(classList) ? classList : [])
       setUsers(Array.isArray(userList) ? userList : [])
     } catch (err) {
-      setError(err.message || 'Không thể tải dữ liệu lớp học')
+      setError(err.message || 'KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u lá»›p há»c')
     } finally {
       setLoading(false)
     }
@@ -88,7 +89,7 @@ function ClassesPage() {
 
       setClasses(Array.isArray(list) ? list : [])
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách lớp học')
+      setError(err.message || 'KhĂ´ng thá»ƒ táº£i danh sĂ¡ch lá»›p há»c')
     }
   }
 
@@ -99,7 +100,7 @@ function ClassesPage() {
 
       setUsers(Array.isArray(list) ? list : [])
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách người dùng')
+      setError(err.message || 'KhĂ´ng thá»ƒ táº£i danh sĂ¡ch ngÆ°á»i dĂ¹ng')
     }
   }
 
@@ -130,7 +131,7 @@ function ClassesPage() {
       setStudentPagination(pagination)
       setStudentPage(pagination.page || page)
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách sinh viên của lớp')
+      setError(err.message || 'KhĂ´ng thá»ƒ táº£i danh sĂ¡ch sinh viĂªn cá»§a lá»›p')
     } finally {
       setStudentLoading(false)
     }
@@ -203,7 +204,7 @@ function ClassesPage() {
       clearMessages()
 
       if (!form.classCode.trim() || !form.className.trim()) {
-        setError('Vui lòng nhập mã lớp và tên lớp')
+        setError('Vui lĂ²ng nháº­p mĂ£ lá»›p vĂ  tĂªn lá»›p')
         return
       }
 
@@ -216,16 +217,16 @@ function ClassesPage() {
 
       if (editingClass) {
         await updateClassApi(editingClass.Id, payload)
-        setSuccess('Cập nhật lớp học thành công')
+        setSuccess('Cáº­p nháº­t lá»›p há»c thĂ nh cĂ´ng')
       } else {
         await createClassApi(payload)
-        setSuccess('Thêm lớp học thành công')
+        setSuccess('ThĂªm lá»›p há»c thĂ nh cĂ´ng')
       }
 
       closeForm()
       await loadClasses()
     } catch (err) {
-      setError(err.message || 'Lưu lớp học thất bại')
+      setError(err.message || 'LÆ°u lá»›p há»c tháº¥t báº¡i')
     } finally {
       setSaving(false)
     }
@@ -237,15 +238,15 @@ function ClassesPage() {
 
       if (classItem.IsActive === false) {
         await unlockClassApi(classItem.Id)
-        setSuccess('Mở khóa lớp học thành công')
+        setSuccess('Má»Ÿ khĂ³a lá»›p há»c thĂ nh cĂ´ng')
       } else {
         await lockClassApi(classItem.Id)
-        setSuccess('Khóa lớp học thành công')
+        setSuccess('KhĂ³a lá»›p há»c thĂ nh cĂ´ng')
       }
 
       await loadClasses()
     } catch (err) {
-      setError(err.message || 'Không thể cập nhật trạng thái lớp học')
+      setError(err.message || 'KhĂ´ng thá»ƒ cáº­p nháº­t tráº¡ng thĂ¡i lá»›p há»c')
     }
   }
 
@@ -322,18 +323,18 @@ function ClassesPage() {
       clearMessages()
 
       if (!selectedClass) {
-        setError('Vui lòng chọn lớp')
+        setError('Vui lĂ²ng chá»n lá»›p')
         return
       }
 
       if (!selectedStudentId) {
-        setError('Vui lòng chọn sinh viên cần thêm vào lớp')
+        setError('Vui lĂ²ng chá»n sinh viĂªn cáº§n thĂªm vĂ o lá»›p')
         return
       }
 
       await addClassStudentApi(selectedClass.Id, Number(selectedStudentId))
 
-      setSuccess('Thêm sinh viên vào lớp thành công')
+      setSuccess('ThĂªm sinh viĂªn vĂ o lá»›p thĂ nh cĂ´ng')
       setSelectedStudentId('')
 
       await loadClassStudents(selectedClass, {
@@ -344,7 +345,7 @@ function ClassesPage() {
       await loadClasses()
       await loadUsers()
     } catch (err) {
-      setError(err.message || 'Không thể thêm sinh viên vào lớp')
+      setError(err.message || 'KhĂ´ng thá»ƒ thĂªm sinh viĂªn vĂ o lá»›p')
     }
   }
 
@@ -353,7 +354,7 @@ function ClassesPage() {
       clearMessages()
 
       const ok = window.confirm(
-        `Bạn có chắc muốn xóa ${student.FullName || student.Email} khỏi lớp này?`
+        `Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a ${student.FullName || student.Email} khá»i lá»›p nĂ y?`
       )
 
       if (!ok) return
@@ -362,7 +363,7 @@ function ClassesPage() {
 
       await removeClassStudentApi(selectedClass.Id, studentId)
 
-      setSuccess('Xóa sinh viên khỏi lớp thành công')
+      setSuccess('XĂ³a sinh viĂªn khá»i lá»›p thĂ nh cĂ´ng')
 
       await loadClassStudents(selectedClass, {
         page: studentPage,
@@ -372,12 +373,12 @@ function ClassesPage() {
       await loadClasses()
       await loadUsers()
     } catch (err) {
-      setError(err.message || 'Không thể xóa sinh viên khỏi lớp')
+      setError(err.message || 'KhĂ´ng thá»ƒ xĂ³a sinh viĂªn khá»i lá»›p')
     }
   }
 
   function getStatusText(classItem) {
-    return classItem.IsActive === false ? 'Đã khóa' : 'Hoạt động'
+    return classItem.IsActive === false ? 'ÄĂ£ khĂ³a' : 'Hoáº¡t Ä‘á»™ng'
   }
 
   function getStatusClass(classItem) {
@@ -442,7 +443,7 @@ function ClassesPage() {
 
   const availableStudents = useMemo(() => {
     return users.filter((user) => {
-      if (user.Role !== 'Student') return false
+      if (normalizeRole(user.Role) !== USER_ROLES.STUDENT) return false
       if (user.IsActive === false) return false
 
       const hasActiveClass =
@@ -460,14 +461,14 @@ function ClassesPage() {
     <div>
       <div className="page-title row-between">
         <div>
-          <h2>Quản lý lớp học</h2>
+          <h2>Quáº£n lĂ½ lá»›p há»c</h2>
           <p>
-            Admin quản lý danh sách lớp và sinh viên thuộc từng lớp.
+            Admin quáº£n lĂ½ danh sĂ¡ch lá»›p vĂ  sinh viĂªn thuá»™c tá»«ng lá»›p.
           </p>
         </div>
 
         <button className="btn-primary small" onClick={openCreateForm}>
-          Thêm lớp học
+          ThĂªm lá»›p há»c
         </button>
       </div>
 
@@ -476,27 +477,27 @@ function ClassesPage() {
 
       {showForm && (
         <div className="panel">
-          <h3>{editingClass ? 'Sửa lớp học' : 'Thêm lớp học'}</h3>
+          <h3>{editingClass ? 'Sá»­a lá»›p há»c' : 'ThĂªm lá»›p há»c'}</h3>
 
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-group">
-                <label>Mã lớp</label>
+                <label>MĂ£ lá»›p</label>
                 <input
                   name="classCode"
                   value={form.classCode}
                   onChange={handleFormChange}
-                  placeholder="Ví dụ: DA22TTB"
+                  placeholder="VĂ­ dá»¥: DA22TTB"
                 />
               </div>
 
               <div className="form-group">
-                <label>Tên lớp</label>
+                <label>TĂªn lá»›p</label>
                 <input
                   name="className"
                   value={form.className}
                   onChange={handleFormChange}
-                  placeholder="Ví dụ: Đại học Công nghệ thông tin B khóa 2022"
+                  placeholder="VĂ­ dá»¥: Äáº¡i há»c CĂ´ng nghá»‡ thĂ´ng tin B khĂ³a 2022"
                 />
               </div>
 
@@ -506,17 +507,17 @@ function ClassesPage() {
                   name="department"
                   value={form.department}
                   onChange={handleFormChange}
-                  placeholder="Ví dụ: Khoa Kỹ thuật và Công nghệ"
+                  placeholder="VĂ­ dá»¥: Khoa Ká»¹ thuáº­t vĂ  CĂ´ng nghá»‡"
                 />
               </div>
 
               <div className="form-group">
-                <label>Niên khóa</label>
+                <label>NiĂªn khĂ³a</label>
                 <input
                   name="academicYear"
                   value={form.academicYear}
                   onChange={handleFormChange}
-                  placeholder="Ví dụ: 2022 - 2026"
+                  placeholder="VĂ­ dá»¥: 2022 - 2026"
                 />
               </div>
             </div>
@@ -527,11 +528,11 @@ function ClassesPage() {
                 type="submit"
                 disabled={saving}
               >
-                {saving ? 'Đang lưu...' : 'Lưu'}
+                {saving ? 'Äang lÆ°u...' : 'LÆ°u'}
               </button>
 
               <button className="btn-light" type="button" onClick={closeForm}>
-                Hủy
+                Há»§y
               </button>
             </div>
           </form>
@@ -539,16 +540,16 @@ function ClassesPage() {
       )}
 
       <div className="panel">
-        <h3>Bộ lọc lớp học</h3>
+        <h3>Bá»™ lá»c lá»›p há»c</h3>
 
         <div className="filter-grid class-filter-grid">
           <div className="form-group">
-            <label>Tìm kiếm</label>
+            <label>TĂ¬m kiáº¿m</label>
             <input
               name="keyword"
               value={filters.keyword}
               onChange={handleFilterChange}
-              placeholder="Mã lớp, tên lớp, khoa, niên khóa..."
+              placeholder="MĂ£ lá»›p, tĂªn lá»›p, khoa, niĂªn khĂ³a..."
             />
           </div>
 
@@ -559,7 +560,7 @@ function ClassesPage() {
               value={filters.department}
               onChange={handleFilterChange}
             >
-              <option value="">Tất cả khoa</option>
+              <option value="">Táº¥t cáº£ khoa</option>
               {departmentOptions.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -569,13 +570,13 @@ function ClassesPage() {
           </div>
 
           <div className="form-group">
-            <label>Niên khóa</label>
+            <label>NiĂªn khĂ³a</label>
             <select
               name="academicYear"
               value={filters.academicYear}
               onChange={handleFilterChange}
             >
-              <option value="">Tất cả niên khóa</option>
+              <option value="">Táº¥t cáº£ niĂªn khĂ³a</option>
               {academicYearOptions.map((item) => (
                 <option key={item} value={item}>
                   {item}
@@ -585,45 +586,45 @@ function ClassesPage() {
           </div>
 
           <div className="form-group">
-            <label>Trạng thái</label>
+            <label>Tráº¡ng thĂ¡i</label>
             <select
               name="status"
               value={filters.status}
               onChange={handleFilterChange}
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Đã khóa</option>
+              <option value="">Táº¥t cáº£ tráº¡ng thĂ¡i</option>
+              <option value="active">Hoáº¡t Ä‘á»™ng</option>
+              <option value="inactive">ÄĂ£ khĂ³a</option>
             </select>
           </div>
 
           <div className="filter-actions">
             <button className="btn-light" onClick={resetFilters}>
-              Xóa bộ lọc
+              XĂ³a bá»™ lá»c
             </button>
           </div>
         </div>
 
         <p className="filter-summary">
-          Hiển thị {filteredClasses.length} / {classes.length} lớp học
+          Hiá»ƒn thá»‹ {filteredClasses.length} / {classes.length} lá»›p há»c
         </p>
       </div>
 
       <div className="panel">
         {loading ? (
-          <p>Đang tải dữ liệu...</p>
+          <p>Äang táº£i dá»¯ liá»‡u...</p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Mã lớp</th>
-                <th>Tên lớp</th>
+                <th>MĂ£ lá»›p</th>
+                <th>TĂªn lá»›p</th>
                 <th>Khoa</th>
-                <th>Niên khóa</th>
-                <th>Số SV</th>
-                <th>Trạng thái</th>
-                <th>Ngày tạo</th>
-                <th>Thao tác</th>
+                <th>NiĂªn khĂ³a</th>
+                <th>Sá»‘ SV</th>
+                <th>Tráº¡ng thĂ¡i</th>
+                <th>NgĂ y táº¡o</th>
+                <th>Thao tĂ¡c</th>
               </tr>
             </thead>
 
@@ -653,7 +654,7 @@ function ClassesPage() {
                       className="btn-light"
                       onClick={() => openEditForm(classItem)}
                     >
-                      Sửa
+                      Sá»­a
                     </button>
 
                     <button
@@ -667,7 +668,7 @@ function ClassesPage() {
                       className="btn-danger"
                       onClick={() => handleToggleLock(classItem)}
                     >
-                      {classItem.IsActive === false ? 'Mở khóa' : 'Khóa'}
+                      {classItem.IsActive === false ? 'Má»Ÿ khĂ³a' : 'KhĂ³a'}
                     </button>
                   </td>
                 </tr>
@@ -675,7 +676,7 @@ function ClassesPage() {
 
               {filteredClasses.length === 0 && (
                 <tr>
-                  <td colSpan="8">Không tìm thấy lớp học phù hợp.</td>
+                  <td colSpan="8">KhĂ´ng tĂ¬m tháº¥y lá»›p há»c phĂ¹ há»£p.</td>
                 </tr>
               )}
             </tbody>
@@ -687,30 +688,30 @@ function ClassesPage() {
         <div className="panel">
           <div className="row-between">
             <div>
-              <h3>Sinh viên lớp {selectedClass.ClassCode}</h3>
+              <h3>Sinh viĂªn lá»›p {selectedClass.ClassCode}</h3>
               <p>
-                {selectedClass.ClassName} - Tổng số:{' '}
-                <strong>{studentPagination.total || 0}</strong> sinh viên
+                {selectedClass.ClassName} - Tá»•ng sá»‘:{' '}
+                <strong>{studentPagination.total || 0}</strong> sinh viĂªn
               </p>
             </div>
 
             <button className="btn-light" onClick={closeStudentsPanel}>
-              Đóng
+              ÄĂ³ng
             </button>
           </div>
 
           <form className="student-search-row" onSubmit={handleSearchStudents}>
             <div className="form-group">
-              <label>Tìm sinh viên trong lớp</label>
+              <label>TĂ¬m sinh viĂªn trong lá»›p</label>
               <input
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="Nhập họ tên, email, MSSV hoặc số điện thoại..."
+                placeholder="Nháº­p há» tĂªn, email, MSSV hoáº·c sá»‘ Ä‘iá»‡n thoáº¡i..."
               />
             </div>
 
             <button className="btn-primary small" type="submit">
-              Tìm kiếm
+              TĂ¬m kiáº¿m
             </button>
 
             <button
@@ -718,19 +719,19 @@ function ClassesPage() {
               type="button"
               onClick={handleResetStudentSearch}
             >
-              Xóa tìm
+              XĂ³a tĂ¬m
             </button>
           </form>
 
           <div className="student-add-row">
             <div className="form-group">
-              <label>Thêm sinh viên vào lớp</label>
+              <label>ThĂªm sinh viĂªn vĂ o lá»›p</label>
 
               <select
                 value={selectedStudentId}
                 onChange={(e) => setSelectedStudentId(e.target.value)}
               >
-                <option value="">Chọn sinh viên chưa thuộc lớp nào</option>
+                <option value="">Chá»n sinh viĂªn chÆ°a thuá»™c lá»›p nĂ o</option>
 
                 {availableStudents.map((student) => (
                   <option key={student.Id} value={student.Id}>
@@ -741,30 +742,30 @@ function ClassesPage() {
             </div>
 
             <button className="btn-primary small" onClick={handleAddStudentToClass}>
-              Thêm vào lớp
+              ThĂªm vĂ o lá»›p
             </button>
           </div>
 
           {availableStudents.length === 0 && (
             <p className="filter-summary">
-              Không còn sinh viên nào chưa thuộc lớp để thêm.
+              KhĂ´ng cĂ²n sinh viĂªn nĂ o chÆ°a thuá»™c lá»›p Ä‘á»ƒ thĂªm.
             </p>
           )}
 
           {studentLoading ? (
-            <p>Đang tải danh sách sinh viên...</p>
+            <p>Äang táº£i danh sĂ¡ch sinh viĂªn...</p>
           ) : (
             <>
               <table>
                 <thead>
                   <tr>
-                    <th>Họ tên</th>
+                    <th>Há» tĂªn</th>
                     <th>Email</th>
                     <th>MSSV</th>
-                    <th>Số điện thoại</th>
+                    <th>Sá»‘ Ä‘iá»‡n thoáº¡i</th>
                     <th>Khoa</th>
-                    <th>Ngày vào lớp</th>
-                    <th>Thao tác</th>
+                    <th>NgĂ y vĂ o lá»›p</th>
+                    <th>Thao tĂ¡c</th>
                   </tr>
                 </thead>
 
@@ -786,7 +787,7 @@ function ClassesPage() {
                           className="btn-danger"
                           onClick={() => handleRemoveStudentFromClass(student)}
                         >
-                          Xóa khỏi lớp
+                          XĂ³a khá»i lá»›p
                         </button>
                       </td>
                     </tr>
@@ -794,7 +795,7 @@ function ClassesPage() {
 
                   {students.length === 0 && (
                     <tr>
-                      <td colSpan="7">Không tìm thấy sinh viên phù hợp.</td>
+                      <td colSpan="7">KhĂ´ng tĂ¬m tháº¥y sinh viĂªn phĂ¹ há»£p.</td>
                     </tr>
                   )}
                 </tbody>
@@ -808,7 +809,7 @@ function ClassesPage() {
                     handleStudentPageChange(studentPagination.page - 1)
                   }
                 >
-                  Trước
+                  TrÆ°á»›c
                 </button>
 
                 <span>

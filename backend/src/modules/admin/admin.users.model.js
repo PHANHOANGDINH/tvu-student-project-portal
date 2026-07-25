@@ -1,4 +1,4 @@
-// src/modules/admin/admin.users.model.js
+﻿// src/modules/admin/admin.users.model.js
 import { sql, poolPromise } from '../../config/db.js';
 
 function addUserFilters(request, filters = {}) {
@@ -125,9 +125,9 @@ export async function getUserStats() {
   const result = await pool.request().query(`
     SELECT
       COUNT(*) AS TotalUsers,
-      SUM(CASE WHEN Role = 'Admin' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalAdmins,
-      SUM(CASE WHEN Role = 'Teacher' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalTeachers,
-      SUM(CASE WHEN Role = 'Student' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalStudents,
+      SUM(CASE WHEN Role = 'ADMIN' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalAdmins,
+      SUM(CASE WHEN Role = 'LECTURER' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalTeachers,
+      SUM(CASE WHEN Role = 'STUDENT' AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalStudents,
       SUM(CASE WHEN IsActive = 1 AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalActiveUsers,
       SUM(CASE WHEN IsActive = 0 AND DeletedAt IS NULL THEN 1 ELSE 0 END) AS TotalInactiveUsers,
       SUM(CASE WHEN DeletedAt IS NOT NULL THEN 1 ELSE 0 END) AS TotalDeletedUsers

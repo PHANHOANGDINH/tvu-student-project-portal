@@ -1,18 +1,28 @@
-import { request } from './http'
+﻿import { request } from './http'
 
 export function loginApi(email, password) {
-  return request('/api/auth/login', {
+  return request('/auth/login', {
     method: 'POST',
     body: JSON.stringify({
-      email: email,
-      password: password
+      email,
+      password
     })
   })
 }
 
-export function registerApi(payload) {
-  return request('/api/auth/register', {
+export function getCurrentUserApi() {
+  return request('/auth/me')
+}
+
+export function changePasswordApi(payload) {
+  return request('/auth/change-password', {
     method: 'POST',
     body: JSON.stringify(payload)
+  })
+}
+
+export function registerApi() {
+  return request('/auth/register', {
+    method: 'POST'
   })
 }

@@ -1,8 +1,9 @@
-// src/modules/teacher/teacher.projects.routes.js
+﻿// src/modules/teacher/teacher.projects.routes.js
 import express from 'express';
 
 import authMiddleware from '../../middlewares/auth.middleware.js';
 import roleMiddleware from '../../middlewares/role.middleware.js';
+import { USER_ROLES } from '../../constants/roles.js';
 
 import {
   getTeacherProjects,
@@ -18,7 +19,7 @@ import {
 const router = express.Router();
 
 router.use(authMiddleware);
-router.use(roleMiddleware('Teacher'));
+router.use(roleMiddleware(USER_ROLES.LECTURER));
 
 router.get('/', getTeacherProjects);
 router.post('/', createTeacherProject);
@@ -40,3 +41,4 @@ router.patch(
 );
 
 export default router;
+

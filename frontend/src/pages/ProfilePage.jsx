@@ -1,15 +1,26 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserDetailApi } from '../api/adminApi'
-import { clearAuth, getUser } from '../utils/auth'
+import { changePasswordApi, getCurrentUserApi } from '../api/authApi'
+import { USER_ROLES } from '../constants/roles'
+import { clearAuth, getUser, updateStoredUser } from '../utils/auth'
+
+const emptyPasswordForm = {
+  currentPassword: '',
+  newPassword: '',
+  confirmNewPassword: ''
+}
 
 function ProfilePage() {
   const navigate = useNavigate()
   const currentUser = getUser()
 
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState(currentUser)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [passwordForm, setPasswordForm] = useState(emptyPasswordForm)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
 
   useEffect(() => {
     loadProfile()
@@ -20,15 +31,9 @@ function ProfilePage() {
       setLoading(true)
       setError('')
 
-      const userId = currentUser?.id || currentUser?.Id
-
-      if (!userId) {
-        setProfile(currentUser)
-        return
-      }
-
-      const response = await getUserDetailApi(userId)
+      const response = await getCurrentUserApi()
       setProfile(response?.data || currentUser)
+      if (response?.data) updateStoredUser(response.data)
     } catch (err) {
       setError(err.message || 'Không thể tải hồ sơ cá nhân')
       setProfile(currentUser)
@@ -42,17 +47,68 @@ function ProfilePage() {
     navigate('/login')
   }
 
+  function handlePasswordChange(e) {
+    setPasswordForm({
+      ...passwordForm,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  function validatePasswordForm() {
+    if (!passwordForm.currentPassword) return 'Vui lòng nhập mật khẩu hiện tại.'
+    if (!passwordForm.newPassword) return 'Vui lòng nhập mật khẩu mới.'
+    if (passwordForm.newPassword.length < 8) return 'Mật khẩu mới phải có ít nhất 8 ký tự.'
+    if (!/[A-Z]/.test(passwordForm.newPassword)) return 'Mật khẩu mới phải có ít nhất một chữ hoa.'
+    if (!/[a-z]/.test(passwordForm.newPassword)) return 'Mật khẩu mới phải có ít nhất một chữ thường.'
+    if (!/\d/.test(passwordForm.newPassword)) return 'Mật khẩu mới phải có ít nhất một chữ số.'
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) return 'Xác nhận mật khẩu mới không khớp.'
+    if (passwordForm.currentPassword === passwordForm.newPassword) return 'Mật khẩu mới không được giống mật khẩu cũ.'
+
+    return ''
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault()
+    setPasswordError('')
+    setPasswordSuccess('')
+
+    const validationMessage = validatePasswordForm()
+    if (validationMessage) {
+      setPasswordError(validationMessage)
+      return
+    }
+
+    try {
+      setPasswordLoading(true)
+      const response = await changePasswordApi(passwordForm)
+      setPasswordSuccess(response?.message || 'Đổi mật khẩu thành công')
+      setPasswordForm(emptyPasswordForm)
+    } catch (err) {
+      setPasswordError(err.message || 'Không thể đổi mật khẩu')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   function getRoleText(role) {
     switch (role) {
-      case 'Admin':
+      case USER_ROLES.ADMIN:
         return 'Quản trị viên'
-      case 'Teacher':
+      case USER_ROLES.LECTURER:
         return 'Giảng viên'
-      case 'Student':
+      case USER_ROLES.STUDENT:
         return 'Sinh viên'
       default:
         return role || '-'
     }
+  }
+
+  function getHomePath(role) {
+    if (role === USER_ROLES.ADMIN) return '/dashboard'
+    if (role === USER_ROLES.LECTURER) return '/teacher/dashboard'
+    if (role === USER_ROLES.STUDENT) return '/student/dashboard'
+
+    return '/dashboard'
   }
 
   function getStatusText(isActive) {
@@ -63,22 +119,22 @@ function ProfilePage() {
     return isActive === false ? 'badge' : 'badge green'
   }
 
-  const fullName = profile?.FullName || profile?.fullName || 'Người dùng'
-  const email = profile?.Email || profile?.email || '-'
-  const role = profile?.Role || profile?.role || '-'
-  const userCode = profile?.UserCode || profile?.userCode || '-'
-  const phone = profile?.Phone || profile?.phone || '-'
-  const department = profile?.Department || profile?.department || '-'
-  const className = profile?.ClassName || profile?.className || '-'
-  const isActive = profile?.IsActive
-  const createdAt = profile?.CreatedAt || profile?.createdAt
+  const fullName = profile?.fullName || profile?.FullName || 'Người dùng'
+  const email = profile?.email || profile?.Email || '-'
+  const role = profile?.role || profile?.Role || '-'
+  const userCode = profile?.userCode || profile?.UserCode || '-'
+  const phone = profile?.phone || profile?.Phone || '-'
+  const department = profile?.department || profile?.Department || '-'
+  const className = profile?.className || profile?.ClassName || '-'
+  const isActive = profile?.isActive ?? profile?.IsActive
+  const createdAt = profile?.createdAt || profile?.CreatedAt
 
   return (
     <div>
       <div className="page-title row-between">
         <div>
           <h2>Hồ sơ cá nhân</h2>
-          <p>Thông tin tài khoản Admin đang đăng nhập.</p>
+          <p>Thông tin tài khoản đang đăng nhập.</p>
         </div>
 
         <button className="btn-danger" onClick={handleLogout}>
@@ -164,38 +220,62 @@ function ProfilePage() {
             </div>
 
             <div className="panel">
-              <h3>Thao tác nhanh</h3>
+              <h3>Đổi mật khẩu</h3>
 
-              <div className="quick-actions">
-                <button
-                  className="btn-primary small"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Xem Dashboard
+              {passwordError && <div className="alert error">{passwordError}</div>}
+              {passwordSuccess && <div className="alert success">{passwordSuccess}</div>}
+
+              <form onSubmit={handleChangePassword}>
+                <div className="form-group">
+                  <label>Mật khẩu hiện tại</label>
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordForm.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Nhập mật khẩu hiện tại"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Mật khẩu mới</label>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordForm.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Tối thiểu 8 ký tự"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Xác nhận mật khẩu mới</label>
+                  <input
+                    type="password"
+                    name="confirmNewPassword"
+                    value={passwordForm.confirmNewPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Nhập lại mật khẩu mới"
+                  />
+                </div>
+
+                <button className="btn-primary" type="submit" disabled={passwordLoading}>
+                  {passwordLoading ? 'Đang đổi mật khẩu...' : 'Đổi mật khẩu'}
                 </button>
+              </form>
+            </div>
+          </div>
 
-                <button
-                  className="btn-light"
-                  onClick={() => navigate('/users')}
-                >
-                  Quản lý người dùng
-                </button>
+          <div className="panel">
+            <h3>Thao tác nhanh</h3>
 
-                <button
-                  className="btn-light"
-                  onClick={() => navigate('/classes')}
-                >
-                  Quản lý lớp học
-                </button>
-              </div>
-
-              <div className="profile-note">
-                <h4>Ghi chú</h4>
-                <p>
-                  Tài khoản Admin dùng để quản trị hệ thống, quản lý người dùng,
-                  lớp học, tài khoản sinh viên và giảng viên.
-                </p>
-              </div>
+            <div className="quick-actions">
+              <button
+                className="btn-primary small"
+                onClick={() => navigate(getHomePath(role))}
+              >
+                Xem Dashboard
+              </button>
             </div>
           </div>
         </>

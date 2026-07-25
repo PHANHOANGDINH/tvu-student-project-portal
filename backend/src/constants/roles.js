@@ -1,0 +1,26 @@
+export const USER_ROLES = Object.freeze({
+  ADMIN: 'ADMIN',
+  LECTURER: 'LECTURER',
+  STUDENT: 'STUDENT',
+});
+
+const ROLE_ALIASES = Object.freeze({
+  Admin: USER_ROLES.ADMIN,
+  admin: USER_ROLES.ADMIN,
+  ADMIN: USER_ROLES.ADMIN,
+  Teacher: USER_ROLES.LECTURER,
+  teacher: USER_ROLES.LECTURER,
+  TEACHER: USER_ROLES.LECTURER,
+  Lecturer: USER_ROLES.LECTURER,
+  lecturer: USER_ROLES.LECTURER,
+  LECTURER: USER_ROLES.LECTURER,
+  GIANGVIEN: USER_ROLES.LECTURER,
+  Student: USER_ROLES.STUDENT,
+  student: USER_ROLES.STUDENT,
+  STUDENT: USER_ROLES.STUDENT,
+  SINHVIEN: USER_ROLES.STUDENT,
+});
+
+export function normalizeRole(role) {
+  return ROLE_ALIASES[String(role || '').trim()] || null;
+}

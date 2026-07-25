@@ -1,4 +1,4 @@
-// src/modules/admin/admin.users.controller.js
+﻿// src/modules/admin/admin.users.controller.js
 import bcrypt from 'bcryptjs';
 import xlsx from 'xlsx';
 
@@ -22,7 +22,7 @@ import {
   addStudentToClass,
 } from './admin.classes.model.js';
 
-const VALID_ROLES = ['Admin', 'Teacher', 'Student'];
+const VALID_ROLES = ['ADMIN', 'LECTURER', 'STUDENT'];
 
 function normalizeString(value) {
   if (value === undefined || value === null) return '';
@@ -42,15 +42,15 @@ function generatePassword() {
 }
 
 function getRoleFromImportType(importType) {
-  if (importType === 'students') return 'Student';
-  if (importType === 'teachers') return 'Teacher';
+  if (importType === 'students') return 'STUDENT';
+  if (importType === 'teachers') return 'LECTURER';
   return '';
 }
 
 function getUserCodeLabel(role) {
-  if (role === 'Student') return 'MSSV';
-  if (role === 'Teacher') return 'Mã giảng viên';
-  return 'Mã người dùng';
+  if (role === 'STUDENT') return 'MSSV';
+  if (role === 'LECTURER') return 'MĂ£ giáº£ng viĂªn';
+  return 'MĂ£ ngÆ°á»i dĂ¹ng';
 }
 
 function getCell(row, keys = []) {
@@ -78,7 +78,7 @@ export async function getAdminUsers(req, res) {
 
     if (filters.role && !isValidRole(filters.role)) {
       return res.status(400).json({
-        message: 'Vai trò không hợp lệ',
+        message: 'Vai trĂ² khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -97,10 +97,10 @@ export async function getAdminUsers(req, res) {
       },
     });
   } catch (error) {
-    console.error('Lỗi lấy danh sách người dùng:', error);
+    console.error('Lá»—i láº¥y danh sĂ¡ch ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi lấy danh sách người dùng',
+      message: 'Lá»—i server khi láº¥y danh sĂ¡ch ngÆ°á»i dĂ¹ng',
     });
   }
 }
@@ -111,7 +111,7 @@ export async function getAdminUserDetail(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -119,7 +119,7 @@ export async function getAdminUserDetail(req, res) {
 
     if (!user) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
@@ -127,10 +127,10 @@ export async function getAdminUserDetail(req, res) {
       data: user,
     });
   } catch (error) {
-    console.error('Lỗi lấy chi tiết người dùng:', error);
+    console.error('Lá»—i láº¥y chi tiáº¿t ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi lấy chi tiết người dùng',
+      message: 'Lá»—i server khi láº¥y chi tiáº¿t ngÆ°á»i dĂ¹ng',
     });
   }
 }
@@ -148,48 +148,48 @@ export async function createAdminUser(req, res) {
 
     if (!fullName || !email || !role) {
       return res.status(400).json({
-        message: 'Vui lòng nhập họ tên, email và vai trò',
+        message: 'Vui lĂ²ng nháº­p há» tĂªn, email vĂ  vai trĂ²',
       });
     }
 
     if (!isValidEmail(email)) {
       return res.status(400).json({
-        message: 'Email không hợp lệ',
+        message: 'Email khĂ´ng há»£p lá»‡',
       });
     }
 
     if (!isValidRole(role)) {
       return res.status(400).json({
-        message: 'Vai trò không hợp lệ',
+        message: 'Vai trĂ² khĂ´ng há»£p lá»‡',
       });
     }
 
     if (!password || password.length < 6) {
       return res.status(400).json({
-        message: 'Mật khẩu phải có ít nhất 6 ký tự',
+        message: 'Máº­t kháº©u pháº£i cĂ³ Ă­t nháº¥t 6 kĂ½ tá»±',
       });
     }
 
-    if ((role === 'Student' || role === 'Teacher') && !userCode) {
+    if ((role === 'STUDENT' || role === 'LECTURER') && !userCode) {
       return res.status(400).json({
-        message: `${getUserCodeLabel(role)} không được để trống`,
+        message: `${getUserCodeLabel(role)} khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng`,
       });
     }
 
-    if (role === 'Student' && !className) {
+    if (role === 'STUDENT' && !className) {
       return res.status(400).json({
-        message: 'Sinh viên cần có mã lớp',
+        message: 'Sinh viĂªn cáº§n cĂ³ mĂ£ lá»›p',
       });
     }
 
     let targetClass = null;
 
-    if (role === 'Student') {
+    if (role === 'STUDENT') {
       const classByCode = await findClassByCode(className);
 
       if (!classByCode || classByCode.DeletedAt) {
         return res.status(400).json({
-          message: `Mã lớp ${className} không tồn tại trong hệ thống`,
+          message: `MĂ£ lá»›p ${className} khĂ´ng tá»“n táº¡i trong há»‡ thá»‘ng`,
         });
       }
 
@@ -197,13 +197,13 @@ export async function createAdminUser(req, res) {
 
       if (!targetClass || targetClass.DeletedAt) {
         return res.status(400).json({
-          message: `Mã lớp ${className} không hợp lệ`,
+          message: `MĂ£ lá»›p ${className} khĂ´ng há»£p lá»‡`,
         });
       }
 
       if (targetClass.IsActive === false) {
         return res.status(400).json({
-          message: `Lớp ${className} đang bị khóa, không thể thêm sinh viên`,
+          message: `Lá»›p ${className} Ä‘ang bá»‹ khĂ³a, khĂ´ng thá»ƒ thĂªm sinh viĂªn`,
         });
       }
     }
@@ -212,7 +212,7 @@ export async function createAdminUser(req, res) {
 
     if (existedEmail) {
       return res.status(409).json({
-        message: 'Email đã tồn tại trong hệ thống',
+        message: 'Email Ä‘Ă£ tá»“n táº¡i trong há»‡ thá»‘ng',
       });
     }
 
@@ -221,7 +221,7 @@ export async function createAdminUser(req, res) {
 
       if (existedUserCode) {
         return res.status(409).json({
-          message: `${getUserCodeLabel(role)} đã tồn tại trong hệ thống`,
+          message: `${getUserCodeLabel(role)} Ä‘Ă£ tá»“n táº¡i trong há»‡ thá»‘ng`,
         });
       }
     }
@@ -236,22 +236,22 @@ export async function createAdminUser(req, res) {
       userCode,
       phone,
       department,
-      className: role === 'Student' ? className : '',
+      className: role === 'STUDENT' ? className : '',
     });
 
-    if (role === 'Student' && targetClass) {
+    if (role === 'STUDENT' && targetClass) {
       await addStudentToClass(targetClass.Id, newUser.Id);
     }
 
     return res.status(201).json({
-      message: 'Tạo người dùng thành công',
+      message: 'Táº¡o ngÆ°á»i dĂ¹ng thĂ nh cĂ´ng',
       data: newUser,
     });
   } catch (error) {
-    console.error('Lỗi tạo người dùng:', error);
+    console.error('Lá»—i táº¡o ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi tạo người dùng',
+      message: 'Lá»—i server khi táº¡o ngÆ°á»i dĂ¹ng',
     });
   }
 }
@@ -262,7 +262,7 @@ export async function updateAdminUser(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -270,7 +270,7 @@ export async function updateAdminUser(req, res) {
 
     if (!currentUser || currentUser.DeletedAt) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
@@ -300,25 +300,25 @@ export async function updateAdminUser(req, res) {
 
     if (!fullName || !email || !role) {
       return res.status(400).json({
-        message: 'Vui lòng nhập họ tên, email và vai trò',
+        message: 'Vui lĂ²ng nháº­p há» tĂªn, email vĂ  vai trĂ²',
       });
     }
 
     if (!isValidEmail(email)) {
       return res.status(400).json({
-        message: 'Email không hợp lệ',
+        message: 'Email khĂ´ng há»£p lá»‡',
       });
     }
 
     if (!isValidRole(role)) {
       return res.status(400).json({
-        message: 'Vai trò không hợp lệ',
+        message: 'Vai trĂ² khĂ´ng há»£p lá»‡',
       });
     }
 
-    if ((role === 'Student' || role === 'Teacher') && !userCode) {
+    if ((role === 'STUDENT' || role === 'LECTURER') && !userCode) {
       return res.status(400).json({
-        message: `${getUserCodeLabel(role)} không được để trống`,
+        message: `${getUserCodeLabel(role)} khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng`,
       });
     }
 
@@ -326,7 +326,7 @@ export async function updateAdminUser(req, res) {
 
     if (existedEmail && existedEmail.Id !== id) {
       return res.status(409).json({
-        message: 'Email đã được sử dụng bởi người dùng khác',
+        message: 'Email Ä‘Ă£ Ä‘Æ°á»£c sá»­ dá»¥ng bá»Ÿi ngÆ°á»i dĂ¹ng khĂ¡c',
       });
     }
 
@@ -335,7 +335,7 @@ export async function updateAdminUser(req, res) {
 
       if (existedUserCode && existedUserCode.Id !== id) {
         return res.status(409).json({
-          message: `${getUserCodeLabel(role)} đã được sử dụng bởi người dùng khác`,
+          message: `${getUserCodeLabel(role)} Ä‘Ă£ Ä‘Æ°á»£c sá»­ dá»¥ng bá»Ÿi ngÆ°á»i dĂ¹ng khĂ¡c`,
         });
       }
     }
@@ -347,18 +347,18 @@ export async function updateAdminUser(req, res) {
       userCode,
       phone,
       department,
-      className: role === 'Student' ? className : '',
+      className: role === 'STUDENT' ? className : '',
     });
 
     return res.json({
-      message: 'Cập nhật người dùng thành công',
+      message: 'Cáº­p nháº­t ngÆ°á»i dĂ¹ng thĂ nh cĂ´ng',
       data: updatedUser,
     });
   } catch (error) {
-    console.error('Lỗi cập nhật người dùng:', error);
+    console.error('Lá»—i cáº­p nháº­t ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi cập nhật người dùng',
+      message: 'Lá»—i server khi cáº­p nháº­t ngÆ°á»i dĂ¹ng',
     });
   }
 }
@@ -369,7 +369,7 @@ export async function lockAdminUser(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -377,19 +377,19 @@ export async function lockAdminUser(req, res) {
 
     if (!user) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
     return res.json({
-      message: 'Khóa tài khoản thành công',
+      message: 'KhĂ³a tĂ i khoáº£n thĂ nh cĂ´ng',
       data: user,
     });
   } catch (error) {
-    console.error('Lỗi khóa người dùng:', error);
+    console.error('Lá»—i khĂ³a ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi khóa tài khoản',
+      message: 'Lá»—i server khi khĂ³a tĂ i khoáº£n',
     });
   }
 }
@@ -400,7 +400,7 @@ export async function unlockAdminUser(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -408,19 +408,19 @@ export async function unlockAdminUser(req, res) {
 
     if (!user) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
     return res.json({
-      message: 'Mở khóa tài khoản thành công',
+      message: 'Má»Ÿ khĂ³a tĂ i khoáº£n thĂ nh cĂ´ng',
       data: user,
     });
   } catch (error) {
-    console.error('Lỗi mở khóa người dùng:', error);
+    console.error('Lá»—i má»Ÿ khĂ³a ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi mở khóa tài khoản',
+      message: 'Lá»—i server khi má»Ÿ khĂ³a tĂ i khoáº£n',
     });
   }
 }
@@ -431,7 +431,7 @@ export async function resetPasswordAdminUser(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -439,7 +439,7 @@ export async function resetPasswordAdminUser(req, res) {
 
     if (!currentUser || currentUser.DeletedAt) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
@@ -449,15 +449,15 @@ export async function resetPasswordAdminUser(req, res) {
     const user = await resetUserPassword(id, passwordHash);
 
     return res.json({
-      message: 'Cấp lại mật khẩu thành công',
+      message: 'Cáº¥p láº¡i máº­t kháº©u thĂ nh cĂ´ng',
       data: user,
       newPassword,
     });
   } catch (error) {
-    console.error('Lỗi cấp lại mật khẩu:', error);
+    console.error('Lá»—i cáº¥p láº¡i máº­t kháº©u:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi cấp lại mật khẩu',
+      message: 'Lá»—i server khi cáº¥p láº¡i máº­t kháº©u',
     });
   }
 }
@@ -468,7 +468,7 @@ export async function deleteAdminUser(req, res) {
 
     if (!id) {
       return res.status(400).json({
-        message: 'Id người dùng không hợp lệ',
+        message: 'Id ngÆ°á»i dĂ¹ng khĂ´ng há»£p lá»‡',
       });
     }
 
@@ -476,19 +476,19 @@ export async function deleteAdminUser(req, res) {
 
     if (!user) {
       return res.status(404).json({
-        message: 'Không tìm thấy người dùng',
+        message: 'KhĂ´ng tĂ¬m tháº¥y ngÆ°á»i dĂ¹ng',
       });
     }
 
     return res.json({
-      message: 'Xóa người dùng thành công',
+      message: 'XĂ³a ngÆ°á»i dĂ¹ng thĂ nh cĂ´ng',
       data: user,
     });
   } catch (error) {
-    console.error('Lỗi xóa người dùng:', error);
+    console.error('Lá»—i xĂ³a ngÆ°á»i dĂ¹ng:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi xóa người dùng',
+      message: 'Lá»—i server khi xĂ³a ngÆ°á»i dĂ¹ng',
     });
   }
 }
@@ -497,7 +497,7 @@ export async function importUsersFromExcel(req, res) {
   try {
     if (!req.file) {
       return res.status(400).json({
-        message: 'Vui lòng chọn file Excel',
+        message: 'Vui lĂ²ng chá»n file Excel',
       });
     }
 
@@ -506,7 +506,7 @@ export async function importUsersFromExcel(req, res) {
 
     if (!role) {
       return res.status(400).json({
-        message: 'Vui lòng chọn loại import: sinh viên hoặc giảng viên',
+        message: 'Vui lĂ²ng chá»n loáº¡i import: sinh viĂªn hoáº·c giáº£ng viĂªn',
       });
     }
 
@@ -523,7 +523,7 @@ export async function importUsersFromExcel(req, res) {
 
     if (!rows.length) {
       return res.status(400).json({
-        message: 'File Excel không có dữ liệu',
+        message: 'File Excel khĂ´ng cĂ³ dá»¯ liá»‡u',
       });
     }
 
@@ -538,7 +538,7 @@ export async function importUsersFromExcel(req, res) {
       const rowNumber = index + 2;
 
       const fullName = normalizeString(
-        getCell(row, ['Họ tên', 'Ho ten', 'HoTen', 'fullName', 'FullName'])
+        getCell(row, ['Há» tĂªn', 'Ho ten', 'HoTen', 'fullName', 'FullName'])
       );
 
       const email = normalizeString(
@@ -548,11 +548,11 @@ export async function importUsersFromExcel(req, res) {
       const userCode = normalizeString(
         getCell(row, [
           'MSSV',
-          'Mã sinh viên',
+          'MĂ£ sinh viĂªn',
           'Ma sinh vien',
-          'Mã giảng viên',
+          'MĂ£ giáº£ng viĂªn',
           'Ma giang vien',
-          'Mã người dùng',
+          'MĂ£ ngÆ°á»i dĂ¹ng',
           'Ma nguoi dung',
           'userCode',
           'UserCode',
@@ -561,7 +561,7 @@ export async function importUsersFromExcel(req, res) {
 
       const phone = normalizeString(
         getCell(row, [
-          'Số điện thoại',
+          'Sá»‘ Ä‘iá»‡n thoáº¡i',
           'So dien thoai',
           'SDT',
           'phone',
@@ -574,12 +574,12 @@ export async function importUsersFromExcel(req, res) {
       );
 
       const className = normalizeString(
-        getCell(row, ['Mã lớp', 'Ma lop', 'Lớp', 'Lop', 'className', 'ClassName'])
+        getCell(row, ['MĂ£ lá»›p', 'Ma lop', 'Lá»›p', 'Lop', 'className', 'ClassName'])
       ).toUpperCase();
 
       const password =
         normalizeString(
-          getCell(row, ['Mật khẩu', 'Mat khau', 'password', 'Password'])
+          getCell(row, ['Máº­t kháº©u', 'Mat khau', 'password', 'Password'])
         ) || '123456';
 
       let targetClass = null;
@@ -590,7 +590,7 @@ export async function importUsersFromExcel(req, res) {
             row: rowNumber,
             email,
             userCode,
-            reason: 'Thiếu họ tên hoặc email',
+            reason: 'Thiáº¿u há» tĂªn hoáº·c email',
             rowData: row,
           });
 
@@ -602,7 +602,7 @@ export async function importUsersFromExcel(req, res) {
             row: rowNumber,
             email,
             userCode,
-            reason: 'Email không hợp lệ',
+            reason: 'Email khĂ´ng há»£p lá»‡',
             rowData: row,
           });
 
@@ -614,7 +614,7 @@ export async function importUsersFromExcel(req, res) {
             row: rowNumber,
             email,
             userCode,
-            reason: 'Email bị trùng trong file Excel',
+            reason: 'Email bá»‹ trĂ¹ng trong file Excel',
             rowData: row,
           });
 
@@ -623,24 +623,24 @@ export async function importUsersFromExcel(req, res) {
 
         seenEmails.add(email);
 
-        if (role === 'Student' && !userCode) {
+        if (role === 'STUDENT' && !userCode) {
           errorItems.push({
             row: rowNumber,
             email,
             userCode,
-            reason: 'Sinh viên cần có MSSV',
+            reason: 'Sinh viĂªn cáº§n cĂ³ MSSV',
             rowData: row,
           });
 
           continue;
         }
 
-        if (role === 'Teacher' && !userCode) {
+        if (role === 'LECTURER' && !userCode) {
           errorItems.push({
             row: rowNumber,
             email,
             userCode,
-            reason: 'Giảng viên cần có mã giảng viên',
+            reason: 'Giáº£ng viĂªn cáº§n cĂ³ mĂ£ giáº£ng viĂªn',
             rowData: row,
           });
 
@@ -653,9 +653,9 @@ export async function importUsersFromExcel(req, res) {
             email,
             userCode,
             reason:
-              role === 'Student'
-                ? 'MSSV bị trùng trong file Excel'
-                : 'Mã giảng viên bị trùng trong file Excel',
+              role === 'STUDENT'
+                ? 'MSSV bá»‹ trĂ¹ng trong file Excel'
+                : 'MĂ£ giáº£ng viĂªn bá»‹ trĂ¹ng trong file Excel',
             rowData: row,
           });
 
@@ -664,19 +664,19 @@ export async function importUsersFromExcel(req, res) {
 
         seenUserCodes.add(userCode);
 
-        if (role === 'Student' && !className) {
+        if (role === 'STUDENT' && !className) {
           errorItems.push({
             row: rowNumber,
             email,
             userCode,
-            reason: 'Sinh viên cần có mã lớp',
+            reason: 'Sinh viĂªn cáº§n cĂ³ mĂ£ lá»›p',
             rowData: row,
           });
 
           continue;
         }
 
-        if (role === 'Student') {
+        if (role === 'STUDENT') {
           const classByCode = await findClassByCode(className);
 
           if (!classByCode || classByCode.DeletedAt) {
@@ -684,7 +684,7 @@ export async function importUsersFromExcel(req, res) {
               row: rowNumber,
               email,
               userCode,
-              reason: `Mã lớp ${className} không tồn tại trong hệ thống`,
+              reason: `MĂ£ lá»›p ${className} khĂ´ng tá»“n táº¡i trong há»‡ thá»‘ng`,
               rowData: row,
             });
 
@@ -698,7 +698,7 @@ export async function importUsersFromExcel(req, res) {
               row: rowNumber,
               email,
               userCode,
-              reason: `Mã lớp ${className} không hợp lệ`,
+              reason: `MĂ£ lá»›p ${className} khĂ´ng há»£p lá»‡`,
               rowData: row,
             });
 
@@ -710,7 +710,7 @@ export async function importUsersFromExcel(req, res) {
               row: rowNumber,
               email,
               userCode,
-              reason: `Lớp ${className} đang bị khóa`,
+              reason: `Lá»›p ${className} Ä‘ang bá»‹ khĂ³a`,
               rowData: row,
             });
 
@@ -723,7 +723,7 @@ export async function importUsersFromExcel(req, res) {
             row: rowNumber,
             email,
             userCode,
-            reason: 'Mật khẩu phải có ít nhất 6 ký tự',
+            reason: 'Máº­t kháº©u pháº£i cĂ³ Ă­t nháº¥t 6 kĂ½ tá»±',
             rowData: row,
           });
 
@@ -737,7 +737,7 @@ export async function importUsersFromExcel(req, res) {
             row: rowNumber,
             email,
             userCode,
-            reason: 'Email đã tồn tại trong hệ thống',
+            reason: 'Email Ä‘Ă£ tá»“n táº¡i trong há»‡ thá»‘ng',
             rowData: row,
           });
 
@@ -752,9 +752,9 @@ export async function importUsersFromExcel(req, res) {
             email,
             userCode,
             reason:
-              role === 'Student'
-                ? 'MSSV đã tồn tại trong hệ thống'
-                : 'Mã giảng viên đã tồn tại trong hệ thống',
+              role === 'STUDENT'
+                ? 'MSSV Ä‘Ă£ tá»“n táº¡i trong há»‡ thá»‘ng'
+                : 'MĂ£ giáº£ng viĂªn Ä‘Ă£ tá»“n táº¡i trong há»‡ thá»‘ng',
             rowData: row,
           });
 
@@ -771,10 +771,10 @@ export async function importUsersFromExcel(req, res) {
           userCode,
           phone,
           department,
-          className: role === 'Student' ? className : '',
+          className: role === 'STUDENT' ? className : '',
         });
 
-        if (role === 'Student' && targetClass) {
+        if (role === 'STUDENT' && targetClass) {
           const activeClass = await findActiveStudentClass(newUser.Id);
 
           if (!activeClass) {
@@ -788,7 +788,7 @@ export async function importUsersFromExcel(req, res) {
           fullName: newUser.FullName,
           email: newUser.Email,
           userCode: newUser.UserCode,
-          classCode: role === 'Student' ? className : '',
+          classCode: role === 'STUDENT' ? className : '',
           role: newUser.Role,
         });
       } catch (rowError) {
@@ -796,14 +796,14 @@ export async function importUsersFromExcel(req, res) {
           row: rowNumber,
           email,
           userCode,
-          reason: rowError.message || 'Lỗi khi import dòng này',
+          reason: rowError.message || 'Lá»—i khi import dĂ²ng nĂ y',
           rowData: row,
         });
       }
     }
 
     return res.json({
-      message: 'Import người dùng từ Excel hoàn tất',
+      message: 'Import ngÆ°á»i dĂ¹ng tá»« Excel hoĂ n táº¥t',
       importType,
       role,
       totalRows: rows.length,
@@ -813,10 +813,10 @@ export async function importUsersFromExcel(req, res) {
       errorItems,
     });
   } catch (error) {
-    console.error('Lỗi import người dùng từ Excel:', error);
+    console.error('Lá»—i import ngÆ°á»i dĂ¹ng tá»« Excel:', error);
 
     return res.status(500).json({
-      message: 'Lỗi server khi import người dùng từ Excel',
+      message: 'Lá»—i server khi import ngÆ°á»i dĂ¹ng tá»« Excel',
     });
   }
 }

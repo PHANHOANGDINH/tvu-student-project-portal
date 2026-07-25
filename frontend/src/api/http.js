@@ -1,4 +1,16 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+﻿import { clearAuth } from '../utils/auth'
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/$/, '')
+
+export function buildApiUrl(path) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  if (API_BASE_URL.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    return `${API_BASE_URL}${normalizedPath.slice(4)}`
+  }
+
+  return `${API_BASE_URL}${normalizedPath}`
+}
 
 export async function request(path, options = {}) {
   const token = localStorage.getItem('access_token')
@@ -13,15 +25,26 @@ export async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(path), {
     ...options,
     headers
   })
 
   const data = await response.json().catch(() => null)
 
+  if (response.status === 401 && !path.includes('/auth/login')) {
+    clearAuth()
+
+    if (window.location.pathname !== '/login') {
+      window.location.assign('/login')
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || `Lỗi API: ${response.status}`)
+    const error = new Error(data?.message || data?.error || `Lỗi API: ${response.status}`)
+    error.status = response.status
+    error.errors = data?.errors || null
+    throw error
   }
 
   return data
