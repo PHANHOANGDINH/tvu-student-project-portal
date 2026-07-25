@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "seed:demo": "node src/scripts/seedDemo.js",
     "reset:admin-demo": "node src/scripts/resetAdminDemo.js",
-    "test": "node --test src/**/*.test.js"
+    "test": "node --test src/**/*.test.js",
+    "seed:demo-passwords": "node src/scripts/syncDemoPasswords.js"
   },
   "keywords": [],
   "author": "",

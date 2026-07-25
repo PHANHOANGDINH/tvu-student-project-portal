@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CourseClassSelect from "../../components/CourseClassSelect";
@@ -55,6 +55,7 @@ export default function TopicRoundsPage() {
     [busy, setBusy] = useState(false),
     [progressText, setProgressText] = useState(""),
     [createdId, setCreatedId] = useState(null);
+  const busyRef = useRef(false);
   const selected = items.find((item) => String(item.id) === String(id));
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,7 +115,8 @@ export default function TopicRoundsPage() {
   };
   const save = async (event, openAfter = false) => {
     event.preventDefault();
-    if (busy || createdId) return;
+    if (busyRef.current || createdId) return;
+    busyRef.current = true;
     setBusy(true);
     setError("");
     try {
@@ -149,7 +151,7 @@ export default function TopicRoundsPage() {
           setCreatedId(roundId);
           throw new Error(
             `Không thể tải tệp ${pendingFiles[index].file.name}. Vòng đăng ký được giữ ở Bản nháp.`,
-          { cause },
+            { cause },
           );
         }
       }
@@ -161,6 +163,7 @@ export default function TopicRoundsPage() {
     } catch (saveError) {
       setError(saveError.message);
     } finally {
+      busyRef.current = false;
       setBusy(false);
       setProgressText("");
     }
