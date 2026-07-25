@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getClassesApi, getDashboardApi, getUsersApi } from "../api/adminApi";
+import { getDashboardApi, getUsersApi, getClassesApi } from "../api/adminApi";
+
 import {
     FaUsers,
     FaUserGraduate,
@@ -7,9 +8,11 @@ import {
     FaUserShield,
     FaSchool,
     FaLock,
+    FaSyncAlt,
 } from "react-icons/fa";
 
 import "../dashboard.css";
+
 function DashboardPage() {
     const [dashboard, setDashboard] = useState(null);
     const [users, setUsers] = useState([]);
@@ -42,12 +45,11 @@ function DashboardPage() {
             setUsers(Array.isArray(userList) ? userList : []);
             setClasses(Array.isArray(classList) ? classList : []);
         } catch (err) {
-            setError(err.message || "Không thể tải dữ liệu dashboard");
+            setError(err.message || "Không thể tải dữ liệu Dashboard.");
         } finally {
             setLoading(false);
         }
     }
-
     const stats = useMemo(() => {
         const totalUsers =
             dashboard?.totalUsers ||
@@ -58,61 +60,55 @@ function DashboardPage() {
         const totalStudents =
             dashboard?.totalStudents ||
             dashboard?.TotalStudents ||
-            users.filter((user) => user.Role === "Student").length;
+            users.filter((u) => u.Role === "Student").length;
 
         const totalTeachers =
             dashboard?.totalTeachers ||
             dashboard?.TotalTeachers ||
-            users.filter((user) => user.Role === "Teacher").length;
+            users.filter((u) => u.Role === "Teacher").length;
 
         const totalAdmins =
             dashboard?.totalAdmins ||
             dashboard?.TotalAdmins ||
-            users.filter((user) => user.Role === "Admin").length;
-
-        const totalActiveUsers =
-            dashboard?.totalActiveUsers ||
-            dashboard?.TotalActiveUsers ||
-            users.filter((user) => user.IsActive !== false).length;
-
-        const totalInactiveUsers =
-            dashboard?.totalInactiveUsers ||
-            dashboard?.TotalInactiveUsers ||
-            users.filter((user) => user.IsActive === false).length;
+            users.filter((u) => u.Role === "Admin").length;
 
         const totalClasses =
             dashboard?.totalClasses ||
             dashboard?.TotalClasses ||
             classes.length;
 
+        const totalActiveUsers =
+            dashboard?.totalActiveUsers ||
+            dashboard?.TotalActiveUsers ||
+            users.filter((u) => u.IsActive !== false).length;
+
+        const totalInactiveUsers =
+            dashboard?.totalInactiveUsers ||
+            dashboard?.TotalInactiveUsers ||
+            users.filter((u) => u.IsActive === false).length;
+
         const totalActiveClasses =
             dashboard?.totalActiveClasses ||
             dashboard?.TotalActiveClasses ||
-            classes.filter((item) => item.IsActive !== false).length;
+            classes.filter((c) => c.IsActive !== false).length;
 
         const totalInactiveClasses =
             dashboard?.totalInactiveClasses ||
             dashboard?.TotalInactiveClasses ||
-            classes.filter((item) => item.IsActive === false).length;
+            classes.filter((c) => c.IsActive === false).length;
 
-        const assignedStudents = users.filter((user) => {
-            if (user.Role !== "Student") return false;
+        const assignedStudents = users.filter((u) => {
+            if (u.Role !== "Student") return false;
 
             return (
-                !!user.ActiveClassId ||
-                !!user.ActiveClassCode ||
-                !!user.ActiveClassName
+                !!u.ActiveClassId || !!u.ActiveClassCode || !!u.ActiveClassName
             );
         }).length;
 
-        const unassignedStudents = users.filter((user) => {
-            if (user.Role !== "Student") return false;
+        const unassignedStudents = users.filter((u) => {
+            if (u.Role !== "Student") return false;
 
-            return (
-                !user.ActiveClassId &&
-                !user.ActiveClassCode &&
-                !user.ActiveClassName
-            );
+            return !u.ActiveClassId && !u.ActiveClassCode && !u.ActiveClassName;
         }).length;
 
         const totalStudentsInClasses = classes.reduce((sum, item) => {
@@ -124,13 +120,18 @@ function DashboardPage() {
             totalStudents,
             totalTeachers,
             totalAdmins,
+
+            totalClasses,
+
             totalActiveUsers,
             totalInactiveUsers,
-            totalClasses,
+
             totalActiveClasses,
             totalInactiveClasses,
+
             assignedStudents,
             unassignedStudents,
+
             totalStudentsInClasses,
         };
     }, [dashboard, users, classes]);
@@ -157,52 +158,56 @@ function DashboardPage() {
         switch (role) {
             case "Admin":
                 return "Admin";
+
             case "Teacher":
                 return "Giảng viên";
+
             case "Student":
                 return "Sinh viên";
+
             default:
                 return role || "-";
         }
-    }
-
-    function getStatusClass(isActive) {
-        return isActive === false ? "badge" : "badge green";
     }
 
     function getStatusText(isActive) {
         return isActive === false ? "Đã khóa" : "Hoạt động";
     }
 
+    function getStatusClass(isActive) {
+        return isActive === false ? "status inactive" : "status active";
+    }
+
     if (loading) {
         return (
-            <div>
-                <div className="page-title">
-                    <h2>Dashboard</h2>
-                    <p>Đang tải dữ liệu tổng quan...</p>
-                </div>
-
-                <div className="panel">
-                    <p>Đang tải dữ liệu...</p>
-                </div>
+            <div className="loading-page">
+                <h2>Đang tải Dashboard...</h2>
             </div>
         );
     }
-
     return (
-        <div>
-            <div className="page-title row-between">
+        <div className="dashboard-container">
+            {/* ================= HEADER ================= */}
+
+            <div className="dashboard-header">
                 <div>
-                    <h2>Dashboard Admin</h2>
-                    <p>Tổng quan hệ thống TVU Student Project Portal.</p>
+                    <h1>Dashboard Admin 👋</h1>
+
+                    <p>
+                        Chào mừng trở lại, quản trị viên. Đây là tổng quan toàn
+                        bộ hệ thống quản lý đồ án.
+                    </p>
                 </div>
 
-                <button className="btn-light" onClick={loadDashboard}>
-                    Làm mới
+                <button className="refresh-btn" onClick={loadDashboard}>
+                    <FaSyncAlt />
+                    <span>Làm mới</span>
                 </button>
             </div>
 
             {error && <div className="alert error">{error}</div>}
+
+            {/* ================= CARDS ================= */}
 
             <div className="dashboard-stat-grid">
                 <div className="stat-card blue">
@@ -210,10 +215,12 @@ function DashboardPage() {
                         <FaUsers />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Tổng người dùng</span>
-                        <strong>{stats.totalUsers}</strong>
-                        <p>Tất cả tài khoản trong hệ thống</p>
+
+                        <h2>{stats.totalUsers}</h2>
+
+                        <small>Toàn bộ tài khoản hệ thống</small>
                     </div>
                 </div>
 
@@ -222,10 +229,12 @@ function DashboardPage() {
                         <FaUserGraduate />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Sinh viên</span>
-                        <strong>{stats.totalStudents}</strong>
-                        <p>Tài khoản sinh viên</p>
+
+                        <h2>{stats.totalStudents}</h2>
+
+                        <small>Đang học trong hệ thống</small>
                     </div>
                 </div>
 
@@ -234,10 +243,12 @@ function DashboardPage() {
                         <FaChalkboardTeacher />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Giảng viên</span>
-                        <strong>{stats.totalTeachers}</strong>
-                        <p>Giảng viên hướng dẫn</p>
+
+                        <h2>{stats.totalTeachers}</h2>
+
+                        <small>Hướng dẫn đồ án</small>
                     </div>
                 </div>
 
@@ -246,10 +257,12 @@ function DashboardPage() {
                         <FaUserShield />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Quản trị viên</span>
-                        <strong>{stats.totalAdmins}</strong>
-                        <p>Tài khoản quản trị</p>
+
+                        <h2>{stats.totalAdmins}</h2>
+
+                        <small>Administrator</small>
                     </div>
                 </div>
 
@@ -258,10 +271,12 @@ function DashboardPage() {
                         <FaSchool />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Lớp học</span>
-                        <strong>{stats.totalClasses}</strong>
-                        <p>Lớp đang quản lý</p>
+
+                        <h2>{stats.totalClasses}</h2>
+
+                        <small>Đang quản lý</small>
                     </div>
                 </div>
 
@@ -270,158 +285,248 @@ function DashboardPage() {
                         <FaLock />
                     </div>
 
-                    <div>
+                    <div className="stat-content">
                         <span>Tài khoản khóa</span>
+
+                        <h2>{stats.totalInactiveUsers}</h2>
+
+                        <small>Không thể đăng nhập</small>
+                    </div>
+                </div>
+            </div>
+
+            {/* ================= THỐNG KÊ ================= */}
+
+            <div className="dashboard-row">
+                <div className="dashboard-box">
+                    <h3>📊 Thống kê tài khoản</h3>
+
+                    <div className="mini-item">
+                        <span>Đang hoạt động</span>
+
+                        <strong>{stats.totalActiveUsers}</strong>
+                    </div>
+
+                    <div className="progress">
+                        <div
+                            className="progress-blue"
+                            style={{
+                                width:
+                                    stats.totalUsers === 0
+                                        ? "0%"
+                                        : `${
+                                              (stats.totalActiveUsers /
+                                                  stats.totalUsers) *
+                                              100
+                                          }%`,
+                            }}
+                        />
+                    </div>
+
+                    <div className="mini-item">
+                        <span>Bị khóa</span>
+
                         <strong>{stats.totalInactiveUsers}</strong>
-                        <p>Đang bị vô hiệu hóa</p>
+                    </div>
+
+                    <div className="progress">
+                        <div
+                            className="progress-red"
+                            style={{
+                                width:
+                                    stats.totalUsers === 0
+                                        ? "0%"
+                                        : `${
+                                              (stats.totalInactiveUsers /
+                                                  stats.totalUsers) *
+                                              100
+                                          }%`,
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="dashboard-box">
+                    <h3>🏫 Thống kê lớp học</h3>
+
+                    <div className="mini-item">
+                        <span>Lớp hoạt động</span>
+
+                        <strong>{stats.totalActiveClasses}</strong>
+                    </div>
+
+                    <div className="progress">
+                        <div
+                            className="progress-green"
+                            style={{
+                                width:
+                                    stats.totalClasses === 0
+                                        ? "0%"
+                                        : `${
+                                              (stats.totalActiveClasses /
+                                                  stats.totalClasses) *
+                                              100
+                                          }%`,
+                            }}
+                        />
+                    </div>
+
+                    <div className="mini-item">
+                        <span>Lớp khóa</span>
+
+                        <strong>{stats.totalInactiveClasses}</strong>
+                    </div>
+
+                    <div className="progress">
+                        <div
+                            className="progress-orange"
+                            style={{
+                                width:
+                                    stats.totalClasses === 0
+                                        ? "0%"
+                                        : `${
+                                              (stats.totalInactiveClasses /
+                                                  stats.totalClasses) *
+                                              100
+                                          }%`,
+                            }}
+                        />
+                    </div>
+                </div>
+            </div>
+            {/* ================= XẾP LỚP SINH VIÊN ================= */}
+
+            <div className="dashboard-box full-width">
+                <h3>👨‍🎓 Thống kê sinh viên</h3>
+
+                <div className="three-column">
+                    <div className="info-card">
+                        <span>Đã thuộc lớp</span>
+
+                        <h2>{stats.assignedStudents}</h2>
+                    </div>
+
+                    <div className="info-card">
+                        <span>Chưa thuộc lớp</span>
+
+                        <h2>{stats.unassignedStudents}</h2>
+                    </div>
+
+                    <div className="info-card">
+                        <span>Tổng SV trong lớp</span>
+
+                        <h2>{stats.totalStudentsInClasses}</h2>
                     </div>
                 </div>
             </div>
 
-            <div className="dashboard-grid">
-                <div className="panel">
-                    <h3>Trạng thái tài khoản</h3>
+            {/* ================= TABLE ================= */}
 
-                    <div className="mini-stat-list">
-                        <div>
-                            <span>Đang hoạt động</span>
-                            <strong>{stats.totalActiveUsers}</strong>
-                        </div>
-
-                        <div>
-                            <span>Bị khóa</span>
-                            <strong>{stats.totalInactiveUsers}</strong>
-                        </div>
-
-                        <div>
-                            <span>Tổng tài khoản</span>
-                            <strong>{stats.totalUsers}</strong>
-                        </div>
+            <div className="table-grid">
+                <div className="table-card">
+                    <div className="table-header">
+                        <h3>🏫 Lớp có nhiều sinh viên nhất</h3>
                     </div>
-                </div>
 
-                <div className="panel">
-                    <h3>Trạng thái lớp học</h3>
-
-                    <div className="mini-stat-list">
-                        <div>
-                            <span>Lớp hoạt động</span>
-                            <strong>{stats.totalActiveClasses}</strong>
-                        </div>
-
-                        <div>
-                            <span>Lớp bị khóa</span>
-                            <strong>{stats.totalInactiveClasses}</strong>
-                        </div>
-
-                        <div>
-                            <span>Tổng lớp</span>
-                            <strong>{stats.totalClasses}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="panel">
-                    <h3>Xếp lớp sinh viên</h3>
-
-                    <div className="mini-stat-list">
-                        <div>
-                            <span>Đã thuộc lớp</span>
-                            <strong>{stats.assignedStudents}</strong>
-                        </div>
-
-                        <div>
-                            <span>Chưa thuộc lớp</span>
-                            <strong>{stats.unassignedStudents}</strong>
-                        </div>
-
-                        <div>
-                            <span>Tổng sinh viên trong lớp</span>
-                            <strong>{stats.totalStudentsInClasses}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="dashboard-grid">
-                <div className="panel">
-                    <h3>Lớp có nhiều sinh viên nhất</h3>
-
-                    <table>
+                    <table className="modern-table">
                         <thead>
                             <tr>
                                 <th>Mã lớp</th>
+
                                 <th>Tên lớp</th>
+
                                 <th>Số SV</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {topClasses.map((item) => (
-                                <tr key={item.Id}>
-                                    <td>{item.ClassCode || "-"}</td>
-                                    <td>{item.ClassName || "-"}</td>
-                                    <td>{item.TotalStudents || 0}</td>
-                                </tr>
-                            ))}
+                            {topClasses.length > 0 ? (
+                                topClasses.map((item) => (
+                                    <tr key={item.Id}>
+                                        <td>{item.ClassCode || "-"}</td>
 
-                            {topClasses.length === 0 && (
+                                        <td>{item.ClassName || "-"}</td>
+
+                                        <td>
+                                            <span className="badge blue">
+                                                {item.TotalStudents || 0}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
                                 <tr>
-                                    <td colSpan="3">
-                                        Chưa có dữ liệu lớp học.
-                                    </td>
+                                    <td colSpan="3">Chưa có dữ liệu.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="panel">
-                    <h3>Người dùng mới tạo</h3>
+                <div className="table-card">
+                    <div className="table-header">
+                        <h3>👥 Người dùng mới</h3>
+                    </div>
 
-                    <table>
+                    <table className="modern-table">
                         <thead>
                             <tr>
                                 <th>Họ tên</th>
+
                                 <th>Vai trò</th>
+
                                 <th>Trạng thái</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {recentUsers.map((user) => (
-                                <tr key={user.Id}>
-                                    <td>
-                                        <strong>{user.FullName || "-"}</strong>
-                                        <br />
-                                        <span className="muted-text">
-                                            {user.Email || "-"}
-                                        </span>
-                                    </td>
+                            {recentUsers.length > 0 ? (
+                                recentUsers.map((user) => (
+                                    <tr key={user.Id}>
+                                        <td>
+                                            <div className="user-info">
+                                                <div className="avatar">
+                                                    {(user.FullName || "U")
 
-                                    <td>
-                                        <span className="badge blue">
-                                            {getRoleText(user.Role)}
-                                        </span>
-                                    </td>
+                                                        .charAt(0)
 
-                                    <td>
-                                        <span
-                                            className={getStatusClass(
-                                                user.IsActive,
-                                            )}
-                                        >
-                                            {getStatusText(user.IsActive)}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
+                                                        .toUpperCase()}
+                                                </div>
 
-                            {recentUsers.length === 0 && (
+                                                <div>
+                                                    <strong>
+                                                        {user.FullName || "-"}
+                                                    </strong>
+
+                                                    <br />
+
+                                                    <small>
+                                                        {user.Email || "-"}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td>
+                                            <span className="badge role">
+                                                {getRoleText(user.Role)}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <span
+                                                className={getStatusClass(
+                                                    user.IsActive,
+                                                )}
+                                            >
+                                                {getStatusText(user.IsActive)}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
                                 <tr>
-                                    <td colSpan="3">
-                                        Chưa có dữ liệu người dùng.
-                                    </td>
+                                    <td colSpan="3">Chưa có dữ liệu.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -431,5 +536,4 @@ function DashboardPage() {
         </div>
     );
 }
-
 export default DashboardPage;
