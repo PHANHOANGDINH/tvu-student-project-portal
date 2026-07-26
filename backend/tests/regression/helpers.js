@@ -4,6 +4,7 @@ import "dotenv/config";
 import { once } from "node:events";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { resolveStoredFile } from "../../src/services/fileStorage.service.js";
 import { tmpdir } from "node:os";
 import app from "../../src/app.js";
 import { poolPromise } from "../../src/config/db.js";
@@ -62,6 +63,8 @@ export function createRegressionContext() {
 export async function createCsvFile(context,name,headers,rows){const directory=await mkdtemp(join(tmpdir(),`tvu-reg-${context.runId}-`));context.tempDirectories.push(directory);const escape=value=>`"${String(value??"").replaceAll('"','""')}"`;const content=[headers,...rows].map(row=>row.map(escape).join(",")).join("\r\n"),path=join(directory,name);await writeFile(path,`\uFEFF${content}`,"utf8");return{path,content};}
 export async function createTestFile(context,name,content){const directory=await mkdtemp(join(tmpdir(),`tvu-reg-${context.runId}-`));context.tempDirectories.push(directory);const path=join(directory,name);await writeFile(path,content);return{path,content};}
 export async function csvForm(path,fields={}){const form=new FormData();form.append("file",new Blob([await readFile(path)],{type:"text/csv"}),path.split(/[\\\\/]/).pop());Object.entries(fields).forEach(([key,value])=>form.append(key,String(value)));return form;}
+export async function fileForm(path,mimeType,fileName){const form=new FormData();form.append("file",new Blob([await readFile(path)],{type:mimeType}),fileName||path.split(/[\\\\/]/).pop());return form;}
+export async function requestDownload(recorder,path,{token,expected=[200]}={}){const response=await fetch(`${API_BASE}${path}`,{headers:{...(token?{Authorization:`Bearer ${token}`}:{})}}),body=Buffer.from(await response.arrayBuffer());recorder.total++;if(response.status>=500)recorder.server5xx++;else if(response.ok)recorder.ok2xx++;else if(expected.includes(response.status))recorder.expected4xx++;else recorder.unexpected4xx++;if(!expected.includes(response.status))recorder.failures.push({path,status:response.status,expected});assert.ok(response.status<500,`${path} returned HTTP ${response.status}`);assert.ok(expected.includes(response.status),`${path}: expected ${expected.join("/")}, got ${response.status}`);return{status:response.status,body,headers:response.headers};}
 
 export async function lookupDemoUsers() {
   const pool = await poolPromise;
@@ -74,11 +77,12 @@ export async function lookupDemoUsers() {
 
 export async function cleanupRegressionData(context) {
   const pool = await poolPromise;
+  const storedFiles=(await pool.request().input("Prefix",sql.NVarChar(100),`${context.prefix}%`).query("SELECT f.RelativePath path FROM TopicRegistrationRoundFiles f JOIN TopicRegistrationRounds r ON r.Id=f.RoundId WHERE r.Name LIKE @Prefix")).recordset;
   await pool.request()
     .input("Prefix", sql.NVarChar(100), `${context.prefix}%`)
     .input("UserPrefix", sql.NVarChar(100), `REG${context.runId}%`)
     .query(`
-      SET XACT_ABORT ON; BEGIN TRANSACTION;\n      DELETE FROM Notifications WHERE UserId IN(SELECT Id FROM Users WHERE UserCode LIKE @UserPrefix) OR RelatedEntityId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM GroupMembers WHERE GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM StudentGroups WHERE Name LIKE @Prefix;
+      SET XACT_ABORT ON; BEGIN TRANSACTION;\n      DELETE FROM Notifications WHERE UserId IN(SELECT Id FROM Users WHERE UserCode LIKE @UserPrefix) OR RelatedEntityId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT tr.Id FROM TopicRegistrations tr JOIN StudentGroups g ON g.Id=tr.GroupId WHERE g.Name LIKE @Prefix);\n      DELETE FROM TopicReviewHistory WHERE TopicRegistrationId IN(SELECT tr.Id FROM TopicRegistrations tr LEFT JOIN TopicRegistrationRounds r ON r.Id=tr.RoundId LEFT JOIN StudentGroups g ON g.Id=tr.GroupId WHERE r.Name LIKE @Prefix OR g.Name LIKE @Prefix);\n      DELETE FROM TopicRegistrations WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRoundFiles WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRounds WHERE Name LIKE @Prefix;\n      DELETE FROM GroupMembers WHERE GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM StudentGroups WHERE Name LIKE @Prefix;
       DELETE FROM CourseClassEnrollments WHERE CourseClassId IN(
         SELECT c.Id FROM CourseClasses c
         WHERE c.Code LIKE @Prefix OR c.CourseClassCode LIKE @Prefix
@@ -108,8 +112,10 @@ export async function cleanupRegressionData(context) {
           OR SemesterId IN(SELECT Id FROM Semesters WHERE Code LIKE @Prefix)) classes
     `)).recordset[0];
   assert.deepEqual(Object.values(row).map(Number), [0, 0, 0, 0, 0]);
+  for(const file of storedFiles)await rm(resolveStoredFile(file.path),{force:true});
   for(const directory of context.tempDirectories)await rm(directory,{recursive:true,force:true});
   await pool.close();
+  server.closeAllConnections?.();
   await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   return { leftovers: 0 };
 }
