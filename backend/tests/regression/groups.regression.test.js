@@ -1,0 +1,20 @@
+import test from"node:test";import assert from"node:assert/strict";import{cleanupRegressionData,createRecorder,createRegressionContext,loginAs,lookupDemoUsers,printSummary,requestAs}from"./helpers.js";
+test("student group membership, leadership and authorization",{timeout:45_000},async()=>{const recorder=createRecorder(),context=createRegressionContext();let cleanup;try{
+ const admin=await loginAs(recorder,"admin.demo@tvu.edu.vn",process.env.DEMO_ADMIN_PASSWORD,"ADMIN"),gv1=await loginAs(recorder,"thiennhd@tvu.edu.vn",process.env.DEMO_LECTURER_PASSWORD,"LECTURER"),gv2=await loginAs(recorder,"annb@tvu.edu.vn",process.env.DEMO_LECTURER_PASSWORD,"LECTURER"),sv1=await loginAs(recorder,"sv001@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT"),sv2=await loginAs(recorder,"sv002@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT"),sv3=await loginAs(recorder,"sv003@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT"),users=await lookupDemoUsers(),now=Date.now(),iso=o=>new Date(now+o).toISOString();
+ const year=(await requestAs(recorder,"/academic-years",{token:admin.accessToken,method:"POST",expected:[201],body:{name:`${context.prefix}_YEAR`,startDate:iso(-86400000),endDate:iso(31536000000)}})).data;
+ const sem=(await requestAs(recorder,"/semesters",{token:admin.accessToken,method:"POST",expected:[201],body:{academicYearId:year.id,name:`${context.prefix}_SEM`,code:`${context.prefix}_SEM`,startDate:iso(-86400000),endDate:iso(31536000000)}})).data;
+ const sub=(await requestAs(recorder,"/subjects",{token:admin.accessToken,method:"POST",expected:[201],body:{code:`${context.prefix}_SUB`,name:`${context.prefix}_SUBJECT`,credits:3}})).data;
+ const course=(await requestAs(recorder,"/course-classes",{token:admin.accessToken,method:"POST",expected:[201],body:{subjectId:sub.id,semesterId:sem.id,lecturerId:users.get("GV001").id,maxStudents:10,status:"ACTIVE",allowSelfEnrollment:true,enrollmentOpenAt:iso(-86400000),enrollmentCloseAt:iso(86400000)}})).data;
+ await requestAs(recorder,`/course-classes/${course.id}/students/bulk`,{token:admin.accessToken,method:"POST",body:{studentIds:[users.get("SV001").id,users.get("SV002").id]}});
+ const group=(await requestAs(recorder,`/course-classes/${course.id}/groups`,{token:sv1.accessToken,method:"POST",expected:[201],body:{name:`${context.prefix}_GROUP`,maxMembers:5}})).data;
+ assert.equal(group.leaderId,users.get("SV001").id);
+ await requestAs(recorder,`/groups/${group.id}/members`,{token:sv1.accessToken,method:"POST",body:{studentId:users.get("SV002").id}});
+ await requestAs(recorder,`/groups/${group.id}/members`,{token:sv1.accessToken,method:"POST",expected:[409],body:{studentId:users.get("SV002").id}});
+ await requestAs(recorder,`/groups/${group.id}/members`,{token:sv1.accessToken,method:"POST",expected:[409],body:{studentId:users.get("SV003").id}});
+ await requestAs(recorder,`/groups/${group.id}/leader`,{token:sv1.accessToken,method:"PATCH",body:{studentId:users.get("SV002").id}});
+ const read=await requestAs(recorder,`/groups/${group.id}`,{token:sv2.accessToken});assert.equal(read.data.leaderId,users.get("SV002").id);assert.equal(read.data.members.length,2);
+ await requestAs(recorder,`/groups/${group.id}/leader`,{token:sv2.accessToken,method:"PATCH",expected:[409],body:{studentId:users.get("SV003").id}});
+ await requestAs(recorder,`/groups/${group.id}/members/${users.get("SV001").id}`,{token:sv2.accessToken,method:"DELETE"});
+ await requestAs(recorder,`/groups/${group.id}`,{token:gv1.accessToken});await requestAs(recorder,`/groups/${group.id}`,{token:gv2.accessToken,expected:[403]});await requestAs(recorder,`/groups/${group.id}`,{token:sv3.accessToken,expected:[403]});
+ await requestAs(recorder,`/course-classes/${course.id}/groups`,{token:gv1.accessToken});await requestAs(recorder,`/course-classes/${course.id}/groups`,{token:gv2.accessToken,expected:[403]});
+}finally{cleanup=await cleanupRegressionData(context);printSummary("groups",recorder,cleanup);}});
