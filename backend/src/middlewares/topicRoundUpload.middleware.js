@@ -29,6 +29,7 @@ const raw = multer({
 export function uploadTopicRoundFile(req, _res, next) {
   raw(req, _res, async cause => {
     if (!cause && req.file) {
+      req.file.originalname = Buffer.from(req.file.originalname, 'latin1').toString('utf8')
       const extension = path.extname(path.basename(req.file.originalname)).toLowerCase()
       const handle = await open(req.file.path, 'r')
       const signature = Buffer.alloc(8)
