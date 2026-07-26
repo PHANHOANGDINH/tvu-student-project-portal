@@ -77,12 +77,35 @@ export async function lookupDemoUsers() {
 
 export async function cleanupRegressionData(context) {
   const pool = await poolPromise;
-  const storedFiles=(await pool.request().input("Prefix",sql.NVarChar(100),`${context.prefix}%`).query("SELECT f.RelativePath path FROM TopicRegistrationRoundFiles f JOIN TopicRegistrationRounds r ON r.Id=f.RoundId WHERE r.Name LIKE @Prefix")).recordset;
+  const storedFiles=(await pool.request().input("Prefix",sql.NVarChar(100),`${context.prefix}%`).query(`
+    SELECT f.RelativePath path FROM TopicRegistrationRoundFiles f JOIN TopicRegistrationRounds r ON r.Id=f.RoundId WHERE r.Name LIKE @Prefix
+    UNION ALL
+    SELECT f.RelativePath path FROM SubmissionFiles f JOIN SubmissionAttempts a ON a.Id=f.SubmissionAttemptId
+    JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId
+    WHERE r.Title LIKE @Prefix
+  `)).recordset;
   await pool.request()
     .input("Prefix", sql.NVarChar(100), `${context.prefix}%`)
     .input("UserPrefix", sql.NVarChar(100), `REG${context.runId}%`)
     .query(`
-      SET XACT_ABORT ON; BEGIN TRANSACTION;\n      DELETE FROM Notifications WHERE UserId IN(SELECT Id FROM Users WHERE UserCode LIKE @UserPrefix) OR RelatedEntityId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT tr.Id FROM TopicRegistrations tr JOIN StudentGroups g ON g.Id=tr.GroupId WHERE g.Name LIKE @Prefix);\n      DELETE FROM TopicReviewHistory WHERE TopicRegistrationId IN(SELECT tr.Id FROM TopicRegistrations tr LEFT JOIN TopicRegistrationRounds r ON r.Id=tr.RoundId LEFT JOIN StudentGroups g ON g.Id=tr.GroupId WHERE r.Name LIKE @Prefix OR g.Name LIKE @Prefix);\n      DELETE FROM TopicRegistrations WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRoundFiles WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRounds WHERE Name LIKE @Prefix;\n      DELETE FROM GroupMembers WHERE GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM StudentGroups WHERE Name LIKE @Prefix;
+      SET XACT_ABORT ON; BEGIN TRANSACTION;\n      DELETE FROM Notifications WHERE UserId IN(SELECT Id FROM Users WHERE UserCode LIKE @UserPrefix) OR RelatedEntityId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR RelatedEntityId IN(SELECT tr.Id FROM TopicRegistrations tr JOIN StudentGroups g ON g.Id=tr.GroupId WHERE g.Name LIKE @Prefix);\n      DELETE FROM Notifications WHERE RelatedEntityType IN('SUBMISSION','SUBMISSION_REQUIREMENT') AND RelatedEntityId IN(
+        SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix
+        UNION SELECT Id FROM SubmissionRequirements WHERE Title LIKE @Prefix);
+      DELETE FROM CriterionScores WHERE GradeId IN(SELECT g.Id FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM Grades WHERE SubmissionId IN(SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM EvaluationCriteria WHERE RequirementId IN(SELECT Id FROM SubmissionRequirements WHERE Title LIKE @Prefix);
+      DELETE FROM Feedback WHERE SubmissionId IN(SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionReviewHistory WHERE SubmissionId IN(SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionHistory WHERE SubmissionId IN(SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionItemResponses WHERE SubmissionAttemptId IN(SELECT a.Id FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionLinks WHERE SubmissionAttemptId IN(SELECT a.Id FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionFiles WHERE SubmissionAttemptId IN(SELECT a.Id FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM SubmissionAttempts WHERE SubmissionId IN(SELECT s.Id FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix);
+      DELETE FROM Submissions WHERE RequirementId IN(SELECT Id FROM SubmissionRequirements WHERE Title LIKE @Prefix);
+      DELETE FROM SubmissionRounds WHERE RequirementId IN(SELECT Id FROM SubmissionRequirements WHERE Title LIKE @Prefix);
+      DELETE FROM RequiredSubmissionItems WHERE RequirementId IN(SELECT Id FROM SubmissionRequirements WHERE Title LIKE @Prefix);
+      DELETE FROM SubmissionRequirements WHERE Title LIKE @Prefix;
+      DELETE FROM TopicReviewHistory WHERE TopicRegistrationId IN(SELECT tr.Id FROM TopicRegistrations tr LEFT JOIN TopicRegistrationRounds r ON r.Id=tr.RoundId LEFT JOIN StudentGroups g ON g.Id=tr.GroupId WHERE r.Name LIKE @Prefix OR g.Name LIKE @Prefix);\n      DELETE FROM TopicRegistrations WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix) OR GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRoundFiles WHERE RoundId IN(SELECT Id FROM TopicRegistrationRounds WHERE Name LIKE @Prefix);\n      DELETE FROM TopicRegistrationRounds WHERE Name LIKE @Prefix;\n      DELETE FROM GroupMembers WHERE GroupId IN(SELECT Id FROM StudentGroups WHERE Name LIKE @Prefix);\n      DELETE FROM StudentGroups WHERE Name LIKE @Prefix;
       DELETE FROM CourseClassEnrollments WHERE CourseClassId IN(
         SELECT c.Id FROM CourseClasses c
         WHERE c.Code LIKE @Prefix OR c.CourseClassCode LIKE @Prefix
@@ -104,6 +127,10 @@ export async function cleanupRegressionData(context) {
     .query(`
       SELECT
        (SELECT COUNT(*) FROM Users WHERE UserCode LIKE @UserPrefix) users,
+       (SELECT COUNT(*) FROM SubmissionRequirements WHERE Title LIKE @Prefix) requirements,
+       (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix) submissions,
+       (SELECT COUNT(*) FROM SubmissionAttempts a JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix) attempts,
+       (SELECT COUNT(*) FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.Title LIKE @Prefix) grades,
        (SELECT COUNT(*) FROM AcademicYears WHERE Name LIKE @Prefix) years,
        (SELECT COUNT(*) FROM Semesters WHERE Code LIKE @Prefix) semesters,
        (SELECT COUNT(*) FROM Subjects WHERE Code LIKE @Prefix) subjects,
@@ -111,7 +138,7 @@ export async function cleanupRegressionData(context) {
           OR SubjectId IN(SELECT Id FROM Subjects WHERE Code LIKE @Prefix)
           OR SemesterId IN(SELECT Id FROM Semesters WHERE Code LIKE @Prefix)) classes
     `)).recordset[0];
-  assert.deepEqual(Object.values(row).map(Number), [0, 0, 0, 0, 0]);
+  assert.deepEqual(Object.values(row).map(Number), [0, 0, 0, 0, 0, 0, 0, 0, 0]);
   for(const file of storedFiles)await rm(resolveStoredFile(file.path),{force:true});
   for(const directory of context.tempDirectories)await rm(directory,{recursive:true,force:true});
   await pool.close();
