@@ -60,6 +60,7 @@ export function createRegressionContext() {
 }
 
 export async function createCsvFile(context,name,headers,rows){const directory=await mkdtemp(join(tmpdir(),`tvu-reg-${context.runId}-`));context.tempDirectories.push(directory);const escape=value=>`"${String(value??"").replaceAll('"','""')}"`;const content=[headers,...rows].map(row=>row.map(escape).join(",")).join("\r\n"),path=join(directory,name);await writeFile(path,`\uFEFF${content}`,"utf8");return{path,content};}
+export async function createTestFile(context,name,content){const directory=await mkdtemp(join(tmpdir(),`tvu-reg-${context.runId}-`));context.tempDirectories.push(directory);const path=join(directory,name);await writeFile(path,content);return{path,content};}
 export async function csvForm(path,fields={}){const form=new FormData();form.append("file",new Blob([await readFile(path)],{type:"text/csv"}),path.split(/[\\\\/]/).pop());Object.entries(fields).forEach(([key,value])=>form.append(key,String(value)));return form;}
 
 export async function lookupDemoUsers() {
