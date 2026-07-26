@@ -10,7 +10,8 @@
     "seed:demo": "node src/scripts/seedDemo.js",
     "reset:admin-demo": "node src/scripts/resetAdminDemo.js",
     "test": "node --test src/**/*.test.js",
-    "seed:demo-passwords": "node src/scripts/syncDemoPasswords.js"
+    "seed:demo-passwords": "node src/scripts/syncDemoPasswords.js",
+    "test:regression": "node --test --test-concurrency=1 tests/regression/*.test.js"
   },
   "keywords": [],
   "author": "",
