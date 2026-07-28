@@ -64,8 +64,10 @@ test("weekly progress submission, revision, review and grading workflows",{timeo
   await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(badUrl)});
   const duplicate=[...responses(),responses()[0]];
   await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(duplicate)});
-  const invalidFile=await createTestFile(context,"invalid.txt","not a report"),emptyFile=await createTestFile(context,"empty.pdf",Buffer.alloc(0)),largeFile=await createTestFile(context,"large.pdf",Buffer.concat([Buffer.from("%PDF-"),Buffer.alloc(2*1024*1024,65)]));
+  const invalidFile=await createTestFile(context,"invalid.txt","not a report"),fakePdfFile=await createTestFile(context,"fake.pdf","plain text"),truncatedPdfFile=await createTestFile(context,"truncated.pdf","%PDF-1.4\nmissing eof"),emptyFile=await createTestFile(context,"empty.pdf",Buffer.alloc(0)),largeFile=await createTestFile(context,"large.pdf",Buffer.concat([Buffer.from("%PDF-1.4\n"),Buffer.alloc(2*1024*1024,65),Buffer.from("\n%%EOF")]));
   await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(responses(),true,invalidFile,"text/plain","invalid.txt")});
+  await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(responses(),true,fakePdfFile,"application/pdf","fake.pdf")});
+  await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(responses(),true,truncatedPdfFile,"application/pdf","truncated.pdf")});
   await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[400],body:await form(responses(),true,emptyFile,"application/pdf","empty.pdf")});
   await requestAs(recorder,`/student/submission-requirements/${requirement.id}/submissions`,{token:leader.accessToken,method:"POST",expected:[413],body:await form(responses(),true,largeFile,"application/pdf","large.pdf")});
   await requestDownload(recorder,"/student/submission-files/2147483000/download",{token:leader.accessToken,expected:[404]});
@@ -73,7 +75,7 @@ test("weekly progress submission, revision, review and grading workflows",{timeo
   assert.equal(submitted.latestAttemptNumber,1);assert.equal(submitted.attempts[0].responses.length,11);
   const attempt1=submitted.attempts[0],file1=attempt1.responses.find(x=>x.type==="REPORT_FILE");
   assert.equal(attempt1.status,"SUBMITTED");assert.equal(file1.originalName,"Báo cáo tiến độ.pdf");
-  await requestDownload(recorder,`/student/submission-files/${file1.fileId}/download`,{token:member.accessToken});
+  const reportDownload=await requestDownload(recorder,`/student/submission-files/${file1.fileId}/download`,{token:member.accessToken});assert.match(reportDownload.headers.get("content-type")||"",/pdf/);assert.equal(Number(reportDownload.headers.get("content-length")),report.content.length);assert.ok(!/[\r\n]/.test(reportDownload.headers.get("content-disposition")||""))
   await requestDownload(recorder,`/student/submission-files/${file1.fileId}/download`,{token:outside.accessToken,expected:[403]});
   await requestDownload(recorder,`/lecturer/submission-files/${file1.fileId}/download`,{token:otherLecturer.accessToken,expected:[403]});
   await requestAs(recorder,`/lecturer/submissions/${submitted.id}`,{token:otherLecturer.accessToken,expected:[403]});

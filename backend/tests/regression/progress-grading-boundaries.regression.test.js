@@ -17,6 +17,7 @@ test("progress terminal states, optional items, inactive enrollment and cross-co
   const admin=await loginAs(recorder,"admin.demo@tvu.edu.vn",process.env.DEMO_ADMIN_PASSWORD,"ADMIN");
   const leader=await loginAs(recorder,"sv001@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT");
   const member=await loginAs(recorder,"sv002@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT");
+  const outside=await loginAs(recorder,"sv003@tvu.edu.vn",process.env.DEMO_STUDENT_PASSWORD,"STUDENT");
   const users=await lookupDemoUsers(),pool=await poolPromise,now=Date.now(),iso=o=>new Date(now+o).toISOString();
   const year=(await requestAs(recorder,"/academic-years",{token:admin.accessToken,method:"POST",expected:[201],body:{name:`${context.prefix}_YEAR`,startDate:iso(-86400000),endDate:iso(31536000000)}})).data;
   const semester=(await requestAs(recorder,"/semesters",{token:admin.accessToken,method:"POST",expected:[201],body:{academicYearId:year.id,name:`${context.prefix}_SEM`,code:`${context.prefix}_SEM`,startDate:iso(-86400000),endDate:iso(31536000000)}})).data;
@@ -98,6 +99,8 @@ test("progress terminal states, optional items, inactive enrollment and cross-co
   const missing=await requestAs(recorder,`/student/submission-files/${missingFile.fileId}/download`,{token:leader.accessToken,expected:[410]});
   assert.equal(missing.payload.message,"Tệp đính kèm không còn tồn tại trên hệ thống.");
   await requestDownload(recorder,`/student/submission-files/${missingFile.fileId}/download`,{token:member.accessToken,expected:[410]});
+  await requestDownload(recorder,`/student/submission-files/${missingFile.fileId}/download`,{token:outside.accessToken,expected:[403]});
+  await requestDownload(recorder,`/lecturer/submission-files/${missingFile.fileId}/download`,{token:lecturerB.accessToken,expected:[403]});
 
   const notMet=(await requestAs(recorder,"/lecturer/submission-requirements",{token:lecturer.accessToken,method:"POST",expected:[201],body:{...requirementBody(classA.id,`${context.prefix}_NOT_MET`),requiredItems:[items[0]]}})).data;
   await requestAs(recorder,`/lecturer/submission-requirements/${notMet.id}/status`,{token:lecturer.accessToken,method:"PATCH",body:{status:"OPEN"}});
