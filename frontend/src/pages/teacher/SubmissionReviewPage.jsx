@@ -102,6 +102,8 @@ export default function SubmissionReviewPage() {
     [scores],
   );
   const latest = (data?.attempts ?? [])[0];
+  const terminal = ["COMPLETED", "NOT_MET", "GRADED"].includes(data?.status);
+  const gradeLocked = Boolean(data?.grade?.isPublished) || data?.status === "NOT_MET";
   const act = async (action) => {
     try {
       setError("");
@@ -362,6 +364,7 @@ export default function SubmissionReviewPage() {
       <section className="panel">
         <div className="form-actions review-actions">
           <button
+            disabled={terminal}
             onClick={() =>
               void act(() => changeReviewStatus(submissionId, "UNDER_REVIEW"))
             }
@@ -369,6 +372,7 @@ export default function SubmissionReviewPage() {
             Bắt đầu xem xét
           </button>
           <button
+            disabled={terminal}
             onClick={() =>
               void act(() => changeReviewStatus(submissionId, "COMPLETED"))
             }
@@ -376,6 +380,7 @@ export default function SubmissionReviewPage() {
             Xác nhận hoàn thành
           </button>
           <button
+            disabled={terminal}
             onClick={() => {
               const value = window.prompt("Nhập lý do yêu cầu chỉnh sửa:");
               if (value)
@@ -387,6 +392,7 @@ export default function SubmissionReviewPage() {
             Yêu cầu chỉnh sửa
           </button>
           <button
+            disabled={terminal}
             onClick={() => {
               const value = window.prompt("Nhập lý do chưa đạt:");
               if (value)
@@ -421,6 +427,7 @@ export default function SubmissionReviewPage() {
           />
         )}
         <button
+          disabled={terminal}
           onClick={() =>
             void act(() =>
               saveFeedback(submissionId, {
@@ -471,8 +478,8 @@ export default function SubmissionReviewPage() {
           </strong>
         </p>
         <div className="form-actions">
-          <button onClick={() => grade(false)}>Lưu nháp</button>
-          <button className="btn-primary" onClick={() => grade(true)}>
+          <button disabled={gradeLocked} onClick={() => grade(false)}>Lưu nháp</button>
+          <button disabled={gradeLocked} className="btn-primary" onClick={() => grade(true)}>
             Công bố
           </button>
         </div>

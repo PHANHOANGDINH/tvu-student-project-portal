@@ -47,7 +47,7 @@ export async function preview(file,courseClassId,adminId){
   });
   const existing=await repository.findExistingUsers(rows.filter((row)=>row.email&&row.studentCode));
   const emails=new Set(existing.map((item)=>item.email.toLowerCase())),codes=new Set(existing.map((item)=>item.studentCode?.toUpperCase()));
-  rows.forEach((row)=>{if(emails.has(row.email))row.errors.push('Email đã tồn tại trong hệ thống.');if(codes.has(row.studentCode))row.errors.push('Mã sinh viên đã tồn tại trong hệ thống.');});
+  rows.forEach((row)=>{if(emails.has(row.email)||codes.has(row.studentCode))row.errors.push('Tài khoản sinh viên đã tồn tại. Vui lòng sử dụng chức năng Thêm sinh viên có sẵn.');});
   const validRows=rows.filter((row)=>!row.errors.length),invalidRows=rows.filter((row)=>row.errors.length);
   cleanExpired();const previewId=randomUUID();
   previews.set(previewId,{courseClassId:id,adminId:Number(adminId),rows:validRows,invalidCount:invalidRows.length,expiresAt:Date.now()+PREVIEW_TTL_MS});
@@ -66,7 +66,7 @@ export async function confirm(data={},adminId){
   if(!item.rows.length)return fail(400,'Không có dòng hợp lệ để import.');
   const rows=await Promise.all(item.rows.map(async(row)=>({...row,passwordHash:await hashPassword(row.password)})));
   try{const result=await repository.importStudents(classId,rows);previews.delete(String(data.previewId));return ok({courseClass:result.courseClass,createdCount:result.created.length,students:result.created},'Import sinh viên và enrollment thành công.',201);}
-  catch(error){return fail(error.statusCode||500,error.statusCode?'Import thất bại, toàn bộ transaction đã rollback.':'Không thể import sinh viên.');}
+  catch(error){if([2601,2627].includes(error.number))return fail(409,'Dữ liệu đã tồn tại sau khi preview; toàn bộ transaction đã rollback.');return fail(error.statusCode||500,error.statusCode?'Import thất bại, toàn bộ transaction đã rollback.':'Không thể import sinh viên.');}
 }
 
 export async function bulkEnroll(courseClassId,data={}){
