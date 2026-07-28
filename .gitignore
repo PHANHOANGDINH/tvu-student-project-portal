@@ -11,6 +11,9 @@ build/
 
 # Environment files
 .env
+.env.*
+!.env.example
+!**/.env.example
 .env.local
 .env.development
 .env.production
@@ -22,6 +25,7 @@ backend/.env
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logs/
 
 # OS files
 .DS_Store
@@ -31,5 +35,15 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Local submission uploads
+# Test and tool output
+coverage/
+.eslintcache
+
+# Runtime uploads
+uploads/
 backend/uploads/
+
+# Local database backups and archives
+*.bak
+*.backup
+*.sql.bak
