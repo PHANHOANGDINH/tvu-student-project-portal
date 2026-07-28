@@ -16,6 +16,7 @@ build/
 .env.production
 frontend/.env
 backend/.env
+.env.docker
 
 # Logs
 *.log
