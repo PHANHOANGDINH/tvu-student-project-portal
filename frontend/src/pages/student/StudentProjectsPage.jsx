@@ -98,7 +98,6 @@ function StudentProjectsPage() {
     return (
         <div className="space-y-8">
             {/* HERO */}
-
             <div className="rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 text-white shadow-xl">
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
                     <div>
@@ -137,7 +136,6 @@ function StudentProjectsPage() {
             </div>
 
             {/* ALERT */}
-
             {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
                     {error}
@@ -151,7 +149,6 @@ function StudentProjectsPage() {
             )}
 
             {/* SEARCH */}
-
             <div className="bg-white rounded-3xl shadow p-6">
                 <form
                     onSubmit={(e) => {
@@ -181,7 +178,6 @@ function StudentProjectsPage() {
             </div>
 
             {/* ĐĂNG KÝ CỦA TÔI */}
-
             <div className="bg-white rounded-3xl shadow p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Đăng ký của tôi</h2>
@@ -254,8 +250,8 @@ function StudentProjectsPage() {
                     />
                 )}
             </div>
-            {/* DANH SÁCH ĐỀ TÀI */}
 
+            {/* DANH SÁCH ĐỀ TÀI */}
             <div>
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Danh sách đề tài</h2>
@@ -269,9 +265,7 @@ function StudentProjectsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {projects.map((p) => {
                             const approved = p.ApprovedStudents || 0;
-
                             const max = p.MaxStudents || 1;
-
                             const percent = Math.min(
                                 (approved / max) * 100,
                                 100,
@@ -283,7 +277,6 @@ function StudentProjectsPage() {
                                     className="bg-white rounded-3xl shadow hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                                 >
                                     {/* Header */}
-
                                     <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-5 text-white">
                                         <div className="flex justify-between items-center">
                                             <StatusBadge status={p.Status} />
@@ -299,7 +292,6 @@ function StudentProjectsPage() {
                                     </div>
 
                                     {/* Body */}
-
                                     <div className="p-6">
                                         <p className="text-gray-600 text-sm leading-6 line-clamp-4">
                                             {p.Description || "Chưa có mô tả."}
@@ -343,7 +335,6 @@ function StudentProjectsPage() {
                                         </div>
 
                                         {/* Progress */}
-
                                         <div className="mt-6">
                                             <div className="flex justify-between text-sm mb-2">
                                                 <span>Tiến độ đăng ký</span>
@@ -364,7 +355,6 @@ function StudentProjectsPage() {
                                         </div>
 
                                         {/* Button */}
-
                                         <button
                                             disabled={hasRegister}
                                             onClick={() =>
@@ -394,8 +384,8 @@ function StudentProjectsPage() {
                     />
                 )}
             </div>
-            {/* Modal xác nhận */}
 
+            {/* Modal xác nhận */}
             <ConfirmModal
                 open={Boolean(confirm)}
                 title={
@@ -420,7 +410,6 @@ function StudentProjectsPage() {
             />
 
             {/* Form ghi chú */}
-
             {confirm?.type === "register" && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 animate-in fade-in zoom-in duration-200">

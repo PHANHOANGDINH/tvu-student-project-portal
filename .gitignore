@@ -32,7 +32,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Runtime uploads
+# Runtime & Local uploads
 backend/uploads/*
 !backend/uploads/.gitkeep
 

@@ -1,0 +1,16 @@
+import { sendError,sendSuccess } from '../../utils/apiResponse.util.js';
+import * as s from './groups.service.js';
+const reply=(res,r)=>r.success?sendSuccess(res,r):sendError(res,r);
+const run=fn=>async(req,res)=>{try{return reply(res,await fn(req));}catch(e){console.error(e);return sendError(res,{statusCode:500,message:'Lỗi hệ thống'});}};
+export const createGroup=run(req=>s.createGroup(req.params.courseClassId,req.body,req.user));
+export const listGroups=run(req=>s.getGroups(req.params.courseClassId,req.user));
+export const getGroup=run(req=>s.getGroup(req.params.id,req.user));
+export const getMyGroup=run(req=>s.getMyGroup(req.user,req.query.courseClassId));
+export const addMember=run(req=>s.addMember(req.params.id,req.body,req.user));
+export const removeMember=run(req=>s.removeMember(req.params.id,req.params.studentId,req.user));
+export const transferLeader=run(req=>s.transferLeader(req.params.id,req.body,req.user));
+export const getTopic=run(req=>s.getTopic(req.params.groupId,req.user));
+export const saveTopic=run(req=>s.saveTopic(req.params.groupId,req.body,req.user));
+export const listTopics=run(req=>s.listTopics(req.user,req.query.status));
+export const getLecturerTopic=run(req=>s.getLecturerTopic(req.params.id,req.user));
+export const reviewTopic=run(req=>s.reviewTopic(req.params.id,req.body,req.user));
