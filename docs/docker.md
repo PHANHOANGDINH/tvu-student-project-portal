@@ -5,8 +5,8 @@
 Docker Compose chạy bốn service:
 
 - `database`: Microsoft SQL Server 2022 Developer trên Linux container;
-- `database-init`: tạo database nếu chưa có và áp dụng migration hiện có khi
-  schema nền đã tồn tại;
+- `database-init`: tạo database, cài schema baseline và áp dụng migration;
+- `database-seed`: tùy chọn tạo một admin local từ biến môi trường;
 - `backend`: Node.js/Express production container;
 - `frontend`: React production build được phục vụ bởi Nginx.
 
@@ -20,24 +20,41 @@ container hoặc `localhost` được hard-code trong bundle.
 - Docker Desktop dùng Linux containers;
 - Docker Compose v2;
 - đủ tài nguyên cho SQL Server (khuyến nghị ít nhất 2 GB RAM dành cho Docker);
-- database schema nền tương thích với source hiện tại.
+- password SQL Server đủ mạnh theo chính sách của image.
 
-## Giới hạn schema hiện tại
+## Nguồn schema và dữ liệu
 
-Repo trên branch này chỉ chứa migration
-`database/migrations/20260713_normalize_user_roles.sql`. Migration đó giả định
-bảng `Users` đã tồn tại; repo không chứa script tạo toàn bộ schema nền.
+`database/schema-baseline.sql` là schema-only deployment script được xuất từ
+database local `TvuStudentProjectPortal` bằng Microsoft SqlPackage/DacFx. Script
+gồm bảng, column, default/check/unique/foreign-key constraint và index mà
+database nguồn đang có tại thời điểm export.
 
-`database-init` sẽ:
+Baseline không chứa row data, password hash, login, database user, permission,
+secret hoặc runtime upload. Repo hiện không có view, stored procedure hay
+trigger trong database nguồn.
 
-1. tạo database có tên từ `DB_DATABASE` nếu chưa tồn tại;
-2. kiểm tra bảng `Users`;
-3. áp dụng các migration theo thứ tự tên file nếu schema nền tồn tại;
-4. bỏ qua migration và ghi cảnh báo nếu database mới chưa có schema nền.
+Không sửa baseline đã được dùng trên môi trường chia sẻ. Khi schema thay đổi,
+thêm migration mới vào `database/migrations` và kiểm thử trên volume mới.
 
-Backend và các endpoint health/Swagger vẫn khởi động với database rỗng, nhưng
-workflow đăng nhập và nghiệp vụ cần schema nền được restore/khởi tạo riêng.
-Không tự tạo bảng từ phỏng đoán vì điều đó có thể làm sai schema nghiệp vụ.
+## Thứ tự khởi tạo
+
+`database-init` chạy sau khi SQL Server healthy:
+
+1. tạo database từ `DB_DATABASE` nếu chưa có;
+2. tạo bảng hạ tầng `DockerSchemaMigrations`;
+3. chạy `schema-baseline.sql` nếu chưa có bảng `Users`;
+4. ghi nhận baseline;
+5. chạy từng file trong `database/migrations` theo thứ tự tên nếu chưa được ghi
+   nhận.
+
+Nếu database đã có schema/dữ liệu, baseline được bỏ qua để không ghi đè dữ liệu.
+Migration đã thành công được lưu trong `DockerSchemaMigrations` và được bỏ qua
+ở lần chạy sau. Vì vậy recreate `database-init` không tạo lại bảng hoặc chạy
+trùng migration.
+
+Sau init, `database-seed` chỉ tạo admin local nếu cả
+`DOCKER_SEED_ADMIN_EMAIL` và `DOCKER_SEED_ADMIN_PASSWORD` được cấu hình. Seed
+không thay đổi tài khoản đã tồn tại và không ghi password ra log.
 
 ## Cấu hình
 
@@ -52,6 +69,9 @@ Thay các placeholder:
 - `MSSQL_SA_PASSWORD`: mật khẩu local đủ mạnh theo chính sách SQL Server;
 - `JWT_SECRET`: chuỗi local dài, ngẫu nhiên;
 - `DB_DATABASE`: tên database chỉ gồm chữ, số và dấu gạch dưới;
+- `DOCKER_SEED_ADMIN_EMAIL` và `DOCKER_SEED_ADMIN_PASSWORD`: tùy chọn để tạo
+  admin local. Password phải dài ít nhất 12 ký tự và có chữ hoa, chữ thường,
+  chữ số;
 - các port nếu port mặc định đang được dùng;
 - `CORS_ALLOWED_ORIGINS`: origin frontend được phép, mặc định
   `http://localhost:8080`; phân cách nhiều origin bằng dấu phẩy.
@@ -67,8 +87,8 @@ docker compose up -d
 docker compose ps
 ```
 
-Compose đợi SQL Server healthy, chạy `database-init`, sau đó mới khởi động
-backend. Frontend chỉ khởi động sau khi backend healthy.
+Compose đợi SQL Server healthy, chạy `database-init`, chạy seed tùy chọn, sau
+đó mới khởi động backend. Frontend chỉ khởi động sau khi backend healthy.
 
 ## Xác minh
 
@@ -160,8 +180,11 @@ docker compose logs frontend
 
 - SQL Server không healthy: kiểm tra Docker đang dùng Linux containers, RAM và
   chính sách mật khẩu.
-- Backend không healthy: kiểm tra `database-init`, tên database và credential.
-- Workflow trả lỗi thiếu bảng: restore/khởi tạo schema nền tương thích.
+- `database-init` lỗi: xem migration đầu tiên chưa được ghi nhận trong log và
+  sửa lỗi trước khi chạy lại; migration đã thành công sẽ không chạy trùng.
+- Backend không healthy: kiểm tra init/seed, tên database và credential.
+- Seed lỗi: kiểm tra email/password local đáp ứng yêu cầu, hoặc để trống cả hai
+  biến để bỏ qua.
 - CORS bị từ chối: bảo đảm origin trình duyệt khớp chính xác
   `CORS_ALLOWED_ORIGINS`.
 

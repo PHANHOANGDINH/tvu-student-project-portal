@@ -32,11 +32,35 @@ services:
       DB_DATABASE: ${DB_DATABASE:-tvu_student_project_portal}
     volumes:
       - ./database/migrations:/migrations:ro
+      - ./database/schema-baseline.sql:/schema/schema-baseline.sql:ro
       - ./docker/sql/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/init.sh"]
     depends_on:
       database:
         condition: service_healthy
+    restart: "no"
+    networks:
+      - portal
+
+  database-seed:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: production
+      DB_USER: sa
+      DB_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+      DB_SERVER: database
+      DB_DATABASE: ${DB_DATABASE:-tvu_student_project_portal}
+      DB_PORT: 1433
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-10}
+      DOCKER_SEED_ADMIN_EMAIL: ${DOCKER_SEED_ADMIN_EMAIL:-}
+      DOCKER_SEED_ADMIN_PASSWORD: ${DOCKER_SEED_ADMIN_PASSWORD:-}
+    command: ["node", "src/scripts/seedAdmin.js"]
+    depends_on:
+      database-init:
+        condition: service_completed_successfully
     restart: "no"
     networks:
       - portal
@@ -66,6 +90,8 @@ services:
       database:
         condition: service_healthy
       database-init:
+        condition: service_completed_successfully
+      database-seed:
         condition: service_completed_successfully
     healthcheck:
       test:
