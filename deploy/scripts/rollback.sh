@@ -23,7 +23,7 @@ git checkout --detach "$target_ref"
 "${compose[@]}" build
 "${compose[@]}" up -d --remove-orphans
 
-for service in database backend frontend proxy; do
+for service in database rabbitmq notification-worker backend frontend proxy; do
   healthy=false
   for _ in {1..60}; do
     container_id="$("${compose[@]}" ps -q "$service")"

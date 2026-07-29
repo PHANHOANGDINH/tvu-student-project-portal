@@ -384,7 +384,8 @@ export async function approveTeacherProjectRegistration(req, res) {
       registrationId,
       'Approved',
       reviewNote,
-      req.user.id
+      req.user.id,
+      { id: req.user.id, role: req.user.role }
     );
 
     return res.json({
@@ -429,7 +430,8 @@ export async function rejectTeacherProjectRegistration(req, res) {
       registrationId,
       'Rejected',
       reviewNote,
-      req.user.id
+      req.user.id,
+      { id: req.user.id, role: req.user.role }
     );
 
     return res.json({

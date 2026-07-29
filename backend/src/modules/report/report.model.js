@@ -1,5 +1,7 @@
 // src/modules/report/report.model.js
 import { sql, poolPromise } from '../../config/db.js';
+import { createNotificationEvent, NOTIFICATION_EVENT_TYPES } from '../../messaging/notification.events.js';
+import { enqueueOutboxEvent } from '../../messaging/outbox.repository.js';
 
 export async function findApprovedStudentProject(studentId, projectId) {
   const pool = await poolPromise;
@@ -363,8 +365,10 @@ export async function countTeacherProgressReports(teacherId, filters = {}) {
 
 export async function reviewProgressReport(id, teacherId, data) {
   const pool = await poolPromise;
-
-  const result = await pool
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+  const result = await transaction
     .request()
     .input('Id', sql.Int, id)
     .input('TeacherId', sql.Int, teacherId)
@@ -399,7 +403,28 @@ export async function reviewProgressReport(id, teacherId, data) {
         AND p.DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
+  const report = result.recordset[0] || null;
+  if (report) {
+    await enqueueOutboxEvent(transaction, createNotificationEvent({
+      eventType: NOTIFICATION_EVENT_TYPES.PROGRESS_REVIEWED,
+      recipientIds: [report.StudentId],
+      actor: { id: teacherId, role: 'LECTURER' },
+      entityType: 'ProjectProgressReport',
+      entityId: report.Id,
+      payload: {
+        title: 'Tiến độ đã được phản hồi',
+        message: `Báo cáo tiến độ "${report.Title}" đã được giảng viên phản hồi.`,
+        teacherScore: Number(report.TeacherScore),
+      },
+      correlationId: `progress-review:${report.Id}:${report.ReviewedAt.toISOString()}`,
+    }));
+  }
+  await transaction.commit();
+  return report;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function findFinalSubmissionByProjectStudent(projectId, studentId) {
@@ -729,8 +754,10 @@ export async function countTeacherFinalSubmissions(teacherId, filters = {}) {
 
 export async function reviewFinalSubmission(id, teacherId, data) {
   const pool = await poolPromise;
-
-  const result = await pool
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+  const result = await transaction
     .request()
     .input('Id', sql.Int, id)
     .input('TeacherId', sql.Int, teacherId)
@@ -765,7 +792,28 @@ export async function reviewFinalSubmission(id, teacherId, data) {
         AND p.DeletedAt IS NULL
     `);
 
-  return result.recordset[0] || null;
+  const submission = result.recordset[0] || null;
+  if (submission) {
+    await enqueueOutboxEvent(transaction, createNotificationEvent({
+      eventType: NOTIFICATION_EVENT_TYPES.FINAL_SUBMISSION_GRADED,
+      recipientIds: [submission.StudentId],
+      actor: { id: teacherId, role: 'LECTURER' },
+      entityType: 'FinalSubmission',
+      entityId: submission.Id,
+      payload: {
+        title: 'Bài nộp cuối kỳ đã được chấm',
+        message: `Bài nộp "${submission.Title}" đã được giảng viên chấm.`,
+        teacherScore: Number(submission.TeacherScore),
+      },
+      correlationId: `final-grade:${submission.Id}:${submission.ReviewedAt.toISOString()}`,
+    }));
+  }
+  await transaction.commit();
+  return submission;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function getReportStats() {

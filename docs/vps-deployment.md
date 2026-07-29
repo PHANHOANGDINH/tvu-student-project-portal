@@ -13,6 +13,9 @@ Nginx reverse proxy
                               │
                               ▼
                          SQL Server
+                              ▲
+                              │ outbox
+                    Notification Worker ⇄ RabbitMQ
 ```
 
 Chỉ proxy publish cổng `80` và `443`. Frontend, backend và SQL Server chỉ ở
@@ -121,6 +124,11 @@ Pre-deploy backup nằm trong volume `sqlserver_backups`:
 - `predeploy_<UTC timestamp>.bak`: SQL Server `COPY_ONLY`, checksum, compression;
 - `uploads_<UTC timestamp>.tar.gz`: snapshot upload.
 
+RabbitMQ và notification worker chỉ nằm trên private Docker network; không mở
+port `5672` hoặc `15672` trên host. Cấu hình `RABBITMQ_USER` và
+`RABBITMQ_PASSWORD` mạnh trong `.env.production`. Volume `rabbitmq_data` giữ
+durable queue/message qua lần recreate container.
+
 Named volume trên cùng VPS không thay thế backup off-site. Đồng bộ bản backup đã
 mã hóa sang storage khác, đặt retention và kiểm thử restore định kỳ. Không copy
 `.bak` vào Git.
@@ -158,4 +166,5 @@ Compose có healthcheck, `restart: unless-stopped` và log rotation. Upload tố
 mặc định `25m`; điều chỉnh `CLIENT_MAX_BODY_SIZE` theo validation backend.
 
 Không public port SQL/Backend để debug. Dùng `docker compose exec` qua SSH.
-RabbitMQ và CD tự động chưa thuộc cấu hình này.
+Khi kiểm tra deploy, xác nhận thêm `rabbitmq` và `notification-worker` healthy.
+Không xóa volume RabbitMQ trong rollback thông thường.
