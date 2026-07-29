@@ -1,0 +1,299 @@
+name: CD
+
+'on':
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full 40-character commit SHA from main to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+
+    steps:
+      - name: Resolve immutable commit
+        id: release
+        shell: bash
+        env:
+          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          MANUAL_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            target_sha="${WORKFLOW_RUN_SHA}"
+          else
+            target_sha="${MANUAL_SHA}"
+          fi
+          if [[ ! "$target_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Deployment requires a full lowercase 40-character commit SHA." >&2
+            exit 1
+          fi
+          echo "target_sha=${target_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout immutable commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.target_sha }}
+          fetch-depth: 0
+
+      - name: Verify commit belongs to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "${{ steps.release.outputs.target_sha }}" origin/main
+
+      - name: Validate required production secrets
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+          SQL_SA_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          set -euo pipefail
+          required=(
+            VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY VPS_DEPLOY_PATH
+            DOMAIN LETSENCRYPT_EMAIL SQL_SA_PASSWORD JWT_SECRET
+          )
+          missing=()
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              missing+=("$name")
+            fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required production secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || { echo "VPS_HOST is invalid." >&2; exit 1; }
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]] && (( VPS_PORT >= 1 && VPS_PORT <= 65535 )) ||
+            { echo "VPS_PORT is invalid." >&2; exit 1; }
+          [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]] || { echo "VPS_USER is invalid." >&2; exit 1; }
+          [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ ]] ||
+            { echo "VPS_DEPLOY_PATH must be an absolute path with safe characters." >&2; exit 1; }
+          [[ "$DOMAIN" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] ||
+            { echo "DOMAIN is invalid." >&2; exit 1; }
+          [[ "$SQL_SA_PASSWORD" != *$'\n'* && "$SQL_SA_PASSWORD" != *$'\r'* ]] ||
+            { echo "SQL_SA_PASSWORD must be a single line." >&2; exit 1; }
+          [[ "$JWT_SECRET" != *$'\n'* && "$JWT_SECRET" != *$'\r'* ]] ||
+            { echo "JWT_SECRET must be a single line." >&2; exit 1; }
+
+      - name: Configure SSH key and known hosts
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/id_deploy"
+          chmod 600 "$HOME/.ssh/id_deploy"
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" > "$HOME/.ssh/known_hosts"
+          [[ -s "$HOME/.ssh/known_hosts" ]]
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Prepare repository and production environment
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+          SQL_SA_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          TARGET_SHA: ${{ steps.release.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          ssh_args=(-i "$HOME/.ssh/id_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          scp_args=(-i "$HOME/.ssh/id_deploy" -P "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_HOST}" bash -s -- \
+            "$VPS_DEPLOY_PATH" "$repository_url" "$TARGET_SHA" <<'REMOTE'
+          set -euo pipefail
+          deploy_path="$1"
+          repository_url="$2"
+          target_sha="$3"
+          mkdir -p "$(dirname "$deploy_path")"
+          if [[ ! -d "$deploy_path/.git" ]]; then
+            git clone "$repository_url" "$deploy_path"
+          fi
+          cd "$deploy_path"
+          git remote set-url origin "$repository_url"
+          git fetch --prune origin main
+          git cat-file -e "${target_sha}^{commit}"
+          git merge-base --is-ancestor "$target_sha" origin/main
+          REMOTE
+
+          env_file="$RUNNER_TEMP/env.production"
+          umask 077
+          {
+            echo "COMPOSE_PROJECT_NAME=tvu-student-project-portal-prod"
+            printf 'DOMAIN=%s\n' "$DOMAIN"
+            printf 'LETSENCRYPT_EMAIL=%s\n' "$LETSENCRYPT_EMAIL"
+            echo "MSSQL_PID=Developer"
+            printf 'MSSQL_SA_PASSWORD=%s\n' "$SQL_SA_PASSWORD"
+            echo "DB_DATABASE=tvu_student_project_portal"
+            printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
+            echo "JWT_EXPIRES_IN=1h"
+            echo "BCRYPT_SALT_ROUNDS=12"
+            echo "DOCKER_SEED_ADMIN_EMAIL="
+            echo "DOCKER_SEED_ADMIN_PASSWORD="
+            echo "CLIENT_MAX_BODY_SIZE=25m"
+            echo "LOG_MAX_SIZE=10m"
+            echo "LOG_MAX_FILES=5"
+            echo "BACKEND_IMAGE=tvu-student-project-portal-backend:latest"
+            echo "FRONTEND_IMAGE=tvu-student-project-portal-frontend:latest"
+            printf 'DEPLOY_REF=%s\n' "$TARGET_SHA"
+          } > "$env_file"
+
+          scp "${scp_args[@]}" "$env_file" "${VPS_USER}@${VPS_HOST}:${VPS_DEPLOY_PATH}/.env.production.next"
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_HOST}" \
+            "install -m 600 '$VPS_DEPLOY_PATH/.env.production.next' '$VPS_DEPLOY_PATH/.env.production' && rm -f '$VPS_DEPLOY_PATH/.env.production.next'"
+          rm -f "$env_file"
+
+      - name: Ensure Let's Encrypt certificate exists
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
+        run: |
+          set -euo pipefail
+          ssh_args=(-i "$HOME/.ssh/id_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_HOST}" bash -s -- \
+            "$VPS_DEPLOY_PATH" "$DOMAIN" "$LETSENCRYPT_EMAIL" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          domain="$2"
+          email="$3"
+          compose=(docker compose --env-file .env.production -f docker-compose.production.yml)
+          if ! "${compose[@]}" --profile tools run --rm --entrypoint sh certbot \
+            -c 'test -s "/etc/letsencrypt/live/$1/fullchain.pem" && test -s "/etc/letsencrypt/live/$1/privkey.pem"' \
+            sh "$domain" >/dev/null 2>&1; then
+            if [[ -n "$("${compose[@]}" ps -q proxy)" ]]; then
+              echo "Certificate is missing while proxy owns port 80; provision it manually." >&2
+              exit 1
+            fi
+            "${compose[@]}" --profile tools run --rm --service-ports certbot \
+              certonly --standalone --preferred-challenges http \
+              --domain "$domain" --email "$email" --agree-tos --no-eff-email
+          fi
+          REMOTE
+
+      - name: Deploy with backup and internal health checks
+        id: production_deploy
+        continue-on-error: true
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          ssh_args=(-i "$HOME/.ssh/id_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_HOST}" bash -s -- "$VPS_DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          git rev-parse HEAD > .git/previous-deploy-ref
+          bash deploy/scripts/deploy.sh
+          REMOTE
+
+      - name: Verify public HTTPS endpoints
+        id: public_health
+        if: steps.production_deploy.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        env:
+          DOMAIN: ${{ secrets.DOMAIN }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 10 --retry-delay 5 "https://${DOMAIN}/" > /dev/null
+          curl --fail --silent --show-error --retry 10 --retry-delay 5 "https://${DOMAIN}/api/health" > /dev/null
+          curl --fail --silent --show-error --retry 10 --retry-delay 5 "https://${DOMAIN}/api-docs/" > /dev/null
+
+      - name: Roll back failed deployment
+        if: >-
+          steps.production_deploy.outcome == 'failure' ||
+          steps.public_health.outcome == 'failure'
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          ssh_args=(-i "$HOME/.ssh/id_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh "${ssh_args[@]}" "${VPS_USER}@${VPS_HOST}" bash -s -- "$VPS_DEPLOY_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          previous_ref="$(cat .git/previous-deploy-ref)"
+          bash deploy/scripts/rollback.sh "$previous_ref"
+          REMOTE
+
+      - name: Fail workflow after rollback
+        if: >-
+          steps.production_deploy.outcome == 'failure' ||
+          steps.public_health.outcome == 'failure'
+        run: |
+          echo "Production deployment failed and rollback was requested." >&2
+          exit 1
+
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        env:
+          TARGET_SHA: ${{ steps.release.outputs.target_sha }}
+          DEPLOY_OUTCOME: ${{ steps.production_deploy.outcome }}
+          HEALTH_OUTCOME: ${{ steps.public_health.outcome }}
+        run: |
+          {
+            echo "## Production deployment"
+            echo
+            echo "- Commit: \`${TARGET_SHA:-not-resolved}\`"
+            echo "- Trigger: \`${GITHUB_EVENT_NAME}\`"
+            echo "- Deploy step: \`${DEPLOY_OUTCOME:-not-run}\`"
+            echo "- Public health: \`${HEALTH_OUTCOME:-not-run}\`"
+            echo "- Environment: \`production\`"
+          } >> "$GITHUB_STEP_SUMMARY"
