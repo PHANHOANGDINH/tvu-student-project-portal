@@ -7,11 +7,28 @@ dotenv.config();
 
 async function seedAdmin() {
   try {
-    const pool = await poolPromise;
+    const email = String(process.env.DOCKER_SEED_ADMIN_EMAIL || '').trim().toLowerCase();
+    const password = String(process.env.DOCKER_SEED_ADMIN_PASSWORD || '');
 
-    const email = 'admin@tvu.edu.vn';
-    const password = '123456';
-    const passwordHash = await bcrypt.hash(password, 10);
+    if (!email || !password) {
+      console.log('Bỏ qua Docker admin seed vì chưa cấu hình tài khoản.');
+      process.exit(0);
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      || password.length < 12
+      || !/[A-Z]/.test(password)
+      || !/[a-z]/.test(password)
+      || !/\d/.test(password)
+    ) {
+      console.error('Docker admin seed email hoặc password không đạt yêu cầu an toàn.');
+      process.exit(1);
+    }
+
+    const pool = await poolPromise;
+    const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
+    const passwordHash = await bcrypt.hash(password, saltRounds);
 
     const checkResult = await pool
       .request()
@@ -29,7 +46,7 @@ async function seedAdmin() {
 
     await pool
       .request()
-      .input('FullName', sql.NVarChar(100), 'Quáº£n trá»‹ viĂªn')
+      .input('FullName', sql.NVarChar(100), 'Docker Administrator')
       .input('Email', sql.NVarChar(150), email)
       .input('PasswordHash', sql.NVarChar(255), passwordHash)
       .input('Role', sql.NVarChar(20), 'ADMIN')
@@ -38,9 +55,8 @@ async function seedAdmin() {
         VALUES (@FullName, @Email, @PasswordHash, @Role)
       `);
 
-    console.log('Táº¡o tĂ i khoáº£n admin thĂ nh cĂ´ng');
+    console.log('Tạo tài khoản Docker admin thành công');
     console.log('Email:', email);
-    console.log('Password:', password);
 
     process.exit(0);
   } catch (error) {

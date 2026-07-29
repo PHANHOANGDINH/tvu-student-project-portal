@@ -1,36 +1,528 @@
-import { useEffect,useMemo,useState } from 'react'
-import { Download,Ellipsis,Eye,FileUp,Lock,LockOpen,Pencil,Plus,Search,Users as UsersIcon } from 'lucide-react'
-import { useLocation,useNavigate } from 'react-router-dom'
-import { createUser,getUserById,getUsers,resetUserPassword,updateUser,updateUserStatus } from '../api/adminApi'
+import { useEffect, useMemo, useState } from 'react'
+import { Download, Ellipsis, Eye, FileUp, Lock, LockOpen, Pencil, Plus, Search, Users as UsersIcon } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { createUser, getUserById, getUsers, resetUserPassword, updateUser, updateUserStatus } from '../api/adminApi'
 import { USER_ROLES } from '../constants/roles'
 
-const roles={ADMIN:'Quản trị viên',LECTURER:'Giảng viên',STUDENT:'Sinh viên'}
-const empty={role:'STUDENT',userCode:'',fullName:'',email:'',password:'',confirmPassword:'',isActive:true}
-const date=value=>value?new Date(value).toLocaleDateString('vi-VN'):'—'
-const codeLabel=role=>role==='LECTURER'?'Mã giảng viên':role==='ADMIN'?'Mã quản trị viên':'Mã sinh viên'
-function downloadCsv(items){const safe=v=>{let s=String(v??'');if(/^[=+\-@\t\r]/.test(s))s=`'${s}`;return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};const rows=[['userCode','fullName','email','role','status','createdAt'],...items.map(x=>[x.userCode,x.fullName,x.email,x.role,x.isActive?'ACTIVE':'INACTIVE',x.createdAt])];const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='danh-sach-tai-khoan.csv';a.click();URL.revokeObjectURL(url)}
+const roles = {
+  ADMIN: 'Quản trị viên',
+  LECTURER: 'Giảng viên',
+  STUDENT: 'Sinh viên'
+}
 
-export default function UsersPage(){
- const navigate=useNavigate(),location=useLocation(),[users,setUsers]=useState([]),[pagination,setPagination]=useState({page:1,pageSize:10,totalItems:0,totalPages:1}),[filters,setFilters]=useState({page:1,pageSize:10,search:'',role:'',status:'',sortBy:'createdAt',sortOrder:'desc'}),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[message,setMessage]=useState(null),[modal,setModal]=useState(null),[selected,setSelected]=useState([]),[form,setForm]=useState(empty),[openMenu,setOpenMenu]=useState(null)
- const load=async(next=filters)=>{try{setLoading(true);const response=await getUsers(next),data=response.data;setUsers(data.items||[]);setPagination({page:data.page,pageSize:data.pageSize,totalItems:data.totalItems,totalPages:data.totalPages||1})}catch(e){setMessage({type:'error',text:e.message})}finally{setLoading(false)}}
- useEffect(()=>{load()},[]);useEffect(()=>{if(location.pathname.endsWith('/new'))openCreate()},[location.pathname])
- const title=useMemo(()=>modal?.type==='detail'?'Chi tiết tài khoản':modal?.type==='edit'?'Chỉnh sửa tài khoản':modal?.type==='reset'?'Đặt lại mật khẩu':'Thêm tài khoản',[modal])
- const apply=patch=>{const next={...filters,...patch};setFilters(next);load(next)}
- const openCreate=()=>{setForm(empty);setModal({type:'create'})}
- const openDetail=async user=>{try{setSaving(true);const response=await getUserById(user.id);setModal({type:'detail',user:response.data})}catch(e){setMessage({type:'error',text:e.message})}finally{setSaving(false)}}
- const openEdit=user=>{setForm({role:user.role,userCode:user.userCode||'',fullName:user.fullName||'',email:user.email||'',isActive:user.isActive!==false,password:'',confirmPassword:''});setModal({type:'edit',user})}
- const close=()=>{setModal(null);setForm(empty);if(location.pathname.endsWith('/new'))navigate('/admin/users',{replace:true})}
- const save=async event=>{event.preventDefault();if(!form.userCode.trim()||!form.fullName.trim()||!form.email.trim())return setMessage({type:'error',text:'Vui lòng nhập đầy đủ mã tài khoản, họ tên và email.'});if(modal.type==='create'&&form.password!==form.confirmPassword)return setMessage({type:'error',text:'Xác nhận mật khẩu không khớp.'});try{setSaving(true);if(modal.type==='create')await createUser({...form,userCode:form.userCode.trim(),fullName:form.fullName.trim(),email:form.email.trim()});else await updateUser(modal.user.id,{role:form.role,userCode:form.userCode.trim(),fullName:form.fullName.trim(),email:form.email.trim(),phone:'',department:'',className:''});setMessage({type:'success',text:modal.type==='create'?'Tạo tài khoản thành công.':'Cập nhật tài khoản thành công.'});close();load()}catch(e){setMessage({type:'error',text:e.message})}finally{setSaving(false)}}
- const confirmStatus=user=>setModal({type:'status',user,next:user.isActive===false})
- const changeStatus=async()=>{try{setSaving(true);await updateUserStatus(modal.user.id,modal.next);setMessage({type:'success',text:modal.next?'Đã mở khóa tài khoản.':'Đã khóa tài khoản.'});close();load()}catch(e){setMessage({type:'error',text:e.message})}finally{setSaving(false)}}
- const doReset=async event=>{event.preventDefault();if(form.password!==form.confirmPassword)return setMessage({type:'error',text:'Xác nhận mật khẩu không khớp.'});try{setSaving(true);await resetUserPassword(modal.user.id,{newPassword:form.password,confirmNewPassword:form.confirmPassword});setMessage({type:'success',text:'Đặt lại mật khẩu thành công.'});close()}catch(e){setMessage({type:'error',text:e.message})}finally{setSaving(false)}}
- const exportAll=async()=>{try{const response=await getUsers({...filters,page:1,pageSize:100});downloadCsv(response.data.items||[])}catch(e){setMessage({type:'error',text:e.message})}}
- return <div className="admin-page"><div className="page-title admin-page-heading"><div><span className="eyebrow">QUẢN LÝ NGƯỜI DÙNG</span><h2>Danh sách tài khoản</h2><p>Quản lý thông tin, vai trò và trạng thái truy cập của người dùng.</p></div><div className="toolbar-actions"><button className="btn-light" onClick={()=>navigate('/admin/students/import')}><FileUp size={17}/>Nhập sinh viên</button><button className="btn-light" onClick={()=>navigate('/admin/lecturers/import')}><FileUp size={17}/>Nhập giảng viên</button><button className="btn-light" onClick={exportAll}><Download size={17}/>Xuất danh sách</button><button className="btn-primary" onClick={openCreate}><Plus size={18}/>Thêm tài khoản</button></div></div>
-  {message&&<div className={`alert ${message.type}`}>{message.text}<button onClick={()=>setMessage(null)}>×</button></div>}
-  <div className="panel filters-panel"><form className="admin-filterbar" onSubmit={e=>{e.preventDefault();apply({page:1})}}><label className="search-field"><Search size={18}/><input value={filters.search} onChange={e=>setFilters({...filters,search:e.target.value})} placeholder="Tìm theo mã, họ tên hoặc email"/></label><select value={filters.role} onChange={e=>apply({role:e.target.value,page:1})}><option value="">Tất cả vai trò</option>{Object.entries(roles).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select value={filters.status} onChange={e=>apply({status:e.target.value,page:1})}><option value="">Tất cả trạng thái</option><option value="ACTIVE">Hoạt động</option><option value="INACTIVE">Đã khóa</option></select><select value={`${filters.sortBy}-${filters.sortOrder}`} onChange={e=>{const[sortBy,sortOrder]=e.target.value.split('-');apply({sortBy,sortOrder,page:1})}}><option value="createdAt-desc">Mới tạo gần đây</option><option value="createdAt-asc">Cũ nhất</option><option value="fullName-asc">Họ tên A–Z</option><option value="fullName-desc">Họ tên Z–A</option></select><button className="btn-primary"><Search size={17}/>Tìm kiếm</button></form></div>
-  <div className="panel account-table-panel"><div className="table-summary"><div><UsersIcon size={20}/><strong>{pagination.totalItems}</strong> tài khoản</div><span>Đã chọn {selected.length}</span></div>{loading?<div className="skeleton-list">{[1,2,3,4].map(x=><div key={x}/>)}</div>:!users.length?<div className="empty-state"><UsersIcon size={42}/><h3>Chưa có tài khoản phù hợp</h3><p>Thử thay đổi bộ lọc hoặc thêm tài khoản mới.</p></div>:<div className="table-wrap"><table className="account-table"><thead><tr><th><input type="checkbox" checked={selected.length===users.length&&users.length>0} onChange={e=>setSelected(e.target.checked?users.map(x=>x.id):[])}/></th><th>Mã tài khoản</th><th>Họ và tên</th><th>Email / Tên đăng nhập</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>{users.map(user=><tr key={user.id}><td><input type="checkbox" checked={selected.includes(user.id)} onChange={e=>setSelected(e.target.checked?[...selected,user.id]:selected.filter(x=>x!==user.id))}/></td><td><strong>{user.userCode||'—'}</strong></td><td>{user.fullName}</td><td>{user.email}</td><td><span className={`role-pill ${user.role.toLowerCase()}`}>{roles[user.role]||user.role}</span></td><td><span className={`status-pill ${user.isActive===false?'inactive':'active'}`}><i/>{user.isActive===false?'Đã khóa':'Hoạt động'}</span></td><td>{date(user.createdAt)}</td><td><div className="compact-actions"><button onClick={()=>openDetail(user)}><Eye size={16}/>Xem</button><button onClick={()=>openEdit(user)}><Pencil size={16}/>Sửa</button><div className="more-menu"><button aria-label="Thêm thao tác" onClick={()=>setOpenMenu(openMenu===user.id?null:user.id)}><Ellipsis size={18}/></button>{openMenu===user.id&&<div className="action-dropdown"><button onClick={()=>{setForm({...empty,password:'',confirmPassword:''});setModal({type:'reset',user});setOpenMenu(null)}}>Đặt lại mật khẩu</button><button onClick={()=>{confirmStatus(user);setOpenMenu(null)}}>{user.isActive===false?'Mở khóa tài khoản':'Khóa tài khoản'}</button></div>}</div></div></td></tr>)}</tbody></table></div>}
-   <div className="table-footer"><label>Hiển thị <select value={filters.pageSize} onChange={e=>apply({pageSize:Number(e.target.value),page:1})}>{[10,20,50].map(x=><option key={x}>{x}</option>)}</select> bản ghi</label><div className="pagination-bar"><button disabled={pagination.page<=1} onClick={()=>apply({page:pagination.page-1})}>Trước</button><span>Trang {pagination.page}/{pagination.totalPages||1}</span><button disabled={pagination.page>=pagination.totalPages} onClick={()=>apply({page:pagination.page+1})}>Sau</button></div></div>
-  </div>
-  {modal&&<div className="modal-overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><div className="modal-card admin-modal"><div className="modal-header"><div><span className="eyebrow">TÀI KHOẢN</span><h3>{modal.type==='status'?(modal.next?'Mở khóa tài khoản':'Khóa tài khoản'):title}</h3></div><button onClick={close}>×</button></div>{modal.type==='detail'?<div className="info-list">{[['Mã tài khoản',modal.user.userCode],['Họ và tên',modal.user.fullName],['Email',modal.user.email],['Vai trò',roles[modal.user.role]],['Trạng thái',modal.user.isActive===false?'Đã khóa':'Hoạt động'],['Ngày tạo',date(modal.user.createdAt)]].map(([l,v])=><div key={l}><span>{l}</span><strong>{v||'—'}</strong></div>)}</div>:modal.type==='status'?<div><p>Bạn có chắc muốn {modal.next?'mở khóa':'khóa'} tài khoản <strong>{modal.user.fullName}</strong>?</p><div className="modal-actions"><button className="btn-light" onClick={close}>Hủy</button><button className={modal.next?'btn-primary':'btn-danger'} disabled={saving} onClick={changeStatus}>{modal.next?<LockOpen size={17}/>:<Lock size={17}/>}Xác nhận</button></div></div>:modal.type==='reset'?<form onSubmit={doReset}><div className="form-grid"><label>Mật khẩu mới<input required type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label><label>Xác nhận mật khẩu<input required type="password" value={form.confirmPassword} onChange={e=>setForm({...form,confirmPassword:e.target.value})}/></label></div><div className="modal-actions"><button type="button" className="btn-light" onClick={close}>Hủy</button><button className="btn-primary" disabled={saving}>Đặt lại mật khẩu</button></div></form>:<form onSubmit={save}><div className="form-grid"><label>Vai trò<select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>{Object.entries(roles).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label>{codeLabel(form.role)}<input required value={form.userCode} onChange={e=>setForm({...form,userCode:e.target.value})}/></label><label>Họ và tên<input required value={form.fullName} onChange={e=>setForm({...form,fullName:e.target.value})}/></label><label>Email / Tên đăng nhập<input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>{modal.type==='create'&&<><label>Mật khẩu ban đầu<input required type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></label><label>Xác nhận mật khẩu<input required type="password" value={form.confirmPassword} onChange={e=>setForm({...form,confirmPassword:e.target.value})}/></label></>}</div><div className="modal-actions"><button type="button" className="btn-light" onClick={close}>Hủy</button><button className="btn-primary" disabled={saving}>{saving?'Đang lưu...':'Lưu tài khoản'}</button></div></form>}</div></div>}
- </div>
+const emptyForm = {
+  role: 'STUDENT',
+  userCode: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  department: '',
+  className: '',
+  password: '',
+  confirmPassword: '',
+  isActive: true
+}
+
+const emptyResetForm = {
+  password: '',
+  confirmPassword: ''
+}
+
+const formatDate = value => value ? new Date(value).toLocaleDateString('vi-VN') : '—'
+const codeLabel = role => role === 'LECTURER' ? 'Mã giảng viên' : role === 'ADMIN' ? 'Mã quản trị viên' : 'Mã sinh viên'
+
+function downloadCsv(items) {
+  const safe = v => {
+    let s = String(v ?? '')
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const rows = [
+    ['userCode', 'fullName', 'email', 'role', 'status', 'createdAt'],
+    ...items.map(x => [x.userCode, x.fullName, x.email, x.role, x.isActive ? 'ACTIVE' : 'INACTIVE', x.createdAt])
+  ]
+  const blob = new Blob(['\uFEFF' + rows.map(r => r.map(safe).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'danh-sach-tai-khoan.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export default function UsersPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const [users, setUsers] = useState([])
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 })
+  const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc' })
+
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [modal, setModal] = useState(null)
+  const [selected, setSelected] = useState([])
+  const [form, setForm] = useState(emptyForm)
+  const [resetForm, setResetForm] = useState(emptyResetForm)
+  const [openMenu, setOpenMenu] = useState(null)
+
+  const load = async (next = filters) => {
+    try {
+      setLoading(true)
+      const response = await getUsers(next)
+      const data = response?.data || {}
+      setUsers(data.items || [])
+      setPagination({
+        page: data.page || 1,
+        pageSize: data.pageSize || 10,
+        totalItems: data.totalItems || 0,
+        totalPages: data.totalPages || 1
+      })
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Không thể tải danh sách người dùng' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (location.pathname.endsWith('/new')) openCreate()
+  }, [location.pathname])
+
+  const title = useMemo(() => {
+    if (modal?.type === 'detail') return 'Chi tiết tài khoản'
+    if (modal?.type === 'edit') return 'Chỉnh sửa tài khoản'
+    if (modal?.type === 'reset') return 'Đặt lại mật khẩu'
+    return 'Thêm tài khoản'
+  }, [modal])
+
+  const apply = patch => {
+    const next = { ...filters, ...patch }
+    setFilters(next)
+    load(next)
+  }
+
+  const openCreate = () => {
+    setForm(emptyForm)
+    setModal({ type: 'create' })
+  }
+
+  const openDetail = async user => {
+    try {
+      setSaving(true)
+      const userId = user.id || user.Id
+      const response = await getUserById(userId)
+      setModal({ type: 'detail', user: response?.data || user })
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Không thể tải chi tiết người dùng' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const openEdit = user => {
+    setForm({
+      role: user.role || 'STUDENT',
+      userCode: user.userCode || '',
+      fullName: user.fullName || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      department: user.department || '',
+      className: user.className || '',
+      isActive: user.isActive !== false,
+      password: '',
+      confirmPassword: ''
+    })
+    setModal({ type: 'edit', user })
+  }
+
+  const close = () => {
+    setModal(null)
+    setForm(emptyForm)
+    setResetForm(emptyResetForm)
+    if (location.pathname.endsWith('/new')) navigate('/admin/users', { replace: true })
+  }
+
+  const validateForm = () => {
+    if (!form.userCode.trim() || !form.fullName.trim() || !form.email.trim()) {
+      return 'Vui lòng nhập đầy đủ mã tài khoản, họ tên và email.'
+    }
+    if (modal.type === 'create' && form.password !== form.confirmPassword) {
+      return 'Xác nhận mật khẩu không khớp.'
+    }
+    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.className.trim()) {
+      return 'Sinh viên cần bổ sung thông tin lớp học.'
+    }
+    return null
+  }
+
+  const save = async event => {
+    event.preventDefault()
+    const errorMsg = validateForm()
+    if (errorMsg) return setMessage({ type: 'error', text: errorMsg })
+
+    try {
+      setSaving(true)
+      const payload = {
+        role: form.role,
+        userCode: form.userCode.trim(),
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        department: form.department.trim(),
+        className: form.className.trim()
+      }
+
+      if (modal.type === 'create') {
+        await createUser({
+          ...payload,
+          password: form.password,
+          confirmPassword: form.confirmPassword
+        })
+      } else {
+        const userId = modal.user.id || modal.user.Id
+        await updateUser(userId, payload)
+      }
+
+      setMessage({
+        type: 'success',
+        text: modal.type === 'create' ? 'Tạo tài khoản thành công.' : 'Cập nhật tài khoản thành công.'
+      })
+      close()
+      load()
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Lỗi khi lưu thông tin người dùng' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const confirmStatus = user => setModal({ type: 'status', user, next: user.isActive === false })
+
+  const changeStatus = async () => {
+    try {
+      setSaving(true)
+      const userId = modal.user.id || modal.user.Id
+      await updateUserStatus(userId, modal.next)
+      setMessage({ type: 'success', text: modal.next ? 'Đã mở khóa tài khoản.' : 'Đã khóa tài khoản.' })
+      close()
+      load()
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Lỗi khi đổi trạng thái' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const doReset = async event => {
+    event.preventDefault()
+    if (resetForm.password !== resetForm.confirmPassword) {
+      return setMessage({ type: 'error', text: 'Xác nhận mật khẩu không khớp.' })
+    }
+    try {
+      setSaving(true)
+      const userId = modal.user.id || modal.user.Id
+      await resetUserPassword(userId, {
+        newPassword: resetForm.password,
+        confirmNewPassword: resetForm.confirmPassword
+      })
+      setMessage({ type: 'success', text: 'Đặt lại mật khẩu thành công.' })
+      close()
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Lỗi khi đặt lại mật khẩu' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const exportAll = async () => {
+    try {
+      const response = await getUsers({ ...filters, page: 1, pageSize: 100 })
+      downloadCsv(response?.data?.items || [])
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message })
+    }
+  }
+
+  return (
+    <div className="admin-page">
+      <div className="page-title admin-page-heading">
+        <div>
+          <span className="eyebrow">QUẢN LÝ NGƯỜI DÙNG</span>
+          <h2>Danh sách tài khoản</h2>
+          <p>Quản lý thông tin, vai trò và trạng thái truy cập của người dùng.</p>
+        </div>
+        <div className="toolbar-actions">
+          <button className="btn-light" onClick={() => navigate('/admin/students/import')}><FileUp size={17} />Nhập sinh viên</button>
+          <button className="btn-light" onClick={() => navigate('/admin/lecturers/import')}><FileUp size={17} />Nhập giảng viên</button>
+          <button className="btn-light" onClick={exportAll}><Download size={17} />Xuất danh sách</button>
+          <button className="btn-primary" onClick={openCreate}><Plus size={18} />Thêm tài khoản</button>
+        </div>
+      </div>
+
+      {message && (
+        <div className={`alert ${message.type}`}>
+          {message.text}
+          <button onClick={() => setMessage(null)}>×</button>
+        </div>
+      )}
+
+      <div className="panel filters-panel">
+        <form className="admin-filterbar" onSubmit={e => { e.preventDefault(); apply({ page: 1 }) }}>
+          <label className="search-field">
+            <Search size={18} />
+            <input
+              value={filters.search}
+              onChange={e => setFilters({ ...filters, search: e.target.value })}
+              placeholder="Tìm theo mã, họ tên, email, khoa, lớp..."
+            />
+          </label>
+          <select value={filters.role} onChange={e => apply({ role: e.target.value, page: 1 })}>
+            <option value="">Tất cả vai trò</option>
+            {Object.entries(roles).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+          <select value={filters.status} onChange={e => apply({ status: e.target.value, page: 1 })}>
+            <option value="">Tất cả trạng thái</option>
+            <option value="ACTIVE">Hoạt động</option>
+            <option value="INACTIVE">Đã khóa</option>
+          </select>
+          <select
+            value={`${filters.sortBy}-${filters.sortOrder}`}
+            onChange={e => {
+              const [sortBy, sortOrder] = e.target.value.split('-')
+              apply({ sortBy, sortOrder, page: 1 })
+            }}
+          >
+            <option value="createdAt-desc">Mới tạo gần đây</option>
+            <option value="createdAt-asc">Cũ nhất</option>
+            <option value="fullName-asc">Họ tên A–Z</option>
+            <option value="fullName-desc">Họ tên Z–A</option>
+          </select>
+          <button className="btn-primary" type="submit"><Search size={17} />Tìm kiếm</button>
+        </form>
+      </div>
+
+      <div className="panel account-table-panel">
+        <div className="table-summary">
+          <div><UsersIcon size={20} /><strong>{pagination.totalItems}</strong> tài khoản</div>
+          <span>Đã chọn {selected.length}</span>
+        </div>
+
+        {loading ? (
+          <div className="skeleton-list">{[1, 2, 3, 4].map(x => <div key={x} />)}</div>
+        ) : !users.length ? (
+          <div className="empty-state">
+            <UsersIcon size={42} />
+            <h3>Chưa có tài khoản phù hợp</h3>
+            <p>Thử thay đổi bộ lọc hoặc thêm tài khoản mới.</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="account-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selected.length === users.length && users.length > 0}
+                      onChange={e => setSelected(e.target.checked ? users.map(x => x.id || x.Id) : [])}
+                    />
+                  </th>
+                  <th>Mã tài khoản</th>
+                  <th>Họ và tên</th>
+                  <th>Email / Tên đăng nhập</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(user => {
+                  const uId = user.id || user.Id
+                  return (
+                    <tr key={uId}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selected.includes(uId)}
+                          onChange={e => setSelected(e.target.checked ? [...selected, uId] : selected.filter(x => x !== uId))}
+                        />
+                      </td>
+                      <td><strong>{user.userCode || '—'}</strong></td>
+                      <td>{user.fullName}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className={`role-pill ${(user.role || '').toLowerCase()}`}>
+                          {roles[user.role] || user.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-pill ${user.isActive === false ? 'inactive' : 'active'}`}>
+                          <i />{user.isActive === false ? 'Đã khóa' : 'Hoạt động'}
+                        </span>
+                      </td>
+                      <td>{formatDate(user.createdAt)}</td>
+                      <td>
+                        <div className="compact-actions">
+                          <button onClick={() => openDetail(user)}><Eye size={16} />Xem</button>
+                          <button onClick={() => openEdit(user)}><Pencil size={16} />Sửa</button>
+                          <div className="more-menu">
+                            <button aria-label="Thêm thao tác" onClick={() => setOpenMenu(openMenu === uId ? null : uId)}>
+                              <Ellipsis size={18} />
+                            </button>
+                            {openMenu === uId && (
+                              <div className="action-dropdown">
+                                <button onClick={() => { setResetForm(emptyResetForm); setModal({ type: 'reset', user }); setOpenMenu(null) }}>
+                                  Đặt lại mật khẩu
+                                </button>
+                                <button onClick={() => { confirmStatus(user); setOpenMenu(null) }}>
+                                  {user.isActive === false ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="table-footer">
+          <label>
+            Hiển thị{' '}
+            <select value={filters.pageSize} onChange={e => apply({ pageSize: Number(e.target.value), page: 1 })}>
+              {[10, 20, 50].map(x => <option key={x}>{x}</option>)}
+            </select>{' '}
+            bản ghi
+          </label>
+          <div className="pagination-bar">
+            <button disabled={pagination.page <= 1} onClick={() => apply({ page: pagination.page - 1 })}>Trước</button>
+            <span>Trang {pagination.page}/{pagination.totalPages || 1}</span>
+            <button disabled={pagination.page >= pagination.totalPages} onClick={() => apply({ page: pagination.page + 1 })}>Sau</button>
+          </div>
+        </div>
+      </div>
+
+      {modal && (
+        <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && close()}>
+          <div className="modal-card admin-modal">
+            <div className="modal-header">
+              <div>
+                <span className="eyebrow">TÀI KHOẢN</span>
+                <h3>{modal.type === 'status' ? (modal.next ? 'Mở khóa tài khoản' : 'Khóa tài khoản') : title}</h3>
+              </div>
+              <button onClick={close}>×</button>
+            </div>
+
+            {modal.type === 'detail' ? (
+              <div className="info-list">
+                {[
+                  ['Mã tài khoản', modal.user.userCode],
+                  ['Họ và tên', modal.user.fullName],
+                  ['Email', modal.user.email],
+                  ['Số điện thoại', modal.user.phone],
+                  ['Khoa', modal.user.department],
+                  ['Lớp', modal.user.className],
+                  ['Vai trò', roles[modal.user.role] || modal.user.role],
+                  ['Trạng thái', modal.user.isActive === false ? 'Đã khóa' : 'Hoạt động'],
+                  ['Ngày tạo', formatDate(modal.user.createdAt)]
+                ].map(([l, v]) => (
+                  <div key={l}>
+                    <span>{l}</span>
+                    <strong>{v || '—'}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : modal.type === 'status' ? (
+              <div>
+                <p>Bạn có chắc muốn {modal.next ? 'mở khóa' : 'khóa'} tài khoản <strong>{modal.user.fullName}</strong>?</p>
+                <div className="modal-actions">
+                  <button className="btn-light" onClick={close}>Hủy</button>
+                  <button className={modal.next ? 'btn-primary' : 'btn-danger'} disabled={saving} onClick={changeStatus}>
+                    {modal.next ? <LockOpen size={17} /> : <Lock size={17} />}Xác nhận
+                  </button>
+                </div>
+              </div>
+            ) : modal.type === 'reset' ? (
+              <form onSubmit={doReset}>
+                <div className="form-grid">
+                  <label>
+                    Mật khẩu mới
+                    <input required type="password" value={resetForm.password} onChange={e => setResetForm({ ...resetForm, password: e.target.value })} />
+                  </label>
+                  <label>
+                    Xác nhận mật khẩu
+                    <input required type="password" value={resetForm.confirmPassword} onChange={e => setResetForm({ ...resetForm, confirmPassword: e.target.value })} />
+                  </label>
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-light" onClick={close}>Hủy</button>
+                  <button className="btn-primary" disabled={saving}>Đặt lại mật khẩu</button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={save}>
+                <div className="form-grid">
+                  <label>
+                    Vai trò
+                    <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                      {Object.entries(roles).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    {codeLabel(form.role)}
+                    <input required value={form.userCode} onChange={e => setForm({ ...form, userCode: e.target.value })} />
+                  </label>
+                  <label>
+                    Họ và tên
+                    <input required value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} />
+                  </label>
+                  <label>
+                    Email / Tên đăng nhập
+                    <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  </label>
+                  <label>
+                    Số điện thoại
+                    <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                  </label>
+                  <label>
+                    Khoa
+                    <input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
+                  </label>
+                  <label>
+                    Lớp
+                    <input value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} />
+                  </label>
+                  {modal.type === 'create' && (
+                    <>
+                      <label>
+                        Mật khẩu ban đầu
+                        <input required type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                      </label>
+                      <label>
+                        Xác nhận mật khẩu
+                        <input required type="password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} />
+                      </label>
+                    </>
+                  )}
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-light" onClick={close}>Hủy</button>
+                  <button className="btn-primary" disabled={saving}>{saving ? 'Đang lưu...' : 'Lưu tài khoản'}</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }

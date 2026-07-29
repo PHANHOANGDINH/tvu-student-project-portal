@@ -1,0 +1,155 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family:
+        Segoe UI,
+        Tahoma,
+        Geneva,
+        Verdana,
+        sans-serif;
+}
+
+body {
+    background: #f3f6fb;
+}
+
+.home-page {
+    min-height: 100vh;
+}
+
+/* Header */
+
+.topbar {
+    height: 75px;
+    background: #1e40af;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.topbar h2 {
+    margin-bottom: 4px;
+}
+
+.topbar span {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.logout-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+/* Main */
+
+.home-container {
+    max-width: 1100px;
+    margin: 40px auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+.welcome-card,
+.feature-card {
+    background: white;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.welcome-card h1 {
+    color: #1e40af;
+    margin-bottom: 10px;
+}
+
+.welcome-card p {
+    color: #555;
+    margin-bottom: 30px;
+}
+
+/* User Info */
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.info-item {
+    background: #f8fafc;
+    border-left: 5px solid #2563eb;
+    padding: 18px;
+    border-radius: 10px;
+}
+
+.info-item span {
+    display: block;
+    color: #777;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.info-item strong {
+    font-size: 17px;
+    color: #222;
+}
+
+/* Feature */
+
+.feature-card h3 {
+    margin-bottom: 20px;
+    color: #1e40af;
+}
+
+.feature-card ul {
+    list-style: none;
+}
+
+.feature-card li {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    transition: 0.3s;
+}
+
+.feature-card li:hover {
+    background: #eff6ff;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .home-container {
+        grid-template-columns: 1fr;
+        padding: 15px;
+    }
+
+    .topbar {
+        padding: 20px;
+        flex-direction: column;
+        height: auto;
+        gap: 15px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}

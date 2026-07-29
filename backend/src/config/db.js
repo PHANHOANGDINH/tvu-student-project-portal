@@ -1,30 +1,39 @@
-// src/config/db.js
 import dotenv from "dotenv";
 import sql from "mssql";
 
-dotenv.config();
+dotenv.config({ override: true });
 
-const dbPort = Number(process.env.DB_PORT);
+const dbPort = Number(process.env.DB_PORT || 1433);
 
 const dbConfig = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-
-    // Tên máy
     server: process.env.DB_SERVER || "localhost",
-
     database: process.env.DB_DATABASE,
-    ...(dbPort ? { port: dbPort } : {}),
+    port: dbPort,
 
     options: {
-        ...(dbPort ? {} : { instanceName: process.env.DB_INSTANCE || "SQLEXPRESS" }),
-        encrypt: false,
-        trustServerCertificate: true,
+        ...(process.env.DB_INSTANCE ? { instanceName: process.env.DB_INSTANCE } : {}),
+        encrypt: process.env.DB_ENCRYPT === "true",
+        trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== "false",
     },
+
+    pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000,
+    },
+
+    connectionTimeout: 15000,
+    requestTimeout: 30000,
 };
 
-console.log("DB_SERVER:", process.env.DB_SERVER);
-console.log("DB_DATABASE:", process.env.DB_DATABASE);
+console.log("Đang kết nối SQL Server:", {
+    server: dbConfig.server,
+    database: dbConfig.database,
+    port: dbConfig.port,
+    user: dbConfig.user,
+});
 
 const poolPromise = new sql.ConnectionPool(dbConfig)
     .connect()
@@ -32,9 +41,9 @@ const poolPromise = new sql.ConnectionPool(dbConfig)
         console.log("Kết nối SQL Server thành công");
         return pool;
     })
-    .catch((err) => {
-        console.error("Lỗi kết nối SQL Server:", err);
-        throw err;
+    .catch((error) => {
+        console.error("Lỗi kết nối SQL Server:", error);
+        throw error;
     });
 
 export { sql, poolPromise };
