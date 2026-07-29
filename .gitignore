@@ -35,3 +35,11 @@ Thumbs.db
 # Runtime uploads
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Production deployment runtime data
+deploy/backups/
+deploy/certs/
+*.pem
+*.key
+id_rsa*
+id_ed25519*
