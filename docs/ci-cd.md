@@ -1,55 +1,98 @@
-# GitHub Actions CI
+# CI/CD với GitHub Actions
 
-Workflow CI của dự án nằm tại `.github/workflows/ci.yml`. Workflow chỉ kiểm tra
-chất lượng và khả năng chạy tích hợp; chưa triển khai ứng dụng lên VPS hay môi
-trường production.
+## Continuous Integration
 
-## Trigger và quyền
+`.github/workflows/ci.yml` chạy khi có Pull Request vào `main`, push lên `main`
+hoặc `workflow_dispatch`.
 
-CI chạy khi có Pull Request vào `main`, push lên `main`, hoặc được chạy thủ công
-bằng `workflow_dispatch`. Workflow chỉ có quyền `contents: read`. Concurrency
-hủy run cũ trên cùng Pull Request/ref khi có run mới.
+- Frontend: Node.js 22, `npm ci`, lint và production build.
+- Backend: `npm ci`, syntax-check JavaScript và validate Swagger. Backend hiện
+  không khai báo `npm test`, nên workflow không tự tạo test script.
+- Docker integration: tạo credential runner tạm, build/up Compose, chờ health,
+  kiểm tra HTTP/restart count và luôn cleanup volume CI riêng.
 
-## Frontend
+CI chỉ có quyền `contents: read`; run cũ trên cùng branch/PR được hủy.
 
-Job dùng Node.js 22, npm cache theo lockfile, rồi chạy:
+## Continuous Deployment
 
-```bash
-cd frontend
-npm ci
-npm run lint
-npm run build
-```
+`.github/workflows/cd.yml` deploy production trong hai trường hợp:
 
-## Backend
+1. workflow `CI` hoàn tất thành công sau một `push` lên `main`;
+2. `workflow_dispatch` với full 40-character commit SHA đã thuộc `main`.
 
-`backend/package.json` hiện không có script `test`, vì vậy CI không tự tạo hoặc
-gọi `npm test`. Job dùng Node.js 22, npm cache, chạy `npm ci`, syntax-check toàn
-bộ JavaScript và import/validate Swagger OpenAPI spec mà không kết nối database.
+CD không deploy từ Pull Request. Commit được checkout và xác minh là ancestor
+của `origin/main` trước khi kết nối VPS.
 
-Khi backend có test script thật, bổ sung lệnh đó trong cùng PR thêm test.
+Job dùng GitHub Environment `production`. Nên cấu hình required reviewers và
+deployment protection rules cho Environment này.
 
-## Docker integration
+Concurrency group cố định `production-deployment` bảo đảm chỉ một production
+deployment chạy tại một thời điểm; `cancel-in-progress: false` không cắt ngang
+backup/deploy/rollback đang chạy. Timeout là 45 phút.
 
-Job Docker chỉ chạy sau hai quality job. Runner sinh password SQL Server và JWT
-secret ngẫu nhiên, ghi `.env` với quyền hạn chế mà không echo giá trị, và dùng
-Compose project riêng theo run ID/attempt. Job chạy Compose config/build/up,
-đợi SQL Server, backend và frontend healthy, kiểm tra HTTP 200 cho health,
-frontend, Swagger, rồi xác nhận restart count bằng 0.
+## Secrets bắt buộc
 
-Cleanup luôn chạy:
+Cấu hình trong GitHub Environment `production`:
 
-```bash
-docker compose down --volumes --remove-orphans
-```
+| Secret | Mục đích |
+| --- | --- |
+| `VPS_HOST` | Host/IP SSH của VPS |
+| `VPS_PORT` | Cổng SSH |
+| `VPS_USER` | User deploy không dùng password |
+| `VPS_SSH_KEY` | Private key SSH dành riêng cho deploy |
+| `VPS_DEPLOY_PATH` | Đường dẫn tuyệt đối của repo trên VPS |
+| `DOMAIN` | Domain production |
+| `LETSENCRYPT_EMAIL` | Email Let's Encrypt |
+| `SQL_SA_PASSWORD` | Password SQL Server production |
+| `JWT_SECRET` | Khóa ký JWT production |
 
-`--volumes` chỉ xóa volume thuộc Compose project CI tạm, không tác động volume
-development/production.
+Workflow kiểm tra secret trong shell, không dùng `secrets.*` trực tiếp trong
+biểu thức `if`. Giá trị secret không được echo vào log hoặc step summary.
+`.env.production` được tạo ở runner với mode hạn chế, copy qua SCP, cài mode
+`600` trên VPS và không commit.
 
-## Secrets và phạm vi
+## SSH và source revision
 
-Workflow không dùng credential thật hay repository secret cho integration test.
-Credential ngẫu nhiên chỉ tồn tại trong runner và không được in ra log. Không
-commit `.env`, backup, runtime upload hoặc token.
+Runner ghi private key mode `600`, tạo `known_hosts` bằng `ssh-keyscan`, sau đó
+dùng `BatchMode=yes` và `StrictHostKeyChecking=yes`. Không hỗ trợ SSH password.
 
-CI không chạy `npm audit fix`, không deploy VPS và không thêm RabbitMQ.
+VPS clone/fetch repository qua HTTPS và xác minh target SHA thuộc `main`.
+`.env.production` đặt `DEPLOY_REF` bằng đúng SHA bất biến; `deploy.sh` checkout
+SHA đó thay vì một branch chuyển động.
+
+Nếu repository chuyển sang private, cần thiết kế thêm deploy key/token read-only
+cho bước fetch trên VPS; không tái sử dụng private key SSH của VPS làm GitHub
+credential.
+
+## Deploy, backup và rollback
+
+Trước deploy, workflow bảo đảm certificate Let's Encrypt đã tồn tại; lần đầu có
+thể cấp certificate bằng HTTP challenge trên port 80.
+
+`deploy/scripts/deploy.sh`:
+
+- backup SQL Server và uploads nếu stack cũ đang chạy;
+- validate production Compose;
+- pull/build image;
+- `up -d`;
+- chờ database, backend, frontend và proxy healthy;
+- tự gọi rollback nội bộ nếu health thất bại.
+
+Sau internal health, runner kiểm tra HTTPS cho frontend, `/api/health` và
+`/api-docs/`. Nếu deploy hoặc public health thất bại, CD gọi
+`deploy/scripts/rollback.sh` với commit trước và đánh dấu workflow thất bại.
+
+Step summary chỉ ghi SHA, trigger, outcome và Environment; không ghi host,
+domain hay secret.
+
+## Chuẩn bị trước run đầu tiên
+
+1. Hoàn tất DNS, firewall, Docker và user deploy theo
+   `docs/vps-deployment.md`.
+2. Đảm bảo VPS có thể clone/fetch repository.
+3. Tạo Environment `production`, thêm secrets và required reviewers.
+4. Merge CI/CD vào `main`.
+5. Không chạy `workflow_dispatch` cho tới khi VPS và secrets hoàn chỉnh.
+
+Workflow không chạy `npm audit fix`, không thêm RabbitMQ và không thay đổi
+schema/logic nghiệp vụ.

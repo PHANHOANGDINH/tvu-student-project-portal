@@ -33,7 +33,7 @@ backup_if_running() {
 
   echo "Creating pre-deploy SQL and uploads backups."
   "${compose[@]}" exec -T -e BACKUP_FILE="predeploy_${timestamp}.bak" database \
-    /bin/bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -Q "BACKUP DATABASE [$DB_DATABASE] TO DISK=N'\''/var/opt/mssql/backup/'\''$BACKUP_FILE'\''' WITH COPY_ONLY, CHECKSUM, COMPRESSION"'
+    /bin/bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -v DbName="$DB_DATABASE" BackupFile="$BACKUP_FILE" -Q "BACKUP DATABASE [\$(DbName)] TO DISK=N'\''/var/opt/mssql/backup/\$(BackupFile)'\'' WITH COPY_ONLY, CHECKSUM, COMPRESSION"'
   BACKUP_FILE="uploads_${timestamp}.tar.gz" "${compose[@]}" --profile tools run --rm uploads-backup
 }
 
