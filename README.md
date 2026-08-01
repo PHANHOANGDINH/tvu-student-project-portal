@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/PHANHOANGDINH/tvu-student-project-portal/actions/workflows/ci.yml/badge.svg)](https://github.com/PHANHOANGDINH/tvu-student-project-portal/actions/workflows/ci.yml)
 
+Production operations: [monitoring and alerting](docs/monitoring.md), [backup and restore](docs/backup-restore.md).
+
 Dự án sử dụng Jira Scrum và GitHub để quản lý tiến độ, mã nguồn.
 
 Tài liệu vận hành:

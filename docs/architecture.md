@@ -1,5 +1,7 @@
 # Kiến trúc TVU Student Project Portal
 
+> Vận hành production dùng structured JSON logging, request/correlation ID và Prometheus metrics cho API, SQL Server, RabbitMQ, outbox và worker. Xem [monitoring.md](monitoring.md) và [backup-restore.md](backup-restore.md).
+
 ## Tổng quan
 
 ```mermaid

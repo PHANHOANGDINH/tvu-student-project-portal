@@ -64,3 +64,11 @@ export async function releaseOutboxEvent(eventId, error, attempts) {
       WHERE EventId = @EventId
     `);
 }
+
+export async function countOutboxByStatus() {
+  const pool = await poolPromise;
+  const result = await pool.request().query(`
+    SELECT Status, COUNT_BIG(*) AS Total FROM NotificationOutbox GROUP BY Status
+  `);
+  return result.recordset;
+}
