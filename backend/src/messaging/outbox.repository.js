@@ -7,8 +7,11 @@ export async function enqueueOutboxEvent(transaction, event) {
     .input('Payload', sql.NVarChar(sql.MAX), JSON.stringify(event))
     .input('CorrelationId', sql.NVarChar(100), event.correlationId)
     .query(`
-      INSERT INTO NotificationOutbox (EventId, EventType, Payload, CorrelationId)
-      VALUES (@EventId, @EventType, @Payload, @CorrelationId)
+      IF NOT EXISTS (
+        SELECT 1 FROM NotificationOutbox WITH (UPDLOCK, HOLDLOCK) WHERE EventId = @EventId
+      )
+        INSERT INTO NotificationOutbox (EventId, EventType, Payload, CorrelationId)
+        VALUES (@EventId, @EventType, @Payload, @CorrelationId)
     `);
 }
 

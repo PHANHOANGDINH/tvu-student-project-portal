@@ -1,10 +1,10 @@
-﻿import { Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { getUserRole, isLoggedIn } from '../utils/auth'
 import { USER_ROLES } from '../constants/roles'
 
 function getHomePathByRole(role) {
-  if (role === USER_ROLES.ADMIN) return '/dashboard'
-  if (role === USER_ROLES.LECTURER) return '/teacher/dashboard'
+  if (role === USER_ROLES.ADMIN) return '/admin/dashboard'
+  if (role === USER_ROLES.LECTURER) return '/lecturer/dashboard'
   if (role === USER_ROLES.STUDENT) return '/student/dashboard'
 
   return '/login'

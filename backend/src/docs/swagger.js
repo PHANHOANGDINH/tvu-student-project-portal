@@ -1,4 +1,12 @@
-﻿import { USER_ROLES } from '../constants/roles.js';
+import { USER_ROLES } from '../constants/roles.js';
+import { groupSwaggerPaths } from './groups.swagger.js';
+import { submissionSwaggerPaths } from './submissions.swagger.js';
+import { submissionUploadSwaggerPaths } from './submissionUploads.swagger.js';
+import { gradingSwaggerPaths } from './grading.swagger.js';
+import { notificationsDashboardPaths } from './notificationsDashboard.swagger.js';
+import { academicsSwaggerPaths } from './academics.swagger.js';
+import { studentImportSwaggerPaths } from './studentImport.swagger.js';
+import { lecturerImportSwaggerPaths } from './lecturerImport.swagger.js';
 
 const apiErrorResponse = {
   description: 'Lỗi API',
@@ -154,6 +162,14 @@ export const swaggerSpec = {
     },
   },
   paths: {
+    ...groupSwaggerPaths,
+    ...submissionSwaggerPaths,
+    ...submissionUploadSwaggerPaths,
+    ...gradingSwaggerPaths,
+    ...notificationsDashboardPaths,
+    ...academicsSwaggerPaths,
+    ...studentImportSwaggerPaths,
+    ...lecturerImportSwaggerPaths,
     '/auth/login': {
       post: {
         tags: ['Authentication'],

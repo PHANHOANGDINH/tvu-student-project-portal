@@ -18,6 +18,10 @@ gọi RabbitMQ. Các model thực hiện thay đổi nghiệp vụ và ghi event
 `NotificationOutbox` trong cùng SQL transaction. Worker độc lập publish và
 consume event; API vẫn hoạt động khi RabbitMQ tạm thời không sẵn sàng.
 
+API notification hiện hữu chỉ đọc và cập nhật trạng thái đã đọc. Các service
+nghiệp vụ mới ghi outbox thay vì insert trực tiếp vào `Notifications`; handler
+consumer là nơi duy nhất materialize notification cho các event bất đồng bộ.
+
 JWT xác thực người dùng; middleware role phân quyền `ADMIN`, `LECTURER`,
 `STUDENT`. Các controller tiếp tục kiểm tra ownership của lớp, đề tài, báo cáo
 và bài nộp trước khi gọi model.

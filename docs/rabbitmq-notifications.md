@@ -36,11 +36,24 @@ confirm. `RABBITMQ_MAX_RETRIES=3` ngăn retry vô hạn.
 - admin duyệt/từ chối đề tài;
 - giảng viên duyệt/từ chối đăng ký đề tài;
 - giảng viên phản hồi tiến độ;
-- giảng viên chấm bài cuối kỳ.
+- giảng viên chấm bài cuối kỳ;
+- thêm sinh viên vào nhóm;
+- duyệt hoặc yêu cầu sửa đăng ký đề tài nhóm;
+- tạo/mở yêu cầu nộp bài;
+- sinh viên nộp bài;
+- yêu cầu chỉnh sửa và công bố điểm.
 
-Repo hiện không có luồng ghi nhóm hoặc API tạo thông báo quản trị, nên hai loại
-này chưa được giả lập. Khi bổ sung nghiệp vụ, model/repository phải ghi outbox
-trong cùng transaction thay vì publish trực tiếp.
+API `/api/notifications` từ `main` tiếp tục cung cấp danh sách, unread count,
+đánh dấu một hoặc tất cả notification đã đọc. Các service nhóm/nộp bài/chấm
+điểm không insert `Notifications` trực tiếp; chúng ghi event vào outbox và dùng
+UUID ổn định suy ra từ `eventKey` để giữ idempotency.
+
+Các model cũ đã hỗ trợ transaction dùng chung thì ghi nghiệp vụ và outbox trong
+cùng transaction. Một số repository mới từ `main` tự quản lý transaction nội
+bộ rồi mới gọi notification service; merge này không viết lại toàn bộ lớp dữ
+liệu, nên vẫn còn một khoảng lỗi nhỏ giữa commit nghiệp vụ và ghi outbox ở các
+luồng đó. Bước tiếp theo là cho các repository này nhận transaction/outbox event
+để loại bỏ hoàn toàn khoảng lỗi.
 
 ## Chạy và quan sát
 

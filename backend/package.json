@@ -9,7 +9,9 @@
     "start": "node src/server.js",
     "worker:notifications": "node src/workers/notification.worker.js",
     "test": "node --test",
-    "test:notifications:integration": "node src/scripts/verifyNotificationPipeline.js"
+    "test:notifications:integration": "node src/scripts/verifyNotificationPipeline.js",
+    "seed:demo": "node src/scripts/seedDemo.js",
+    "reset:admin-demo": "node src/scripts/resetAdminDemo.js"
   },
   "keywords": [],
   "author": "",

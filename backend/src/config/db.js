@@ -3,17 +3,19 @@ import sql from "mssql";
 
 dotenv.config({ override: true });
 
+const dbPort = Number(process.env.DB_PORT || 1433);
+
 const dbConfig = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
+    server: process.env.DB_SERVER || "localhost",
     database: process.env.DB_DATABASE,
-    port: Number(process.env.DB_PORT || 1433),
+    port: dbPort,
 
     options: {
+        ...(process.env.DB_INSTANCE ? { instanceName: process.env.DB_INSTANCE } : {}),
         encrypt: process.env.DB_ENCRYPT === "true",
-        trustServerCertificate:
-            process.env.DB_TRUST_SERVER_CERTIFICATE !== "false",
+        trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== "false",
     },
 
     pool: {

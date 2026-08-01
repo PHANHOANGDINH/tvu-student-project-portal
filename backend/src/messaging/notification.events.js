@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 export const NOTIFICATION_EVENT_TYPES = Object.freeze({
   CLASS_STUDENT_ADDED: 'class.student.added',
@@ -6,7 +6,22 @@ export const NOTIFICATION_EVENT_TYPES = Object.freeze({
   PROJECT_REGISTRATION_REVIEWED: 'project.registration.reviewed',
   PROGRESS_REVIEWED: 'progress.reviewed',
   FINAL_SUBMISSION_GRADED: 'final-submission.graded',
+  GROUP_MEMBER_ADDED: 'GROUP_MEMBER_ADDED',
+  TOPIC_REVIEWED: 'TOPIC_REVIEWED',
+  REVISION_REQUESTED: 'REVISION_REQUESTED',
+  GRADE_PUBLISHED: 'GRADE_PUBLISHED',
+  SUBMISSION_REQUIREMENT_CREATED: 'SUBMISSION_REQUIREMENT_CREATED',
+  SUBMISSION_ROUND_OPENED: 'SUBMISSION_ROUND_OPENED',
+  SUBMISSION_RECEIVED: 'SUBMISSION_RECEIVED',
 });
+
+export function eventIdFromKey(key) {
+  const bytes = createHash('sha256').update(String(key)).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 function positiveInteger(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;

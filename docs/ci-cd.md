@@ -6,8 +6,8 @@
 hoặc `workflow_dispatch`.
 
 - Frontend: Node.js 22, `npm ci`, lint và production build.
-- Backend: `npm ci`, syntax-check JavaScript và validate Swagger. Backend hiện
-  không khai báo `npm test`, nên workflow không tự tạo test script.
+- Backend: `npm ci`, syntax-check JavaScript, `npm test` bằng Node test runner
+  và validate Swagger.
 - Docker integration: tạo credential runner tạm, build/up Compose, chờ health,
   kiểm tra HTTP/restart count và luôn cleanup volume CI riêng.
 
