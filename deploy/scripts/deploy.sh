@@ -62,7 +62,12 @@ git checkout --detach "$deploy_ref"
 "${compose[@]}" build --pull
 "${compose[@]}" up -d --remove-orphans
 
-if wait_for_health database && wait_for_health backend && wait_for_health frontend && wait_for_health proxy; then
+if wait_for_health database &&
+  wait_for_health rabbitmq &&
+  wait_for_health notification-worker &&
+  wait_for_health backend &&
+  wait_for_health frontend &&
+  wait_for_health proxy; then
   echo "Deployment healthy at commit $(git rev-parse --short HEAD)."
   exit 0
 fi

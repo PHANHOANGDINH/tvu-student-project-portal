@@ -415,7 +415,12 @@ export async function addAdminClassStudent(req, res) {
       });
     }
 
-    const member = await addStudentToClass(classId, studentId);
+    const member = await addStudentToClass(
+      classId,
+      studentId,
+      { id: req.user.id, role: req.user.role },
+      classItem.ClassCode
+    );
 
     return res.status(201).json({
       message: 'Thêm sinh viên vào lớp thành công',

@@ -122,7 +122,10 @@ export async function updateAdminProjectStatus(req, res) {
     const updatedProject = await updateProjectStatus(
       id,
       status,
-      status === 'Rejected' ? rejectReason : null
+      status === 'Rejected' ? rejectReason : null,
+      ['Approved', 'Rejected'].includes(status)
+        ? { actor: { id: req.user.id, role: req.user.role } }
+        : null
     );
 
     return res.json({

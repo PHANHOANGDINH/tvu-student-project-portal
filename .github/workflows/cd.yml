@@ -82,11 +82,14 @@ jobs:
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
           SQL_SA_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
         run: |
           set -euo pipefail
           required=(
             VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY VPS_DEPLOY_PATH
             DOMAIN LETSENCRYPT_EMAIL SQL_SA_PASSWORD JWT_SECRET
+            RABBITMQ_USER RABBITMQ_PASSWORD
           )
           missing=()
           for name in "${required[@]}"; do
@@ -110,6 +113,10 @@ jobs:
             { echo "SQL_SA_PASSWORD must be a single line." >&2; exit 1; }
           [[ "$JWT_SECRET" != *$'\n'* && "$JWT_SECRET" != *$'\r'* ]] ||
             { echo "JWT_SECRET must be a single line." >&2; exit 1; }
+          [[ "$RABBITMQ_USER" =~ ^[A-Za-z0-9._-]+$ ]] ||
+            { echo "RABBITMQ_USER is invalid." >&2; exit 1; }
+          [[ "$RABBITMQ_PASSWORD" != *$'\n'* && "$RABBITMQ_PASSWORD" != *$'\r'* ]] ||
+            { echo "RABBITMQ_PASSWORD must be a single line." >&2; exit 1; }
 
       - name: Configure SSH key and known hosts
         shell: bash
@@ -137,6 +144,8 @@ jobs:
           LETSENCRYPT_EMAIL: ${{ secrets.LETSENCRYPT_EMAIL }}
           SQL_SA_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
           TARGET_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
           set -euo pipefail
@@ -171,6 +180,14 @@ jobs:
             printf 'MSSQL_SA_PASSWORD=%s\n' "$SQL_SA_PASSWORD"
             echo "DB_DATABASE=tvu_student_project_portal"
             printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
+            printf 'RABBITMQ_USER=%s\n' "$RABBITMQ_USER"
+            printf 'RABBITMQ_PASSWORD=%s\n' "$RABBITMQ_PASSWORD"
+            echo "RABBITMQ_VHOST=/"
+            echo "RABBITMQ_PREFETCH=10"
+            echo "RABBITMQ_MAX_RETRIES=3"
+            echo "RABBITMQ_RETRY_DELAY_MS=5000"
+            echo "OUTBOX_POLL_INTERVAL_MS=2000"
+            echo "OUTBOX_MAX_ATTEMPTS=20"
             echo "JWT_EXPIRES_IN=1h"
             echo "BCRYPT_SALT_ROUNDS=12"
             echo "DOCKER_SEED_ADMIN_EMAIL="

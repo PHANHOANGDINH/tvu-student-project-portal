@@ -1,5 +1,7 @@
 ﻿// src/modules/admin/admin.classes.model.js
 import { sql, poolPromise } from '../../config/db.js';
+import { createNotificationEvent, NOTIFICATION_EVENT_TYPES } from '../../messaging/notification.events.js';
+import { enqueueOutboxEvent } from '../../messaging/outbox.repository.js';
 
 function addClassFilters(request, filters = {}) {
   const search = filters.search ? `%${filters.search.trim()}%` : null;
@@ -361,30 +363,40 @@ export async function findActiveStudentClass(studentId) {
   return result.recordset[0] || null;
 }
 
-export async function addStudentToClass(classId, studentId) {
+export async function addStudentToClass(classId, studentId, actor, classCode) {
   const pool = await poolPromise;
-
-  const result = await pool
-    .request()
-    .input('ClassId', sql.Int, classId)
-    .input('StudentId', sql.Int, studentId)
-    .query(`
-      INSERT INTO StudentClassMembers (
-        ClassId,
-        StudentId
-      )
-      OUTPUT
-        INSERTED.Id,
-        INSERTED.ClassId,
-        INSERTED.StudentId,
-        INSERTED.CreatedAt
-      VALUES (
-        @ClassId,
-        @StudentId
-      )
-    `);
-
-  return result.recordset[0];
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+    const result = await transaction.request()
+      .input('ClassId', sql.Int, classId)
+      .input('StudentId', sql.Int, studentId)
+      .query(`
+        INSERT INTO StudentClassMembers (ClassId, StudentId)
+        OUTPUT INSERTED.Id, INSERTED.ClassId, INSERTED.StudentId, INSERTED.CreatedAt
+        VALUES (@ClassId, @StudentId)
+      `);
+    const member = result.recordset[0];
+    const event = createNotificationEvent({
+      eventType: NOTIFICATION_EVENT_TYPES.CLASS_STUDENT_ADDED,
+      recipientIds: [studentId],
+      actor,
+      entityType: 'Class',
+      entityId: classId,
+      payload: {
+        title: 'Bạn đã được thêm vào lớp học phần',
+        message: `Bạn đã được thêm vào lớp ${classCode || classId}.`,
+        memberId: member.Id,
+      },
+      correlationId: `class-member:${member.Id}`,
+    });
+    await enqueueOutboxEvent(transaction, event);
+    await transaction.commit();
+    return member;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function getClassStudents(classId, filters = {}) {

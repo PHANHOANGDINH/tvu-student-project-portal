@@ -6,8 +6,8 @@
 hoặc `workflow_dispatch`.
 
 - Frontend: Node.js 22, `npm ci`, lint và production build.
-- Backend: `npm ci`, syntax-check JavaScript và validate Swagger. Backend hiện
-  không khai báo `npm test`, nên workflow không tự tạo test script.
+- Backend: `npm ci`, syntax-check JavaScript, `npm test` bằng Node test runner
+  và validate Swagger.
 - Docker integration: tạo credential runner tạm, build/up Compose, chờ health,
   kiểm tra HTTP/restart count và luôn cleanup volume CI riêng.
 
@@ -45,6 +45,8 @@ Cấu hình trong GitHub Environment `production`:
 | `LETSENCRYPT_EMAIL` | Email Let's Encrypt |
 | `SQL_SA_PASSWORD` | Password SQL Server production |
 | `JWT_SECRET` | Khóa ký JWT production |
+| `RABBITMQ_USER` | User RabbitMQ production |
+| `RABBITMQ_PASSWORD` | Password RabbitMQ production |
 
 Workflow kiểm tra secret trong shell, không dùng `secrets.*` trực tiếp trong
 biểu thức `if`. Giá trị secret không được echo vào log hoặc step summary.
@@ -94,5 +96,6 @@ domain hay secret.
 4. Merge CI/CD vào `main`.
 5. Không chạy `workflow_dispatch` cho tới khi VPS và secrets hoàn chỉnh.
 
-Workflow không chạy `npm audit fix`, không thêm RabbitMQ và không thay đổi
-schema/logic nghiệp vụ.
+Workflow không chạy `npm audit fix`. CI kiểm tra health của RabbitMQ và
+notification worker; CD truyền credential RabbitMQ qua GitHub Environment mà
+không ghi chúng vào log. Workflow không tự thay đổi schema/logic nghiệp vụ.

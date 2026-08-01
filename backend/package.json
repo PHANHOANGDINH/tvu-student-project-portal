@@ -7,14 +7,17 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "worker:notifications": "node src/workers/notification.worker.js",
+    "test": "node --test",
+    "test:notifications:integration": "node src/scripts/verifyNotificationPipeline.js",
     "seed:demo": "node src/scripts/seedDemo.js",
-    "reset:admin-demo": "node src/scripts/resetAdminDemo.js",
-    "test": "node --test src/**/*.test.js"
+    "reset:admin-demo": "node src/scripts/resetAdminDemo.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "amqplib": "^0.10.9",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -22,7 +25,8 @@
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.1.0",
     "multer": "^2.2.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

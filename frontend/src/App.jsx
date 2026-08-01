@@ -23,7 +23,6 @@ import LecturerSubmissionsPage from './pages/teacher/SubmissionsPage'
 import LecturerSubmissionDetailPage from './pages/teacher/SubmissionDetailPage'
 import SubmissionReviewPage from './pages/teacher/SubmissionReviewPage'
 import EvaluationCriteriaPage from './pages/teacher/EvaluationCriteriaPage'
-import TeacherDashboardPage from './pages/teacher/TeacherDashboardPage'
 
 // Student Pages
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
@@ -34,8 +33,6 @@ import SubmitRequirementPage from './pages/student/SubmitRequirementPage'
 import SubmissionHistoryPage from './pages/student/SubmissionHistoryPage'
 import SubmissionResultPage from './pages/student/SubmissionResultPage'
 import StudentCourseClassesPage from './pages/student/StudentCourseClassesPage'
-import StudentDashboardPage from './pages/student/StudentDashboardPage'
-import StudentProjectsPage from './pages/student/StudentProjectsPage'
 import StudentReportsPage from './pages/student/StudentReportsPage'
 import StudentUnavailablePage from './pages/student/StudentUnavailablePage'
 

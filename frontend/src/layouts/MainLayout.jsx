@@ -10,7 +10,6 @@ import {
   FileUp,
   FolderKanban,
   GraduationCap,
-  KeyRound,
   Layers3,
   LayoutDashboard,
   LogOut,

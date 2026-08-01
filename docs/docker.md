@@ -188,4 +188,20 @@ docker compose logs frontend
 - CORS bị từ chối: bảo đảm origin trình duyệt khớp chính xác
   `CORS_ALLOWED_ORIGINS`.
 
-RabbitMQ, GitHub Actions và triển khai production/VPS không thuộc bước này.
+## RabbitMQ và notification worker
+
+Compose chạy thêm `rabbitmq` và `notification-worker`. RabbitMQ giữ dữ liệu
+trong volume `rabbitmq_data`; worker đọc SQL outbox, publish event persistent và
+consume bằng manual ack. Điền `RABBITMQ_USER` và `RABBITMQ_PASSWORD` trong
+`.env`; không dùng placeholder. Local publish AMQP `5672` và management UI
+`15672`. Production không public hai port này.
+
+```bash
+docker compose ps rabbitmq notification-worker
+docker compose logs notification-worker
+docker compose exec rabbitmq rabbitmqctl list_queues name messages_ready
+```
+
+Không dùng `docker compose down -v` nếu cần giữ SQL, upload hoặc RabbitMQ data.
+Xem [rabbitmq-notifications.md](rabbitmq-notifications.md) để kiểm thử
+retry/DLQ và failure recovery.

@@ -1,5 +1,7 @@
 // src/modules/project/project.model.js
 import { sql, poolPromise } from '../../config/db.js';
+import { createNotificationEvent, NOTIFICATION_EVENT_TYPES } from '../../messaging/notification.events.js';
+import { enqueueOutboxEvent } from '../../messaging/outbox.repository.js';
 
 export const PROJECT_STATUSES = ['Draft', 'Pending', 'Approved', 'Rejected', 'Closed'];
 export const REGISTRATION_STATUSES = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
@@ -270,31 +272,47 @@ export async function updateProject(id, data) {
   return result.recordset[0] || null;
 }
 
-export async function updateProjectStatus(id, status, rejectReason = null) {
+export async function updateProjectStatus(id, status, rejectReason = null, notification = null) {
   const pool = await poolPromise;
-
-  const result = await pool
-    .request()
-    .input('Id', sql.Int, id)
-    .input('Status', sql.NVarChar(30), status)
-    .input('RejectReason', sql.NVarChar(sql.MAX), rejectReason)
-    .query(`
-      UPDATE Projects
-      SET
-        Status = @Status,
-        RejectReason = @RejectReason,
-        UpdatedAt = SYSDATETIME()
-      OUTPUT
-        INSERTED.Id,
-        INSERTED.Title,
-        INSERTED.Status,
-        INSERTED.RejectReason,
-        INSERTED.UpdatedAt
-      WHERE Id = @Id
-        AND DeletedAt IS NULL
-    `);
-
-  return result.recordset[0] || null;
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+    const result = await transaction.request()
+      .input('Id', sql.Int, id)
+      .input('Status', sql.NVarChar(30), status)
+      .input('RejectReason', sql.NVarChar(sql.MAX), rejectReason)
+      .query(`
+        UPDATE Projects
+        SET Status = @Status, RejectReason = @RejectReason, UpdatedAt = SYSDATETIME()
+        OUTPUT INSERTED.Id, INSERTED.Title, INSERTED.TeacherId, INSERTED.Status,
+          INSERTED.RejectReason, INSERTED.UpdatedAt
+        WHERE Id = @Id AND DeletedAt IS NULL
+      `);
+    const project = result.recordset[0] || null;
+    if (project && notification) {
+      await enqueueOutboxEvent(transaction, createNotificationEvent({
+        eventType: NOTIFICATION_EVENT_TYPES.PROJECT_STATUS_CHANGED,
+        recipientIds: [project.TeacherId],
+        actor: notification.actor,
+        entityType: 'Project',
+        entityId: project.Id,
+        payload: {
+          title: status === 'Approved' ? 'Đề tài đã được duyệt' : 'Đề tài đã bị từ chối',
+          message: status === 'Approved'
+            ? `Đề tài "${project.Title}" đã được duyệt.`
+            : `Đề tài "${project.Title}" đã bị từ chối.`,
+          status,
+          rejectReason: rejectReason || null,
+        },
+        correlationId: `project-status:${project.Id}:${project.UpdatedAt.toISOString()}`,
+      }));
+    }
+    await transaction.commit();
+    return project;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function softDeleteProject(id) {
@@ -542,37 +560,49 @@ export async function findProjectRegistrationById(id) {
   return result.recordset[0] || null;
 }
 
-export async function updateRegistrationStatus(id, status, reviewNote, reviewedBy) {
+export async function updateRegistrationStatus(id, status, reviewNote, reviewedBy, actor = null) {
   const pool = await poolPromise;
-
-  const result = await pool
-    .request()
-    .input('Id', sql.Int, id)
-    .input('Status', sql.NVarChar(30), status)
-    .input('ReviewNote', sql.NVarChar(sql.MAX), reviewNote || null)
-    .input('ReviewedBy', sql.Int, reviewedBy)
-    .query(`
-      UPDATE ProjectRegistrations
-      SET
-        Status = @Status,
-        ReviewNote = @ReviewNote,
-        ReviewedBy = @ReviewedBy,
-        ReviewedAt = SYSDATETIME(),
-        UpdatedAt = SYSDATETIME()
-      OUTPUT
-        INSERTED.Id,
-        INSERTED.ProjectId,
-        INSERTED.StudentId,
-        INSERTED.Status,
-        INSERTED.ReviewNote,
-        INSERTED.ReviewedBy,
-        INSERTED.ReviewedAt,
-        INSERTED.UpdatedAt
-      WHERE Id = @Id
-        AND DeletedAt IS NULL
-    `);
-
-  return result.recordset[0] || null;
+  const transaction = new sql.Transaction(pool);
+  await transaction.begin();
+  try {
+    const result = await transaction.request()
+      .input('Id', sql.Int, id)
+      .input('Status', sql.NVarChar(30), status)
+      .input('ReviewNote', sql.NVarChar(sql.MAX), reviewNote || null)
+      .input('ReviewedBy', sql.Int, reviewedBy)
+      .query(`
+        UPDATE ProjectRegistrations
+        SET Status = @Status, ReviewNote = @ReviewNote, ReviewedBy = @ReviewedBy,
+          ReviewedAt = SYSDATETIME(), UpdatedAt = SYSDATETIME()
+        OUTPUT INSERTED.Id, INSERTED.ProjectId, INSERTED.StudentId, INSERTED.Status,
+          INSERTED.ReviewNote, INSERTED.ReviewedBy, INSERTED.ReviewedAt, INSERTED.UpdatedAt
+        WHERE Id = @Id AND DeletedAt IS NULL
+      `);
+    const registration = result.recordset[0] || null;
+    if (registration && actor) {
+      await enqueueOutboxEvent(transaction, createNotificationEvent({
+        eventType: NOTIFICATION_EVENT_TYPES.PROJECT_REGISTRATION_REVIEWED,
+        recipientIds: [registration.StudentId],
+        actor,
+        entityType: 'ProjectRegistration',
+        entityId: registration.Id,
+        payload: {
+          title: status === 'Approved' ? 'Đăng ký đề tài đã được duyệt' : 'Đăng ký đề tài đã bị từ chối',
+          message: status === 'Approved'
+            ? 'Đăng ký đề tài của bạn đã được giảng viên duyệt.'
+            : 'Đăng ký đề tài của bạn đã bị giảng viên từ chối.',
+          status,
+          reviewNote: reviewNote || null,
+        },
+        correlationId: `registration-review:${registration.Id}:${registration.ReviewedAt.toISOString()}`,
+      }));
+    }
+    await transaction.commit();
+    return registration;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 export async function cancelRegistration(id, studentId) {
