@@ -1,0 +1,14 @@
+{
+  "annotations":{"list":[]},"editable":false,"graphTooltip":1,"panels":[
+    {"type":"stat","title":"Service health","targets":[{"expr":"up","legendFormat":"{{job}}"}],"gridPos":{"h":6,"w":8,"x":0,"y":0}},
+    {"type":"timeseries","title":"Backend request rate","targets":[{"expr":"sum(rate(tvu_http_requests_total[5m])) by (method)"}],"gridPos":{"h":8,"w":8,"x":8,"y":0}},
+    {"type":"timeseries","title":"HTTP 5xx rate","targets":[{"expr":"sum(rate(tvu_http_requests_total{status=~\"5..\"}[5m]))"}],"gridPos":{"h":8,"w":8,"x":16,"y":0}},
+    {"type":"timeseries","title":"p95 latency","targets":[{"expr":"histogram_quantile(0.95,sum(rate(tvu_http_request_duration_seconds_bucket[5m])) by (le))"}],"gridPos":{"h":8,"w":8,"x":0,"y":8}},
+    {"type":"stat","title":"SQL availability","targets":[{"expr":"tvu_database_up"}],"gridPos":{"h":6,"w":4,"x":8,"y":8}},
+    {"type":"timeseries","title":"RabbitMQ queue depth","targets":[{"expr":"sum(rabbitmq_queue_messages) by (queue)"}],"gridPos":{"h":8,"w":8,"x":12,"y":8}},
+    {"type":"timeseries","title":"Outbox backlog","targets":[{"expr":"tvu_outbox_events{status=~\"Pending|Processing|Failed\"}"}],"gridPos":{"h":8,"w":8,"x":0,"y":16}},
+    {"type":"timeseries","title":"Worker processed/retry/DLQ","targets":[{"expr":"sum(rate(tvu_notification_events_total[5m])) by (result)"}],"gridPos":{"h":8,"w":8,"x":8,"y":16}},
+    {"type":"timeseries","title":"Container CPU","targets":[{"expr":"sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m])) by (name)"}],"gridPos":{"h":8,"w":8,"x":16,"y":16}},
+    {"type":"timeseries","title":"Container memory","targets":[{"expr":"container_memory_working_set_bytes{name!=\"\"}"}],"gridPos":{"h":8,"w":8,"x":0,"y":24}}
+  ],"schemaVersion":39,"tags":["tvu","operations"],"templating":{"list":[]},"time":{"from":"now-6h","to":"now"},"title":"TVU Portal Operations","uid":"tvu-operations","version":1
+}

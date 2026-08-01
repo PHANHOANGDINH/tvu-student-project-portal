@@ -38,6 +38,12 @@ backend/uploads/*
 
 # Production deployment runtime data
 deploy/backups/
+deploy/monitoring/runtime/
+prometheus-data/
+grafana-data/
+*.bak
+*.tar.gz
+SHA256SUMS
 deploy/certs/
 *.pem
 *.key

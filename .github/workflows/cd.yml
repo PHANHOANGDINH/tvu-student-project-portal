@@ -84,12 +84,13 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
           RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
           required=(
             VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY VPS_DEPLOY_PATH
             DOMAIN LETSENCRYPT_EMAIL SQL_SA_PASSWORD JWT_SECRET
-            RABBITMQ_USER RABBITMQ_PASSWORD
+            RABBITMQ_USER RABBITMQ_PASSWORD GRAFANA_ADMIN_PASSWORD
           )
           missing=()
           for name in "${required[@]}"; do
@@ -146,6 +147,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
           RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
           TARGET_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
           set -euo pipefail
@@ -182,12 +184,21 @@ jobs:
             printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
             printf 'RABBITMQ_USER=%s\n' "$RABBITMQ_USER"
             printf 'RABBITMQ_PASSWORD=%s\n' "$RABBITMQ_PASSWORD"
+            echo "GRAFANA_ADMIN_USER=admin"
+            printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$GRAFANA_ADMIN_PASSWORD"
             echo "RABBITMQ_VHOST=/"
             echo "RABBITMQ_PREFETCH=10"
             echo "RABBITMQ_MAX_RETRIES=3"
             echo "RABBITMQ_RETRY_DELAY_MS=5000"
             echo "OUTBOX_POLL_INTERVAL_MS=2000"
             echo "OUTBOX_MAX_ATTEMPTS=20"
+            echo "WORKER_METRICS_PORT=9464"
+            echo "PROMETHEUS_RETENTION=15d"
+            echo "BACKUP_ROOT=deploy/backups"
+            echo "BACKUP_RETENTION_DAYS=14"
+            echo "BACKUP_WEEKLY_RETENTION_WEEKS=8"
+            echo "OFFSITE_BACKUP_COMMAND="
+            echo "ALLOW_DEPLOY_WITHOUT_BACKUP=false"
             echo "JWT_EXPIRES_IN=1h"
             echo "BCRYPT_SALT_ROUNDS=12"
             echo "DOCKER_SEED_ADMIN_EMAIL="

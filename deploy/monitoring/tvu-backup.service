@@ -1,0 +1,6 @@
+[Unit]
+Description=TVU Portal production backup
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/tvu-student-project-portal
+ExecStart=/opt/tvu-student-project-portal/deploy/scripts/backup.sh

@@ -31,10 +31,15 @@ backup_if_running() {
     return
   fi
 
-  echo "Creating pre-deploy SQL and uploads backups."
-  "${compose[@]}" exec -T -e BACKUP_FILE="predeploy_${timestamp}.bak" database \
-    /bin/bash -lc '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -v DbName="$DB_DATABASE" BackupFile="$BACKUP_FILE" -Q "BACKUP DATABASE [\$(DbName)] TO DISK=N'\''/var/opt/mssql/backup/\$(BackupFile)'\'' WITH COPY_ONLY, CHECKSUM, COMPRESSION"'
-  BACKUP_FILE="uploads_${timestamp}.tar.gz" "${compose[@]}" --profile tools run --rm uploads-backup
+  echo "Creating standardized pre-deploy backup."
+  if ! ENV_FILE="$ENV_FILE" COMPOSE_FILE="$COMPOSE_FILE" "$ROOT_DIR/deploy/scripts/backup.sh"; then
+    if [[ "${ALLOW_DEPLOY_WITHOUT_BACKUP:-false}" == "true" ]]; then
+      echo "WARNING: backup failed; explicit override permits deployment." >&2
+    else
+      echo "Backup failed; deployment stopped." >&2
+      exit 1
+    fi
+  fi
 }
 
 wait_for_health() {
@@ -68,6 +73,9 @@ if wait_for_health database &&
   wait_for_health backend &&
   wait_for_health frontend &&
   wait_for_health proxy; then
+  monitoring=(docker compose --env-file "$ENV_FILE" -f docker-compose.monitoring.yml)
+  "${monitoring[@]}" config --quiet
+  "${monitoring[@]}" up -d --remove-orphans
   echo "Deployment healthy at commit $(git rev-parse --short HEAD)."
   exit 0
 fi

@@ -1,5 +1,7 @@
 # CI/CD với GitHub Actions
 
+> CD gọi duy nhất `deploy/scripts/backup.sh` trước khi đổi release; backup thất bại sẽ chặn deployment. Restore luôn là thao tác thủ công trên project Docker cô lập, không chạy trong CI/CD.
+
 ## Continuous Integration
 
 `.github/workflows/ci.yml` chạy khi có Pull Request vào `main`, push lên `main`

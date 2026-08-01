@@ -48,8 +48,14 @@ HAS_USERS="$(
     -Q "SET NOCOUNT ON; SELECT CASE WHEN OBJECT_ID(N'[$DATABASE_NAME].dbo.Users', N'U') IS NULL THEN 0 ELSE 1 END;"
 )"
 
+baseline_applied=false
 if [[ "${HAS_USERS//[[:space:]]/}" != "1" ]]; then
   echo "Applying schema baseline exported from TvuStudentProjectPortal."
+  runtime_baseline=/tmp/schema-baseline.runtime.sql
+  sed \
+    -e "s/^:setvar DatabaseName .*/:setvar DatabaseName \"$DATABASE_NAME\"/" \
+    -e "s/^:setvar DefaultFilePrefix .*/:setvar DefaultFilePrefix \"$DATABASE_NAME\"/" \
+    "$BASELINE_PATH" > "$runtime_baseline"
   "$SQLCMD" \
     -S database \
     -U sa \
@@ -57,10 +63,22 @@ if [[ "${HAS_USERS//[[:space:]]/}" != "1" ]]; then
     -C \
     -b \
     -d "$DATABASE_NAME" \
-    -v DatabaseName="$DATABASE_NAME" \
-    -i "$BASELINE_PATH"
+    -i "$runtime_baseline"
+  baseline_applied=true
 else
   echo "Existing application schema detected; baseline creation skipped."
+fi
+
+# The exported baseline already contains repository migrations through 20260721.
+# Record those scripts only after a fresh baseline import so they are not replayed.
+if [[ "$baseline_applied" == "true" ]]; then
+  for included in /migrations/202607{13,15,17,18,19,21}_*.sql; do
+    [[ -f "$included" ]] || continue
+    included_name="$(basename "$included")"
+    "$SQLCMD" -S database -U sa -P "$MSSQL_SA_PASSWORD" -C -b -d "$DATABASE_NAME" \
+      -v ScriptName="$included_name" \
+      -Q "IF NOT EXISTS (SELECT 1 FROM dbo.DockerSchemaMigrations WHERE ScriptName=N'\$(ScriptName)') INSERT dbo.DockerSchemaMigrations (ScriptName) VALUES (N'\$(ScriptName)');"
+  done
 fi
 
 "$SQLCMD" \

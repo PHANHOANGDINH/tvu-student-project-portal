@@ -7,8 +7,19 @@ x-logging: &default-logging
     max-file: ${LOG_MAX_FILES:-5}
 
 services:
+  database-backup-init:
+    image: alpine:3.21
+    user: "0:0"
+    command: ["sh", "-c", "chown 10001:0 /backup && chmod 770 /backup"]
+    volumes:
+      - sqlserver_backups:/backup
+    restart: "no"
+    logging: *default-logging
+    networks:
+      - private
+
   rabbitmq:
-    image: rabbitmq:3.13-alpine
+    image: rabbitmq:3.13-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}
@@ -50,6 +61,9 @@ services:
     logging: *default-logging
     networks:
       - private
+    depends_on:
+      database-backup-init:
+        condition: service_completed_successfully
 
   database-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -100,6 +114,7 @@ services:
       context: ./backend
     environment:
       NODE_ENV: production
+      SERVICE_NAME: backend-api
       PORT: 5000
       DB_USER: sa
       DB_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD}
@@ -145,6 +160,8 @@ services:
       context: ./backend
     environment:
       NODE_ENV: production
+      SERVICE_NAME: notification-worker
+      WORKER_METRICS_PORT: 9464
       DB_USER: sa
       DB_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD}
       DB_SERVER: database

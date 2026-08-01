@@ -1,4 +1,5 @@
 import { validateNotificationEvent } from './notification.events.js';
+import { notificationEvents } from '../monitoring/metrics.js';
 
 export async function publishOutboxBatch(
   broker,
@@ -18,11 +19,13 @@ export async function publishOutboxBatch(
       if (errors.length) throw new Error(errors.join(', '));
       await broker.publish(event);
       await activeRepository.markOutboxSent(record.EventId);
+      notificationEvents.inc({ operation: 'publish', result: 'success' });
       logger.info('Notification outbox event published', {
         eventId: event.eventId,
         correlationId: event.correlationId,
       });
     } catch (error) {
+      notificationEvents.inc({ operation: 'publish', result: 'failure' });
       await activeRepository.releaseOutboxEvent(record.EventId, error, record.Attempts);
       logger.error('Notification outbox publish failed', {
         eventId: String(record.EventId),

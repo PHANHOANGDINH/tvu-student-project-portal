@@ -1,5 +1,7 @@
 # Triển khai VPS với domain và HTTPS
 
+> Production cần monitoring stack nội bộ và backup định kỳ/off-site theo [monitoring.md](monitoring.md) và [backup-restore.md](backup-restore.md). Không public Prometheus/Grafana. Deploy mặc định dừng nếu backup thất bại.
+
 ## Kiến trúc production
 
 ```text
