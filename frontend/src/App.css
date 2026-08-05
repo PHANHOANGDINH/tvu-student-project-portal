@@ -1739,3 +1739,142 @@ body { background: #f4f7fb; }
 @media (max-width: 900px) { .lms-auth-page { grid-template-columns: 1fr; } .auth-showcase { display: none; } .auth-login-panel { background: linear-gradient(180deg, #e9f2fc, #f7f9fc); } .auth-mobile-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 28px; color: var(--tvu-blue); font-size: 12px; } }
 @media (max-width: 768px) { .brand { margin-inline: -12px; } .welcome-banner { min-height: 170px; padding: 25px; } .welcome-mark { display: none; } .course-grid { grid-template-columns: 1fr; } .footer-inner { align-items: flex-start; flex-direction: column; } .footer-contact { justify-content: flex-start; } }
 @media (max-width: 480px) { .auth-login-panel { padding: 20px 14px; } .lms-auth-page .auth-card { padding: 28px 20px; } .welcome-banner { padding: 22px 19px; } .course-toolbar { align-items: stretch; flex-direction: column; } .course-toolbar .btn-primary { width: 100%; } .course-detail-hero { padding: 22px 19px; flex-direction: column; } }
+
+/* Shared modal and administrative form refinement */
+.modal-overlay,
+.modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(3px);
+}
+
+.modal-card {
+  position: relative;
+  width: min(100%, 780px);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  opacity: 1;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, .24);
+}
+
+.modal-small { max-width: 480px; }
+.modal-medium { max-width: 620px; }
+.modal-large { max-width: 780px; }
+
+.modal-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.modal-header > div { min-width: 0; }
+.modal-header .eyebrow { margin-bottom: 6px; }
+.modal-header h2 { margin: 0; color: #0f2742; font-size: 21px; line-height: 1.35; }
+.modal-header p { margin: 6px 0 0; color: #64748b; font-size: 13px; line-height: 1.55; }
+.modal-header .modal-close {
+  position: static;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d8e1eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+}
+.modal-header .modal-close:hover { border-color: #b8c7d8; background: #f1f5f9; color: #0f3b76; }
+
+.modal-body { min-height: 0; overflow-y: auto; padding: 24px; background: #fff; }
+.modal-form { display: flex; min-height: 0; flex-direction: column; }
+.modal-form-grid,
+.modal-card .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
+.modal-card .form-grid > label,
+.modal-card .form-field-ui { display: grid; align-content: start; gap: 7px; color: #334155; font-size: 13px; font-weight: 650; }
+.modal-card .form-grid > label small,
+.modal-card .form-field-ui small { margin-top: -1px; color: #dc2626; font-size: 11px; font-weight: 500; }
+.modal-card input:not([type="checkbox"]):not([type="radio"]),
+.modal-card select,
+.modal-card textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  line-height: 1.4;
+  transition: border-color .15s, box-shadow .15s;
+}
+.modal-card textarea { min-height: 108px; resize: vertical; }
+.modal-card input::placeholder,
+.modal-card textarea::placeholder { color: #94a3b8; opacity: 1; }
+.modal-card input:hover,
+.modal-card select:hover,
+.modal-card textarea:hover { border-color: #94a3b8; }
+.modal-card input:focus,
+.modal-card select:focus,
+.modal-card textarea:focus { border-color: #2563eb; outline: 0; box-shadow: 0 0 0 3px rgba(37, 99, 235, .14); }
+.modal-card input:disabled,
+.modal-card select:disabled,
+.modal-card textarea:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
+
+.modal-card .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 24px -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.modal-card .modal-actions .btn-primary,
+.modal-card .modal-actions .btn-light,
+.modal-card .modal-actions .btn-danger { width: auto; min-width: 108px; margin: 0; }
+.modal-card .modal-actions .button-spinner { width: 15px; height: 15px; }
+
+.confirm-modal { background: #fff; opacity: 1; }
+.academic-page { position: static; }
+.academic-list-panel { padding-bottom: 18px; }
+.academic-list-panel .ui-state { min-height: 300px; }
+.academic-list-panel .pagination-bar { padding-top: 17px; border-top: 1px solid #edf1f5; }
+
+@media (max-width: 768px) {
+  .modal-overlay,
+  .modal-backdrop { align-items: center; padding: 20px; }
+  .modal-card { max-height: calc(100vh - 40px); border-radius: 14px; }
+  .modal-header { padding: 19px 20px 16px; }
+  .modal-body { padding: 20px; }
+  .modal-form-grid,
+  .modal-card .form-grid { grid-template-columns: 1fr; gap: 15px; }
+  .modal-card .modal-actions { margin: 22px -20px -20px; padding: 15px 20px; }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay,
+  .modal-backdrop { align-items: stretch; padding: 12px; }
+  .modal-card { width: 100%; max-height: calc(100vh - 24px); margin: auto 0; border-radius: 13px; }
+  .modal-header { padding: 17px 16px 14px; }
+  .modal-header h2 { font-size: 18px; }
+  .modal-body { padding: 16px; }
+  .modal-card .modal-actions { display: grid; grid-template-columns: 1fr; margin: 20px -16px -16px; padding: 14px 16px; }
+  .modal-card .modal-actions .btn-primary,
+  .modal-card .modal-actions .btn-light,
+  .modal-card .modal-actions .btn-danger { width: 100%; }
+}

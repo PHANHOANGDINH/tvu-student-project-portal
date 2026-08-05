@@ -3,6 +3,7 @@ import { Download, Ellipsis, Eye, FileUp, Lock, LockOpen, Pencil, Plus, Search, 
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createUser, getUserById, getUsers, resetUserPassword, updateUser, updateUserStatus } from '../api/adminApi'
 import { USER_ROLES } from '../constants/roles'
+import Modal from '../components/common/Modal'
 
 const roles = {
   ADMIN: 'Quản trị viên',
@@ -412,15 +413,15 @@ export default function UsersPage() {
       </div>
 
       {modal && (
-        <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && close()}>
-          <div className="modal-card admin-modal">
-            <div className="modal-header">
-              <div>
-                <span className="eyebrow">TÀI KHOẢN</span>
-                <h3>{modal.type === 'status' ? (modal.next ? 'Mở khóa tài khoản' : 'Khóa tài khoản') : title}</h3>
-              </div>
-              <button onClick={close}>×</button>
-            </div>
+        <Modal
+          open
+          eyebrow="Tài khoản"
+          title={modal.type === 'status' ? (modal.next ? 'Mở khóa tài khoản' : 'Khóa tài khoản') : title}
+          description={modal.type === 'detail' ? 'Thông tin chi tiết của tài khoản trong hệ thống.' : undefined}
+          onClose={close}
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
 
             {modal.type === 'detail' ? (
               <div className="info-list">
@@ -520,8 +521,7 @@ export default function UsersPage() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
