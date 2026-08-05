@@ -3,6 +3,7 @@ import { AlertTriangle, BookOpen, GraduationCap, RefreshCw, School, UserCheck, U
 import { getRoleDashboard } from '../../api/dashboardApi'
 import PageHeader from '../../components/common/PageHeader'
 import StatCard from '../../components/common/StatCard'
+import WelcomeBanner from '../../components/common/WelcomeBanner'
 import { EmptyState, ErrorState, LoadingState } from '../../components/common/UiState'
 
 const labels = { classes: 'Lớp học phần', groups: 'Nhóm sinh viên', topicsPending: 'Đề tài chờ duyệt', notSubmitted: 'Chưa nộp', submitted: 'Đã nộp', late: 'Nộp trễ', waitingGrade: 'Chờ chấm', graded: 'Đã chấm', openRequirements: 'Đợt đang mở', unread: 'Thông báo chưa đọc', revisions: 'Yêu cầu chỉnh sửa', publishedGrades: 'Điểm đã công bố' }
@@ -30,6 +31,7 @@ export default function RoleDashboardPage({ role, title }) {
 
 function AdminDashboard({ data, error, onRefresh }) {
   return <div className="admin-page">
+    <WelcomeBanner title="Chào mừng trở lại, Quản trị viên" description="Theo dõi nhanh tình hình người dùng, học vụ và vận hành của hệ thống TVU." />
     <PageHeader eyebrow="Tổng quan hệ thống" title="Tổng quan quản trị" description="Theo dõi tài khoản, học vụ và tình trạng vận hành hệ thống." actions={<button className="btn-light" onClick={onRefresh}><RefreshCw size={17} /> Làm mới</button>} />
     {error && <div className="alert error">{error}</div>}
     <div className="admin-stat-grid">{adminCards.map(([key, label, Icon]) => <StatCard key={key} icon={Icon} label={label} value={data?.stats?.[key]} tone={key.includes('unassigned') || key.includes('unenrolled') ? 'warning' : 'primary'} />)}</div>
@@ -44,6 +46,7 @@ function AdminDashboard({ data, error, onRefresh }) {
 function RoleDashboard({ data, error, title, onRefresh }) {
   const activities = data?.recentActivity || data?.recentSubmissions || []
   return <div>
+    <WelcomeBanner title={`Chào mừng đến với ${title}`} description="Theo dõi lớp học phần, đồ án và các hoạt động quan trọng trong không gian học tập TVU." />
     <PageHeader eyebrow="Không gian học tập" title={title} description="Tổng quan dữ liệu và hoạt động gần đây." actions={<button className="btn-light" onClick={onRefresh}><RefreshCw size={17} /> Làm mới</button>} />
     {error && <div className="alert error">{error}</div>}
     <div className="admin-stat-grid">{Object.entries(data?.stats || {}).map(([key, value]) => <StatCard key={key} label={labels[key] || key} value={value} />)}</div>

@@ -4,6 +4,7 @@ import { clearAuth, getUser, getUserRole } from '../utils/auth'
 import { getNavigation, getRoleLabel } from '../components/layout/navigation'
 import AppSidebar from '../components/layout/AppSidebar'
 import AppHeader from '../components/layout/AppHeader'
+import AppFooter from '../components/layout/AppFooter'
 
 export default function MainLayout() {
   const navigate = useNavigate()
@@ -44,6 +45,7 @@ export default function MainLayout() {
           onLogout={handleLogout}
         />
         <main className="content"><Outlet /></main>
+        <AppFooter />
       </div>
     </div>
   )
