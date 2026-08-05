@@ -3,7 +3,7 @@ import './App.css'
 import './group.css'
 import './notifications.css'
 
-import MainLayout from './layouts/MainLayout'
+import AppLayout from './layouts/AppLayout'
 import LoginPage from './pages/LoginPage'
 
 import UsersPage from './pages/UsersPage'
@@ -78,7 +78,7 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <MainLayout />
+              <AppLayout />
             </ProtectedRoute>
           }
         >
