@@ -5,4 +5,6 @@ const paths={}
 for(const [path,tag] of [['/academic-years','Academic years'],['/semesters','Semesters'],['/subjects','Subjects'],['/course-classes','Course classes']]){const c=crud(tag);paths[path]={get:c.list,post:c.create};paths[path+'/{id}']={get:c.detail,put:c.update};paths[path+'/{id}/status']={patch:c.status}}
 paths['/student/course-classes']={get:{...secure,tags:['Student course classes'],responses:{200:{description:'Danh sách lớp sinh viên tham gia'}}}}
 paths['/student/course-classes/{id}']={get:{...secure,tags:['Student course classes'],parameters:[parameter],responses:{200:{description:'Chi tiết lớp'},404:{description:'Không tham gia lớp'}}}}
+paths['/lecturer/course-classes']={get:{...secure,tags:['Lecturer course classes'],responses:{200:{description:'Danh sách tất cả lớp giảng viên phụ trách'}}}}
+paths['/lecturer/course-classes/{id}']={get:{...secure,tags:['Lecturer course classes'],parameters:[parameter],responses:{200:{description:'Không gian lớp được phân công'},404:{description:'Không được phân công lớp'}}}}
 export const academicsSwaggerPaths=paths

@@ -23,6 +23,7 @@ import LecturerSubmissionsPage from './pages/teacher/SubmissionsPage'
 import LecturerSubmissionDetailPage from './pages/teacher/SubmissionDetailPage'
 import SubmissionReviewPage from './pages/teacher/SubmissionReviewPage'
 import EvaluationCriteriaPage from './pages/teacher/EvaluationCriteriaPage'
+import LecturerCourseClassesPage from './pages/teacher/LecturerCourseClassesPage'
 
 // Student Pages
 import StudentGroupsPage from './pages/student/StudentGroupsPage'
@@ -114,6 +115,8 @@ function App() {
 
           {/* Lecturer Routes */}
           <Route path="lecturer/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><RoleDashboardPage role="lecturer" title="Dashboard Giảng viên" /></RoleRoute>} />
+          <Route path="lecturer/course-classes" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerCourseClassesPage /></RoleRoute>} />
+          <Route path="lecturer/course-classes/:id" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerCourseClassesPage /></RoleRoute>} />
           <Route path="lecturer/groups" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerGroupsPage /></RoleRoute>} />
           <Route path="lecturer/topic-registrations" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerTopicRegistrationsPage /></RoleRoute>} />
           <Route path="lecturer/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.LECTURER]}><LecturerSubmissionRequirementsPage /></RoleRoute>} />

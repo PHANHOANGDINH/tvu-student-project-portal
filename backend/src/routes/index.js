@@ -9,7 +9,7 @@ import { lecturerSubmissionViewRoutes, studentSubmissionUploadRoutes } from '../
 import { lecturerGradingRoutes, studentGradingRoutes } from '../modules/grading/grading.routes.js';
 import notificationsRoutes from '../modules/notifications/notifications.routes.js';
 import { adminDashboardRoutes, lecturerDashboardRoutes, studentDashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
-import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes } from '../modules/academics/academics.routes.js';
+import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, studentCourseClassRoutes, lecturerCourseClassRoutes } from '../modules/academics/academics.routes.js';
 import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
 import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
 
@@ -29,6 +29,7 @@ router.use('/academic-years', academicYearRoutes);
 router.use('/semesters', semesterRoutes);
 router.use('/subjects', subjectRoutes);
 router.use('/student/course-classes', studentCourseClassRoutes);
+router.use('/lecturer/course-classes', lecturerCourseClassRoutes);
 router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);
 router.use('/student/dashboard', studentDashboardRoutes);

@@ -30,7 +30,8 @@ const navigations = {
     homePath: '/lecturer/dashboard',
     groups: [
       { label: 'Không gian giảng dạy', items: [
-        { label: 'Tổng quan', icon: LayoutDashboard, path: '/lecturer/dashboard' },
+        { label: 'Trang chủ', icon: LayoutDashboard, path: '/lecturer/dashboard' },
+        { label: 'Lớp học phần', icon: GraduationCap, path: '/lecturer/course-classes' },
         { label: 'Nhóm sinh viên', icon: Users, path: '/lecturer/groups' },
         { label: 'Đăng ký đề tài', icon: FolderKanban, path: '/lecturer/topic-registrations' },
         { label: 'Tiến độ và đợt nộp', icon: BookOpen, path: '/lecturer/submission-requirements' },
@@ -43,8 +44,8 @@ const navigations = {
     homePath: '/student/dashboard',
     groups: [
       { label: 'Học tập', items: [
-        { label: 'Tổng quan', icon: LayoutDashboard, path: '/student/dashboard' },
-        { label: 'Lớp học phần', icon: School, path: '/student/course-classes' },
+        { label: 'Trang chủ', icon: LayoutDashboard, path: '/student/dashboard' },
+        { label: 'Học phần của tôi', icon: School, path: '/student/course-classes' },
         { label: 'Nhóm của tôi', icon: Users, path: '/student/groups/my-group' },
         { label: 'Đề tài', icon: FolderKanban, path: '/student/topic-registration' },
         { label: 'Yêu cầu nộp bài', icon: BookOpen, path: '/student/submission-requirements' },

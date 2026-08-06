@@ -1618,6 +1618,32 @@ body { background: #f4f7fb; }
   .toolbar-actions > * { width: 100%; }
 }
 
+/* Course-class workspaces */
+.course-filters { display:grid; grid-template-columns:minmax(240px,2fr) repeat(4,minmax(140px,1fr)) auto; gap:12px; margin:0 0 24px; padding:16px; background:#fff; border:1px solid #dbe5f1; border-radius:14px; box-shadow:0 8px 24px rgba(15,23,42,.05) }
+.course-filters input,.course-filters select { width:100%; min-height:44px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; color:#0f172a; padding:0 12px }
+.course-search { display:flex; align-items:center; gap:8px; min-height:44px; border:1px solid #cbd5e1; border-radius:10px; padding:0 12px; color:#64748b }
+.course-search input { min-height:40px; padding:0; border:0; outline:0 }
+.course-filters input:focus,.course-filters select:focus,.course-search:focus-within { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.14); outline:0 }
+.course-card-counts { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px }
+.course-card-counts span { padding:6px 9px; border-radius:8px; background:#eff6ff; color:#1e40af; font-size:.78rem; font-weight:700 }
+.dashboard-courses { margin:28px 0 }
+.workspace-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin:14px 0 0; padding:28px; color:#fff; border-radius:18px 18px 0 0; background:linear-gradient(135deg,#0b3b91,#1559b7); box-shadow:0 16px 34px rgba(11,59,145,.18) }
+.workspace-header h2 { margin:8px 0; color:#fff; font-size:clamp(1.45rem,3vw,2.15rem) }
+.workspace-header p,.workspace-header .eyebrow { color:#dbeafe }
+.workspace-tabs { display:flex; gap:4px; padding:0 14px; overflow-x:auto; background:#fff; border:1px solid #dbe5f1; border-top:0; border-radius:0 0 14px 14px }
+.workspace-tabs a { flex:0 0 auto; padding:15px 12px 12px; border-bottom:3px solid transparent; color:#475569; font-size:.86rem; font-weight:700; text-decoration:none }
+.workspace-tabs a:hover,.workspace-tabs a.active { color:#0b3b91; border-bottom-color:#2563eb; background:#eff6ff }
+.workspace-overview { margin-top:22px }
+.workspace-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:20px }
+.workspace-metrics div { padding:16px; border:1px solid #dbe5f1; border-radius:12px; background:#f8fafc }
+.workspace-metrics span { display:block; color:#64748b; font-size:.82rem }
+.workspace-metrics strong { display:block; margin-top:5px; color:#0f172a }
+.workspace-group-list { display:grid; gap:10px }
+
+@media (max-width: 1100px) { .course-filters { grid-template-columns:repeat(2,minmax(0,1fr)) } .course-search { grid-column:1/-1 } }
+@media (max-width: 700px) { .course-filters { grid-template-columns:1fr; padding:14px } .course-search { grid-column:auto } .workspace-header { padding:22px 18px; border-radius:14px 14px 0 0 } .workspace-metrics { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+@media (max-width: 420px) { .workspace-metrics { grid-template-columns:1fr } .course-filters .btn-primary { width:100% } }
+
 /* TVU LMS visual language */
 :root {
   --tvu-blue: #0b3b91;

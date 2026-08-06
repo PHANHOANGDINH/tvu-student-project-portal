@@ -46,14 +46,36 @@ export async function reference(table,id,role=null){
   const q=await r.query('SELECT TOP 1 Id FROM '+table+' WHERE Id=@Id AND DeletedAt IS NULL'+(role?' AND Role=@Role':''))
   return!!q.recordset[0]
 }
-const studentSelect='c.Id id,c.Code code,sub.Code subjectCode,sub.Name subjectName,sub.Credits credits,sub.Description subjectDescription,sem.Name semesterName,sem.Code semesterCode,sem.StartDate semesterStartDate,sem.EndDate semesterEndDate,ay.Name academicYearName,u.FullName lecturerName,u.Email lecturerEmail,c.Status status,c.IsActive isActive,c.MaxStudents maxStudents'
+const workspaceSelect=`c.Id id,c.Code code,sub.Id subjectId,sub.Code subjectCode,sub.Name subjectName,sub.Credits credits,sub.Description subjectDescription,
+ sem.Id semesterId,sem.Name semesterName,sem.Code semesterCode,sem.StartDate semesterStartDate,sem.EndDate semesterEndDate,
+ ay.Id academicYearId,ay.Name academicYearName,u.FullName lecturerName,u.Email lecturerEmail,c.Status status,c.IsActive isActive,c.MaxStudents maxStudents,
+ (SELECT COUNT(*) FROM CourseClassEnrollments e WHERE e.CourseClassId=c.Id AND e.IsActive=1 AND e.DeletedAt IS NULL) studentCount,
+ (SELECT COUNT(*) FROM StudentGroups g WHERE g.ClassId=c.Id AND g.DeletedAt IS NULL) groupCount,
+ (SELECT COUNT(*) FROM TopicRegistrations t WHERE t.ClassId=c.Id AND t.Status='PENDING' AND t.DeletedAt IS NULL) topicsPending,
+ (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.ClassId=c.Id AND s.Status IN('SUBMITTED','LATE','RESUBMITTED','UNDER_REVIEW')) waitingGrade`
 const studentFrom=' FROM CourseClasses c JOIN CourseClassEnrollments scm ON scm.CourseClassId=c.Id AND scm.StudentId=@Uid AND scm.IsActive=1 AND scm.DeletedAt IS NULL JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId LEFT JOIN Users u ON u.Id=c.LecturerId WHERE c.DeletedAt IS NULL'
-export async function listStudentClasses(uid,{page,pageSize,search}){
- const pool=await poolPromise,pattern=search?'%'+search+'%':null,where=studentFrom+' AND (@Pattern IS NULL OR c.Code LIKE @Pattern OR sub.Name LIKE @Pattern)',bind=r=>r.input('Uid',sql.Int,uid).input('Pattern',sql.NVarChar(202),pattern)
- const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+studentSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
+const filterWhere=` AND (@Pattern IS NULL OR c.Code LIKE @Pattern OR sub.Code LIKE @Pattern OR sub.Name LIKE @Pattern)
+ AND (@AcademicYearId IS NULL OR ay.Id=@AcademicYearId) AND (@SemesterId IS NULL OR sem.Id=@SemesterId)
+ AND (@SubjectId IS NULL OR sub.Id=@SubjectId) AND (@Status IS NULL OR c.Status=@Status)`
+const bindFilters=(request,uid,{search,academicYearId,semesterId,subjectId,status})=>request.input('Uid',sql.Int,uid)
+ .input('Pattern',sql.NVarChar(202),search?'%'+search+'%':null).input('AcademicYearId',sql.Int,academicYearId)
+ .input('SemesterId',sql.Int,semesterId).input('SubjectId',sql.Int,subjectId).input('Status',sql.NVarChar(30),status)
+export async function listStudentClasses(uid,{page,pageSize,...filters}){
+ const pool=await poolPromise,where=studentFrom+filterWhere,bind=r=>bindFilters(r,uid,filters)
+ const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+workspaceSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
  const total=await bind(pool.request()).query('SELECT COUNT(*) total'+where);return{items:items.recordset,total:total.recordset[0].total}
 }
 export async function findStudentClass(uid,id){
- const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+studentSelect+studentFrom+' AND c.Id=@Id')
+ const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+workspaceSelect+studentFrom+' AND c.Id=@Id')
+ return r.recordset[0]||null
+}
+const lecturerFrom=' FROM CourseClasses c JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId LEFT JOIN Users u ON u.Id=c.LecturerId WHERE c.LecturerId=@Uid AND c.DeletedAt IS NULL'
+export async function listLecturerClasses(uid,{page,pageSize,...filters}){
+ const pool=await poolPromise,where=lecturerFrom+filterWhere,bind=r=>bindFilters(r,uid,filters)
+ const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+workspaceSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
+ const total=await bind(pool.request()).query('SELECT COUNT(*) total'+where);return{items:items.recordset,total:total.recordset[0].total}
+}
+export async function findLecturerClass(uid,id){
+ const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+workspaceSelect+lecturerFrom+' AND c.Id=@Id')
  return r.recordset[0]||null
 }
