@@ -41,6 +41,7 @@ import StudentUnavailablePage from './pages/student/StudentUnavailablePage'
 import RequirementDetailPage from './pages/student/RequirementDetailPage'
 import WorkflowSubmissionDetailPage from './pages/student/WorkflowSubmissionDetailPage'
 import WorkflowEvaluationPage from './pages/student/WorkflowEvaluationPage'
+import ProgressDetailPage from './pages/student/ProgressDetailPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -147,6 +148,7 @@ function App() {
           <Route path="student/submissions/:id/history" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionHistoryPage /></RoleRoute>} />
           <Route path="student/submissions/:id/result" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionResultPage /></RoleRoute>} />
           <Route path="student/progress" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="progress" /></RoleRoute>} />
+          <Route path="student/progress/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><ProgressDetailPage /></RoleRoute>} />
           <Route path="student/progress/:id/submission" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowSubmissionDetailPage type="progress" /></RoleRoute>} />
           <Route path="student/progress/:id/evaluation" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowEvaluationPage type="progress" /></RoleRoute>} />
           <Route path="student/final-submissions" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="final" /></RoleRoute>} />

@@ -11,7 +11,8 @@ export const STATUS_LABELS = Object.freeze({
   APPROVED: 'Đã duyệt', REJECTED: 'Từ chối', REQUIRES_REVISION: 'Cần chỉnh sửa',
   COMPLETED: 'Đã hoàn thành', COMPLETE: 'Đã hoàn thành', DONE: 'Đã hoàn thành', CANCELLED: 'Đã hủy',
   DRAFT: 'Bản nháp', OPEN: 'Đang mở', CLOSED: 'Đã đóng', SUBMITTED: 'Đã nộp',
-  RESUBMITTED: 'Đã nộp lại', LATE: 'Nộp trễ', UNDER_REVIEW: 'Đang xem xét', GRADED: 'Đã chấm'
+  RESUBMITTED: 'Đã nộp lại', LATE: 'Nộp trễ', UNDER_REVIEW: 'Chờ đánh giá', REVIEWED: 'Đã đánh giá',
+  NOT_SUBMITTED: 'Chưa nộp', PUBLISHED: 'Đã công bố', GRADED: 'Đã chấm'
 })
 
 export const STATUS_COLORS = Object.freeze({ ACTIVE: 'green', APPROVED: 'green', COMPLETED: 'green', GRADED: 'green', PENDING: 'gold', OPEN: 'blue', UNDER_REVIEW: 'blue', REJECTED: 'red', LOCKED: 'red', LATE: 'red', REQUIRES_REVISION: 'orange' })

@@ -19,7 +19,7 @@ export default function RequirementDetailPage() {
   const canSubmit = ['OPEN', 'OPEN_LATE'].includes(item.effectiveStatus)
   const required = (item.requiredItems || []).map(value => itemLabels[value.type] || itemLabels[value] || 'Nội dung khác').join(', ') || 'Không có'
   return <div className="student-workflow detail-page">
-    <Breadcrumb items={[{ title: <Link to="/student/submission-requirements">Yêu cầu nộp bài</Link> }, { title: 'Chi tiết yêu cầu' }]} />
+    <Breadcrumb items={[{ title: <Link to="/student/dashboard">Trang chủ</Link> }, { title: <Link to="/student/submission-requirements">Yêu cầu nộp bài</Link> }, { title: 'Chi tiết' }]} />
     <div className="page-title"><h2>{item.title}</h2><p>{item.classCode} · {item.className}</p><StatusBadge status={item.effectiveStatus} /></div>
     <Card title="Thông tin yêu cầu">
       <Typography.Title level={5}>Mô tả</Typography.Title><Typography.Paragraph>{item.description || 'Không có mô tả.'}</Typography.Paragraph>

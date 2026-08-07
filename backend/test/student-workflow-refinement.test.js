@@ -76,6 +76,7 @@ test('student module provides separate requirement, submission and evaluation pa
   assert.match(app, /student\/submission-requirements\/:id/)
   assert.match(app, /student\/progress\/:id\/submission/)
   assert.match(app, /student\/progress\/:id\/evaluation/)
+  assert.match(app, /student\/progress\/:id/)
   assert.match(app, /student\/final-submissions\/:id/)
   assert.doesNotMatch(requirements, /setSelected/)
   assert.match(submission, /Lịch sử các lần nộp/)
@@ -83,6 +84,19 @@ test('student module provides separate requirement, submission and evaluation pa
   assert.match(submission, /selected\.links/)
   assert.match(evaluation, /feedback\?\.comment/)
   assert.match(evaluation, /grade\?\.isPublished/)
+})
+
+test('student dashboard uses responsive KPI cards and localized activity statuses', async () => {
+  const dashboard = await source('../../frontend/src/pages/dashboards/RoleDashboardPage.jsx')
+  const components = await source('../../frontend/src/components/dashboard/DashboardComponents.jsx')
+  const styles = await source('../../frontend/src/pages/dashboards/role-dashboard.css')
+  assert.match(dashboard, /Đợt đang mở/)
+  assert.match(dashboard, /Thông báo chưa đọc/)
+  assert.match(dashboard, /Cần chỉnh sửa/)
+  assert.match(dashboard, /Điểm đã công bố/)
+  assert.match(components, /submissionStatusLabel/)
+  assert.match(styles, /repeat\(5,minmax\(0,1fr\)\)/)
+  assert.match(styles, /max-width:480px/)
 })
 
 test('presentation seed is idempotent and never resets data', async () => {
