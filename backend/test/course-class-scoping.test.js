@@ -17,6 +17,13 @@ test('group membership is unique inside a class, not globally', async () => {
   assert.match(repository, /CourseClassEnrollments WHERE CourseClassId=@ClassId AND StudentId=@StudentId/)
 })
 
+test('presentation seed numbers group names independently inside each course class', async () => {
+  const source = await readFile(new URL('../src/scripts/seedPresentation.js', import.meta.url), 'utf8')
+  assert.match(source, /ROW_NUMBER\(\) OVER\(PARTITION BY ClassId ORDER BY Id\)/)
+  assert.match(source, /N'Nhóm '\+CONVERT\(NVARCHAR\(10\),ranked\.GroupNumber\)/)
+  assert.doesNotMatch(source, /Polaris|Orion|Phoenix|Nova|Vertex|Aurora|Nexus|Horizon|Atlas|Pioneer/)
+})
+
 test('group candidate selector returns business keys only inside the current CourseClass', async () => {
   const repository = await source('../src/modules/groups/groups.repository.js')
   const routes = await source('../src/modules/groups/groups.routes.js')
