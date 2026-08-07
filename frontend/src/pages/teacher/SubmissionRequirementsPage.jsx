@@ -1,3 +1,142 @@
-import{useEffect,useState}from'react';import{changeRequirementStatus,createRequirement,deleteRequirement,listLecturerRequirements,updateRequirement}from'../../api/submissionRequirementsApi';
-const TYPES=['REPORT','SLIDE','SOURCE_CODE','GITHUB_LINK','VIDEO_LINK','OTHER'],blank={classId:'',title:'',description:'',instructions:'',startAt:'',deadline:'',allowLate:false,allowResubmission:false,maxAttempts:1,maxFileSizeMb:'',requiredItems:[]};
-export default function SubmissionRequirementsPage(){const[items,setItems]=useState([]),[form,setForm]=useState(blank),[editing,setEditing]=useState(null),[show,setShow]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');const load=async()=>{setLoading(true);try{setItems((await listLecturerRequirements()).data||[]);setError('')}catch(e){setError(e.message)}finally{setLoading(false)}};useEffect(()=>{load()},[]);const open=x=>{setEditing(x||null);setForm(x?{...x,startAt:String(x.startAt).slice(0,16),deadline:String(x.deadline).slice(0,16),requiredItems:x.requiredItems||[]}:blank);setShow(true)};const toggle=type=>setForm({...form,requiredItems:form.requiredItems.some(x=>x.type===type)?form.requiredItems.filter(x=>x.type!==type):[...form.requiredItems,{type}]});const save=async e=>{e.preventDefault();try{editing?await updateRequirement(editing.id,form):await createRequirement(form);setShow(false);load()}catch(e){setError(e.message)}};const action=async fn=>{try{await fn();load()}catch(e){setError(e.message)}};return <div><div className="page-title row-between"><div><h2>Yêu cầu và đợt nộp</h2><p>Quản lý yêu cầu nộp cho lớp học phần bạn phụ trách.</p></div><button className="btn-primary" onClick={()=>open()}>Tạo yêu cầu</button></div>{error&&<div className="alert error">{error}</div>}{show&&<form className="panel" onSubmit={save}><h3>{editing?'Sửa yêu cầu':'Tạo yêu cầu'}</h3><input required placeholder="Id lớp học phần" disabled={!!editing} value={form.classId} onChange={e=>setForm({...form,classId:e.target.value})}/><input required placeholder="Tên yêu cầu" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/><textarea required placeholder="Mô tả" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/><textarea placeholder="Hướng dẫn" value={form.instructions||''} onChange={e=>setForm({...form,instructions:e.target.value})}/><div className="form-row"><label>Bắt đầu <input type="datetime-local" required value={form.startAt} onChange={e=>setForm({...form,startAt:e.target.value})}/></label><label>Hạn nộp <input type="datetime-local" required value={form.deadline} onChange={e=>setForm({...form,deadline:e.target.value})}/></label><label>Số lần nộp <input type="number" min="1" required value={form.maxAttempts} onChange={e=>setForm({...form,maxAttempts:e.target.value})}/></label><label>MB tối đa <input type="number" min="1" value={form.maxFileSizeMb||''} onChange={e=>setForm({...form,maxFileSizeMb:e.target.value})}/></label></div><div className="form-row"><label><input type="checkbox" checked={form.allowLate} onChange={e=>setForm({...form,allowLate:e.target.checked})}/> Cho nộp trễ</label><label><input type="checkbox" checked={form.allowResubmission} onChange={e=>setForm({...form,allowResubmission:e.target.checked})}/> Cho nộp lại</label></div><h4>Nội dung bắt buộc</h4><div className="form-row">{TYPES.map(t=><label key={t}><input type="checkbox" checked={form.requiredItems.some(x=>x.type===t)} onChange={()=>toggle(t)}/>{t}</label>)}</div><button className="btn-primary">Lưu</button><button type="button" className="btn-light" onClick={()=>setShow(false)}>Hủy</button></form>}<div className="panel">{loading?<p>Đang tải...</p>:<table><thead><tr><th>Yêu cầu</th><th>Lớp</th><th>Thời hạn</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{items.map(x=><tr key={x.id}><td><strong>{x.title}</strong><small>{x.requiredItems.map(i=>i.type).join(', ')}</small></td><td>{x.classCode}</td><td>{new Date(x.startAt).toLocaleString('vi-VN')} – {new Date(x.deadline).toLocaleString('vi-VN')}</td><td>{x.effectiveStatus}</td><td><button onClick={()=>open(x)}>Sửa</button> {['DRAFT','CANCELLED'].includes(x.status)&&<button onClick={()=>action(()=>changeRequirementStatus(x.id,'OPEN'))}>Mở</button>} {x.status==='OPEN'&&<button onClick={()=>action(()=>changeRequirementStatus(x.id,'CLOSED'))}>Đóng</button>} {x.status!=='CLOSED'&&<button onClick={()=>action(()=>changeRequirementStatus(x.id,'CANCELLED'))}>Hủy</button>} {['DRAFT','CANCELLED'].includes(x.status)&&<button onClick={()=>action(()=>deleteRequirement(x.id))}>Xóa</button>}</td></tr>)}{!items.length&&<tr><td colSpan="5">Chưa có yêu cầu nộp nào.</td></tr>}</tbody></table>}</div></div>}
+import { useCallback, useEffect, useState } from 'react'
+import { Alert, Button, Card, Checkbox, Col, DatePicker, Divider, Flex, Form, Input, InputNumber, Popconfirm, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from 'antd'
+import dayjs from 'dayjs'
+import { listLecturerCourseClasses } from '../../api/academicsApi'
+import { changeRequirementStatus, createRequirement, deleteRequirement, listLecturerRequirements, updateRequirement } from '../../api/submissionRequirementsApi'
+import { StatusBadge } from '../../components/common/UiState'
+import { formatDateTimeVi } from '../../utils/formatters'
+import './submission-requirements.css'
+
+const CONTENT_LABELS = {
+  REPORT: 'Báo cáo',
+  SLIDE: 'Slide trình chiếu',
+  SOURCE_CODE: 'Mã nguồn',
+  GITHUB_LINK: 'Liên kết GitHub',
+  VIDEO_LINK: 'Liên kết video',
+  OTHER: 'Nội dung khác'
+}
+const CONTENT_OPTIONS = Object.entries(CONTENT_LABELS).map(([value, label]) => ({ value, label }))
+const initialValues = { classId: undefined, title: '', description: '', instructions: '', startAt: null, deadline: null, allowLate: false, allowResubmission: false, maxAttempts: 1, maxFileSizeMb: null, requiredItems: [] }
+
+function RequiredContentTags({ items = [] }) {
+  const labels = items.map(item => CONTENT_LABELS[item.type || item] || 'Nội dung khác')
+  const shown = labels.slice(0, 3), hidden = labels.slice(3)
+  return <Space size={[4, 4]} wrap>{shown.map(label => <Tag color="blue" key={label}>{label}</Tag>)}{hidden.length > 0 && <Tooltip title={hidden.join(', ')}><Tag>+{hidden.length}</Tag></Tooltip>}</Space>
+}
+
+export default function SubmissionRequirementsPage() {
+  const [form] = Form.useForm()
+  const [items, setItems] = useState([]), [classes, setClasses] = useState([])
+  const [editing, setEditing] = useState(null), [show, setShow] = useState(false)
+  const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [error, setError] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [requirements, courseClasses] = await Promise.all([listLecturerRequirements(), listLecturerCourseClasses({ pageSize: 100 })])
+      setItems(requirements.data || [])
+      setClasses(courseClasses.data?.items || [])
+      setError('')
+    } catch (requestError) {
+      setError(requestError.message || 'Không thể tải dữ liệu. Vui lòng thử lại.')
+    } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  function open(item = null) {
+    setEditing(item)
+    form.setFieldsValue(item ? {
+      ...item,
+      startAt: dayjs(item.startAt),
+      deadline: dayjs(item.deadline),
+      requiredItems: (item.requiredItems || []).map(value => value.type || value)
+    } : initialValues)
+    setShow(true)
+  }
+
+  function closeForm() {
+    setShow(false)
+    setEditing(null)
+    form.resetFields()
+  }
+
+  async function save(values) {
+    setSaving(true)
+    setError('')
+    const payload = {
+      ...values,
+      startAt: values.startAt.toISOString(),
+      deadline: values.deadline.toISOString(),
+      requiredItems: values.requiredItems.map(type => ({ type }))
+    }
+    try {
+      if (editing) await updateRequirement(editing.id, payload)
+      else await createRequirement(payload)
+      closeForm()
+      await load()
+    } catch (requestError) {
+      setError(requestError.message || 'Không thể lưu yêu cầu. Vui lòng thử lại.')
+    } finally { setSaving(false) }
+  }
+
+  async function action(callback) {
+    try { setError(''); await callback(); await load() }
+    catch (requestError) { setError(requestError.message || 'Không thể cập nhật yêu cầu. Vui lòng thử lại.') }
+  }
+
+  const columns = [
+    { title: 'Yêu cầu', dataIndex: 'title', key: 'title', render: (_, item) => <div className="requirement-title-cell"><strong>{item.title}</strong><RequiredContentTags items={item.requiredItems} /></div> },
+    { title: 'Lớp học phần', dataIndex: 'classCode', key: 'classCode', width: 190 },
+    { title: 'Thời hạn', key: 'time', width: 260, render: (_, item) => <span>{formatDateTimeVi(item.startAt)} – {formatDateTimeVi(item.deadline)}</span> },
+    { title: 'Trạng thái', dataIndex: 'effectiveStatus', key: 'status', width: 145, render: status => <StatusBadge status={status} /> },
+    { title: 'Thao tác', key: 'actions', width: 250, render: (_, item) => <Space size={8} wrap>
+      {!['CLOSED', 'CANCELLED'].includes(item.status) && <Button size="small" onClick={() => open(item)}>Sửa</Button>}
+      {['DRAFT', 'CANCELLED'].includes(item.status) && <Button size="small" type="primary" onClick={() => action(() => changeRequirementStatus(item.id, 'OPEN'))}>Mở</Button>}
+      {item.status === 'OPEN' && <Popconfirm title="Bạn có chắc muốn đóng yêu cầu này?" okText="Đóng yêu cầu" cancelText="Quay lại" onConfirm={() => action(() => changeRequirementStatus(item.id, 'CLOSED'))}><Button size="small">Đóng</Button></Popconfirm>}
+      {!['CLOSED', 'CANCELLED'].includes(item.status) && <Popconfirm title="Bạn có chắc muốn hủy yêu cầu này?" okText="Hủy yêu cầu" cancelText="Quay lại" okButtonProps={{ danger: true }} onConfirm={() => action(() => changeRequirementStatus(item.id, 'CANCELLED'))}><Button size="small" danger>Hủy</Button></Popconfirm>}
+      {['DRAFT', 'CANCELLED'].includes(item.status) && <Popconfirm title="Bạn có chắc muốn xóa yêu cầu này?" okText="Xóa" cancelText="Quay lại" okButtonProps={{ danger: true }} onConfirm={() => action(() => deleteRequirement(item.id))}><Button size="small" danger>Xóa</Button></Popconfirm>}
+    </Space> }
+  ]
+
+  return <div className="lecturer-requirements-page">
+    <div className="page-title row-between"><div><h2>Yêu cầu và đợt nộp</h2><p>Quản lý yêu cầu nộp cho lớp học phần bạn phụ trách.</p></div><Button type="primary" onClick={() => open()}>Tạo yêu cầu</Button></div>
+    {error && <Alert type="error" showIcon message={error} closable onClose={() => setError('')} />}
+
+    {show && <Card className="requirement-form-card" title={editing ? 'Sửa yêu cầu' : 'Tạo yêu cầu'}>
+      <Form form={form} layout="vertical" initialValues={initialValues} onFinish={save} requiredMark="optional">
+        <section><Typography.Title level={5}>Thông tin yêu cầu</Typography.Title><Divider />
+          <Form.Item name="classId" label="Lớp học phần" rules={[{ required: true, message: 'Vui lòng chọn lớp học phần.' }]}>
+            <Select showSearch optionFilterProp="label" disabled={Boolean(editing)} placeholder="Chọn lớp học phần" options={classes.map(item => ({ value: item.id, label: `${item.code} — ${item.subjectName}` }))} />
+          </Form.Item>
+          <Form.Item name="title" label="Tên yêu cầu" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên yêu cầu.' }]}><Input placeholder="Nhập tên yêu cầu" /></Form.Item>
+          <Form.Item name="description" label="Mô tả" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập mô tả.' }]}><Input.TextArea rows={3} placeholder="Mô tả nội dung và mục tiêu của yêu cầu" /></Form.Item>
+          <Form.Item name="instructions" label="Hướng dẫn"><Input.TextArea rows={3} placeholder="Hướng dẫn sinh viên chuẩn bị và nộp bài" /></Form.Item>
+        </section>
+
+        <section><Typography.Title level={5}>Thiết lập nộp bài</Typography.Title><Divider />
+          <Row gutter={[16, 0]}>
+            <Col xs={24} md={12} xl={6}><Form.Item name="startAt" label="Bắt đầu" rules={[{ required: true, message: 'Vui lòng chọn thời gian bắt đầu.' }]}><DatePicker showTime={{ format: 'HH:mm' }} format="DD/MM/YYYY HH:mm" placeholder="Chọn thời gian" /></Form.Item></Col>
+            <Col xs={24} md={12} xl={6}><Form.Item name="deadline" label="Hạn nộp" dependencies={['startAt']} rules={[{ required: true, message: 'Vui lòng chọn hạn nộp.' }, ({ getFieldValue }) => ({ validator(_, value) { return !value || !getFieldValue('startAt') || value.isAfter(getFieldValue('startAt')) ? Promise.resolve() : Promise.reject(new Error('Hạn nộp phải sau thời gian bắt đầu.')) } })]}><DatePicker showTime={{ format: 'HH:mm' }} format="DD/MM/YYYY HH:mm" placeholder="Chọn thời gian" /></Form.Item></Col>
+            <Col xs={24} md={12} xl={6}><Form.Item name="maxAttempts" label="Số lần nộp tối đa" rules={[{ required: true, message: 'Vui lòng nhập số lần nộp.' }]}><InputNumber min={1} precision={0} addonAfter="lần" /></Form.Item></Col>
+            <Col xs={24} md={12} xl={6}><Form.Item name="maxFileSizeMb" label="Dung lượng tối đa"><InputNumber min={1} precision={0} addonAfter="MB" placeholder="Không giới hạn" /></Form.Item></Col>
+          </Row>
+          <Flex className="requirement-switches" gap={24} wrap>
+            <Form.Item name="allowLate" label="Cho phép nộp trễ" valuePropName="checked"><Switch checkedChildren="Có" unCheckedChildren="Không" /></Form.Item>
+            <Form.Item name="allowResubmission" label="Cho phép nộp lại" valuePropName="checked"><Switch checkedChildren="Có" unCheckedChildren="Không" /></Form.Item>
+          </Flex>
+        </section>
+
+        <section><Typography.Title level={5}>Nội dung bắt buộc</Typography.Title><Divider />
+          <Form.Item name="requiredItems" rules={[{ required: true, message: 'Vui lòng chọn ít nhất một nội dung bắt buộc.' }]}>
+            <Checkbox.Group options={CONTENT_OPTIONS} className="required-content-grid" />
+          </Form.Item>
+        </section>
+
+        <Flex className="requirement-form-footer" justify="flex-end" gap={8} wrap><Button onClick={closeForm} disabled={saving}>Hủy</Button><Button type="primary" htmlType="submit" loading={saving}>{editing ? 'Lưu thay đổi' : 'Tạo yêu cầu'}</Button></Flex>
+      </Form>
+    </Card>}
+
+    <Card className="requirements-list-card"><Table rowKey="id" columns={columns} dataSource={items} loading={loading} pagination={{ pageSize: 10, showSizeChanger: false }} scroll={{ x: 1050 }} locale={{ emptyText: 'Chưa có yêu cầu nộp nào.' }} /></Card>
+  </div>
+}

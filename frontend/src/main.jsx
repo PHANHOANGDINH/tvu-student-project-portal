@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ConfigProvider } from 'antd'
+import viVN from 'antd/locale/vi_VN'
 import { ProConfigProvider } from '@ant-design/pro-components'
+import 'dayjs/locale/vi'
 import '@fontsource/be-vietnam-pro/400.css'
 import '@fontsource/be-vietnam-pro/500.css'
 import '@fontsource/be-vietnam-pro/600.css'
@@ -23,7 +25,7 @@ const theme = {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ConfigProvider theme={theme} locale={{ locale: 'vi-vn' }}>
+    <ConfigProvider theme={theme} locale={viVN}>
       <ProConfigProvider hashed={false}><AppErrorBoundary><App /></AppErrorBoundary></ProConfigProvider>
     </ConfigProvider>
   </StrictMode>,

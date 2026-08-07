@@ -48,3 +48,18 @@ test('frontend guards null course data and hides raw production exceptions', asy
   assert.doesNotMatch(boundary, /error\.message/)
   assert.match(users, /placeholder="Chọn lớp hành chính"/)
 })
+
+test('lecturer submission requirement form uses localized Ant Design controls and business labels', async () => {
+  const page = await source('../../frontend/src/pages/teacher/SubmissionRequirementsPage.jsx')
+  const styles = await source('../../frontend/src/pages/teacher/submission-requirements.css')
+  assert.match(page, /listLecturerCourseClasses/)
+  assert.match(page, /format="DD\/MM\/YYYY HH:mm"/)
+  assert.match(page, /InputNumber min=\{1\}/)
+  assert.match(page, /Cho phép nộp trễ/)
+  assert.match(page, /Báo cáo.*Slide trình chiếu.*Mã nguồn/s)
+  assert.match(page, /Popconfirm title="Bạn có chắc muốn đóng yêu cầu này\?"/)
+  assert.doesNotMatch(page, /placeholder="Id lớp học phần"/)
+  assert.doesNotMatch(page, /toLocaleString/)
+  assert.match(styles, /repeat\(3,minmax\(0,1fr\)\)/)
+  assert.match(styles, /@media\(max-width:600px\)/)
+})
