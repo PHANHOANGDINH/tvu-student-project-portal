@@ -28,3 +28,21 @@ test('dashboard filters validate ids and date ranges', () => {
   assert.throws(() => filters({ dateFrom: '2026-02-01', dateTo: '2026-01-01' }), /Khoảng ngày/);
   assert.throws(() => filters({ dateFrom: 'not-a-date' }), /dateFrom/);
 });
+
+test('local and Docker dashboard connectivity keep both browser origins and safe errors', async () => {
+  const compose = await readFile(new URL('../../docker-compose.yml', import.meta.url), 'utf8');
+  const envExample = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
+  const dashboardApi = await readFile(new URL('../../frontend/src/api/dashboardApi.js', import.meta.url), 'utf8');
+  const http = await readFile(new URL('../../frontend/src/api/http.js', import.meta.url), 'utf8');
+
+  for (const sourceText of [compose, envExample]) {
+    assert.match(sourceText, /http:\/\/localhost:5173,http:\/\/localhost:8080/);
+  }
+  assert.match(http, /VITE_API_BASE_URL \|\| 'http:\/\/localhost:5000\/api'/);
+  assert.match(http, /Không thể kết nối đến máy chủ\. Vui lòng thử lại\./);
+  assert.match(http, /isDashboardRequest/);
+  assert.match(dashboardApi, /Phiên đăng nhập đã hết hạn/);
+  assert.match(dashboardApi, /Bạn không có quyền xem dữ liệu này/);
+  assert.match(dashboardApi, /Không tìm thấy dữ liệu dashboard/);
+  assert.match(dashboardApi, /Hệ thống đang gặp sự cố/);
+});

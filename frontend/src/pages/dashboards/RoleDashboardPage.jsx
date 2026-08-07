@@ -3,7 +3,7 @@ import { Button, List, Progress, Select, Space, Steps } from 'antd'
 import { BarChartOutlined, BookOutlined, FolderOutlined, ReloadOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Tooltip } from 'chart.js'
-import { getDashboardAnalytics, getRoleDashboard } from '../../api/dashboardApi'
+import { getDashboardAnalytics, getDashboardErrorMessage, getRoleDashboard } from '../../api/dashboardApi'
 import { AppChartCard, AppErrorState, AppLoadingState, AppPageContainer, AppStatCard, CourseClassCard, DeadlineCard, GroupProgressCard, RecentActivityList } from '../../components/dashboard/DashboardComponents'
 import './role-dashboard.css'
 
@@ -16,7 +16,7 @@ const hasData = items => Array.isArray(items) && items.some(item => Number(item.
 
 export default function RoleDashboardPage({ role, title }) {
   const [data, setData] = useState(null), [legacy, setLegacy] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [courseClassId, setCourseClassId] = useState('')
-  const load = useCallback(async () => { setLoading(true); setError(''); try { const [analytics, base] = await Promise.all([getDashboardAnalytics(role, courseClassId ? { courseClassId } : {}), getRoleDashboard(role)]); setData(analytics); setLegacy(base.data) } catch (err) { setError(err.message || 'Không thể tải dữ liệu dashboard.') } finally { setLoading(false) } }, [role, courseClassId])
+  const load = useCallback(async () => { setLoading(true); setError(''); try { const [analytics, base] = await Promise.all([getDashboardAnalytics(role, courseClassId ? { courseClassId } : {}), getRoleDashboard(role)]); setData(analytics); setLegacy(base.data) } catch (err) { setError(getDashboardErrorMessage(err)) } finally { setLoading(false) } }, [role, courseClassId])
   useEffect(() => { load() }, [load])
   const extra = <Space wrap>{role === 'lecturer' && <Select aria-label="Lọc lớp học phần" allowClear placeholder="Tất cả lớp" style={{ minWidth: 220 }} value={courseClassId || undefined} onChange={value => setCourseClassId(value || '')} options={(legacy?.courseClasses || []).map(c => ({ value: c.id, label: `${c.code} · ${c.subjectName}` }))} />}<Button icon={<ReloadOutlined />} onClick={load}>Làm mới</Button></Space>
   if (loading && !data) return <AppLoadingState />

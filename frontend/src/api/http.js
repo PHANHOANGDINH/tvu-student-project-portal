@@ -30,15 +30,17 @@ export async function request(path, options = {}) {
     response = await fetch(buildApiUrl(path), { ...options, headers })
   } catch (error) {
     console.error('Không thể kết nối API:', error)
-    throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra Backend và thử lại.', { cause: error })
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại.', { cause: error })
   }
 
   const data = await response.json().catch(() => null)
 
   if (response.status === 401 && !path.includes('/auth/login')) {
-    clearAuth()
+    const isDashboardRequest = /^\/(admin|lecturer|student)\/dashboard(?:\/|$)/.test(path)
 
-    if (window.location.pathname !== '/login') {
+    if (!isDashboardRequest) clearAuth()
+
+    if (!isDashboardRequest && window.location.pathname !== '/login') {
       window.location.assign('/login')
     }
   }
