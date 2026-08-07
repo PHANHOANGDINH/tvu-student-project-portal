@@ -13,7 +13,7 @@ export function ErrorState({ message = 'Đã xảy ra lỗi. Vui lòng thử l�
 }
 
 const statusMap = {
-  ACTIVE: ['Đang hoạt động', 'green'], INACTIVE: ['Đã khóa', 'muted'], APPROVED: ['Đã duyệt', 'green'], PENDING: ['Chờ duyệt', 'warning'], REJECTED: ['Từ chối', 'red'], REQUIRES_REVISION: ['Cần chỉnh sửa', 'warning'], CANCELLED: ['Đã hủy', 'muted'], SUBMITTED: ['Đã nộp', 'blue'], RESUBMITTED: ['Đã nộp lại', 'blue'], LATE: ['Nộp trễ', 'red'], REVIEWED: ['Đã nhận xét', 'green'], GRADED: ['Đã chấm', 'green'], DRAFT: ['Bản nháp', 'muted'], OPEN: ['Đang mở', 'green'], CLOSED: ['Đã đóng', 'muted']
+  ACTIVE: ['Đang hoạt động', 'green'], INACTIVE: ['Ngừng hoạt động', 'muted'], APPROVED: ['Đã duyệt', 'green'], PENDING: ['Chờ duyệt', 'warning'], REJECTED: ['Từ chối', 'red'], REQUIRES_REVISION: ['Cần chỉnh sửa', 'warning'], CANCELLED: ['Đã hủy', 'muted'], SUBMITTED: ['Đã nộp', 'blue'], RESUBMITTED: ['Đã nộp lại', 'blue'], LATE: ['Nộp trễ', 'red'], REVIEWED: ['Đã nhận xét', 'green'], GRADED: ['Đã chấm', 'green'], DRAFT: ['Bản nháp', 'muted'], OPEN: ['Đang mở', 'green'], CLOSED: ['Đã đóng', 'muted'], NOT_SUBMITTED: ['Chưa nộp', 'muted'], COMPLETED: ['Hoàn thành', 'green'], FAILED: ['Chưa đạt', 'red'], UNDER_REVIEW: ['Đang xem xét', 'warning']
 }
 export function StatusBadge({ status, children }) {
   const value = String(status || '')

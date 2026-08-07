@@ -1,13 +1,14 @@
 import { NavLink } from 'react-router-dom'
 import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
+import TvuBrandMark from '../common/TvuBrandMark'
 
 export default function AppSidebar({ groups, roleLabel, homePath, collapsed, mobileOpen, onNavigate, onClose, onToggle }) {
   return (
     <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`} aria-label="Thanh điều hướng">
       <div className="brand">
         <NavLink className="brand-home" to={homePath} onClick={onNavigate} aria-label="Về trang tổng quan">
-          <div className="brand-logo">TVU</div>
-          <div className="brand-text"><h2>Project Portal</h2><p>Cổng quản lý đồ án sinh viên</p></div>
+          <TvuBrandMark size={44} />
+          <div className="brand-text"><h2>TVU Project Portal</h2><p>Cổng quản lý đồ án sinh viên</p></div>
         </NavLink>
         <button className="mobile-close" aria-label="Đóng menu" onClick={onClose}><X size={20} /></button>
       </div>

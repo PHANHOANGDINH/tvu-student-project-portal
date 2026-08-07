@@ -22,7 +22,16 @@ export default function Modal({ open, title, description, eyebrow, onClose, clos
         || panelRef.current?.querySelector('.modal-body button:not([disabled]), .modal-close:not([disabled])')
       firstField?.focus()
     }, 0)
-    const handleKeyDown = event => { if (event.key === 'Escape' && closeOnEscapeRef.current) onCloseRef.current() }
+    const handleKeyDown = event => {
+      if (event.key === 'Escape' && closeOnEscapeRef.current) onCloseRef.current()
+      if (event.key === 'Tab') {
+        const focusable=[...panelRef.current?.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]')||[]]
+        if(!focusable.length)return
+        const first=focusable[0],last=focusable.at(-1)
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+      }
+    }
     document.addEventListener('keydown', handleKeyDown)
     return () => {
       window.clearTimeout(timer)

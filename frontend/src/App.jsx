@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import './group.css'
 import './notifications.css'
+import './theme.css'
 
 import AppLayout from './layouts/AppLayout'
 import LoginPage from './pages/LoginPage'
