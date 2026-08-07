@@ -86,6 +86,26 @@ test('student module provides separate requirement, submission and evaluation pa
   assert.match(evaluation, /grade\?\.isPublished/)
 })
 
+test('student requirement detail distinguishes missing resources from unauthorized CourseClasses', async () => {
+  const routes = await source('../src/modules/submissions/submissionRequirements.routes.js')
+  const repository = await source('../src/modules/submissions/submissionRequirements.repository.js')
+  const service = await source('../src/modules/submissions/submissionRequirements.service.js')
+  assert.match(routes, /use\(auth,role\(R\.STUDENT\)\)/)
+  assert.match(routes, /get\('\/:id',c\.studentDetail\)/)
+  assert.match(repository, /enrollment\.StudentId=@UserId AND enrollment\.IsActive=1 AND enrollment\.DeletedAt IS NULL/)
+  assert.match(repository, /WHERE r\.Id=@Id AND r\.DeletedAt IS NULL/)
+  assert.match(service, /if\(!item\)return fail\(404/)
+  assert.match(service, /if\(!item\.enrolled\)return fail\(403/)
+})
+
+test('requirement detail loads one authorized API response without depending on group submission context', async () => {
+  const page = await source('../../frontend/src/pages/student/RequirementDetailPage.jsx')
+  assert.match(page, /getStudentRequirement\(id\)/)
+  assert.doesNotMatch(page, /currentSubmission\(id\)/)
+  assert.match(page, /requestError\.status===403/)
+  assert.match(page, /requestError\.status===404/)
+})
+
 test('student dashboard uses responsive KPI cards and localized activity statuses', async () => {
   const dashboard = await source('../../frontend/src/pages/dashboards/RoleDashboardPage.jsx')
   const components = await source('../../frontend/src/components/dashboard/DashboardComponents.jsx')
