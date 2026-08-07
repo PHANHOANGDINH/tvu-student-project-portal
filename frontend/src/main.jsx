@@ -9,6 +9,7 @@ import '@fontsource/be-vietnam-pro/700.css'
 import 'antd/dist/reset.css'
 import './index.css'
 import App from './App.jsx'
+import AppErrorBoundary from './components/common/AppErrorBoundary.jsx'
 
 const theme = {
   token: {
@@ -23,7 +24,7 @@ const theme = {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ConfigProvider theme={theme} locale={{ locale: 'vi-vn' }}>
-      <ProConfigProvider hashed={false}><App /></ProConfigProvider>
+      <ProConfigProvider hashed={false}><AppErrorBoundary><App /></AppErrorBoundary></ProConfigProvider>
     </ConfigProvider>
   </StrictMode>,
 )

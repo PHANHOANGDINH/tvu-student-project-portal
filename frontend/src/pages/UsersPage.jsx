@@ -19,7 +19,9 @@ const emptyForm = {
   phone: '',
   department: '',
   facultyId: '',
+  administrativeClassId: '',
   className: '',
+  academicDegree: '',
   password: '',
   confirmPassword: '',
   isActive: true
@@ -33,21 +35,21 @@ const emptyResetForm = {
 const formatDate = value => value ? new Date(value).toLocaleDateString('vi-VN') : '—'
 const codeLabel = role => role === 'LECTURER' ? 'Mã giảng viên' : role === 'ADMIN' ? 'Mã quản trị viên' : 'Mã sinh viên'
 
-function downloadCsv(items) {
+function downloadCsv(items, fileName = 'danh-sach-tai-khoan.csv') {
   const safe = v => {
     let s = String(v ?? '')
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const rows = [
-    ['userCode', 'fullName', 'email', 'role', 'status', 'createdAt'],
-    ...items.map(x => [x.userCode, x.fullName, x.email, x.role, x.isActive ? 'ACTIVE' : 'INACTIVE', x.createdAt])
+    ['Mã tài khoản', 'Họ và tên', 'Email', 'Khoa', 'Lớp hành chính', 'Học vị', 'Vai trò', 'Trạng thái'],
+    ...items.map(x => [x.userCode, x.fullName, x.email, x.department, x.className, x.academicDegree, roles[x.role] || x.role, x.isActive ? 'Hoạt động' : 'Đã khóa'])
   ]
   const blob = new Blob(['\uFEFF' + rows.map(r => r.map(safe).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'danh-sach-tai-khoan.csv'
+  a.download = fileName
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -59,8 +61,10 @@ export default function UsersPage() {
   const [users, setUsers] = useState([])
   const [faculties, setFaculties] = useState([])
   const [facultiesLoading, setFacultiesLoading] = useState(false)
+  const [administrativeClasses, setAdministrativeClasses] = useState([])
+  const [classesLoading, setClassesLoading] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 })
-  const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc' })
+  const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', facultyId: '', administrativeClassId: '', sortBy: 'createdAt', sortOrder: 'desc' })
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -98,6 +102,16 @@ export default function UsersPage() {
       .catch(() => setFaculties([]))
       .finally(() => setFacultiesLoading(false))
   }, [])
+
+  useEffect(() => {
+    setClassesLoading(true)
+    listOrganization('administrative-classes', { pageSize: 100, isActive: true })
+      .then(response => setAdministrativeClasses(response.data.items || []))
+      .catch(() => setAdministrativeClasses([]))
+      .finally(() => setClassesLoading(false))
+  }, [])
+
+  const classesForFaculty = useMemo(() => administrativeClasses.filter(item => !form.facultyId || Number(item.facultyId) === Number(form.facultyId)), [administrativeClasses, form.facultyId])
 
   useEffect(() => {
     if (location.pathname.endsWith('/new')) openCreate()
@@ -143,7 +157,9 @@ export default function UsersPage() {
       phone: user.phone || '',
       department: user.department || '',
       facultyId: faculties.find(item => item.facultyName === user.department)?.id || '',
+      administrativeClassId: user.administrativeClassId || '',
       className: user.className || '',
+      academicDegree: user.academicDegree || '',
       isActive: user.isActive !== false,
       password: '',
       confirmPassword: ''
@@ -165,7 +181,10 @@ export default function UsersPage() {
     if (modal.type === 'create' && form.password !== form.confirmPassword) {
       return 'Xác nhận mật khẩu không khớp.'
     }
-    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.className.trim()) {
+    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.facultyId) {
+      return 'Sinh viên cần chọn khoa.'
+    }
+    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.administrativeClassId) {
       return 'Sinh viên cần bổ sung thông tin lớp học.'
     }
     return null
@@ -185,7 +204,9 @@ export default function UsersPage() {
         email: form.email.trim(),
         phone: form.phone.trim(),
         department: form.department.trim(),
-        className: form.className.trim()
+        className: form.className.trim(),
+        administrativeClassId: form.role === 'STUDENT' ? Number(form.administrativeClassId) : null,
+        academicDegree: form.role === 'LECTURER' ? form.academicDegree : ''
       }
 
       if (modal.type === 'create') {
@@ -250,10 +271,29 @@ export default function UsersPage() {
     }
   }
 
-  const exportAll = async () => {
+  const exportUsers = async role => {
     try {
-      const response = await getUsers({ ...filters, page: 1, pageSize: 100 })
-      downloadCsv(response?.data?.items || [])
+      const exportFilters = {
+        ...filters,
+        role,
+        administrativeClassId: role === 'STUDENT' ? filters.administrativeClassId : '',
+        pageSize: 100
+      }
+      const items = []
+      let page = 1
+      let totalPages = 1
+      do {
+        const response = await getUsers({ ...exportFilters, page })
+        items.push(...(response?.data?.items || []))
+        totalPages = response?.data?.totalPages || 1
+        page += 1
+      } while (page <= totalPages)
+      const faculty = faculties.find(item => Number(item.id) === Number(filters.facultyId))
+      const adminClass = role === 'STUDENT'
+        ? administrativeClasses.find(item => Number(item.id) === Number(filters.administrativeClassId))
+        : null
+      const suffix = adminClass?.classCode || faculty?.facultyCode || 'tat-ca'
+      downloadCsv(items, `danh-sach-${role === 'LECTURER' ? 'giang-vien' : 'sinh-vien'}-${suffix}.csv`)
     } catch (e) {
       setMessage({ type: 'error', text: e.message })
     }
@@ -270,7 +310,8 @@ export default function UsersPage() {
         <div className="toolbar-actions">
           <button className="btn-light" onClick={() => navigate('/admin/students/import')}><FileUp size={17} />Nhập sinh viên</button>
           <button className="btn-light" onClick={() => navigate('/admin/lecturers/import')}><FileUp size={17} />Nhập giảng viên</button>
-          <button className="btn-light" onClick={exportAll}><Download size={17} />Xuất danh sách</button>
+          <button className="btn-light" onClick={() => exportUsers('STUDENT')}><Download size={17} />Xuất sinh viên</button>
+          <button className="btn-light" onClick={() => exportUsers('LECTURER')}><Download size={17} />Xuất giảng viên</button>
           <button className="btn-primary" onClick={openCreate}><Plus size={18} />Thêm tài khoản</button>
         </div>
       </div>
@@ -301,6 +342,13 @@ export default function UsersPage() {
             <option value="ACTIVE">Hoạt động</option>
             <option value="INACTIVE">Đã khóa</option>
           </select>
+          <Select showSearch allowClear optionFilterProp="label" placeholder="Tất cả khoa" loading={facultiesLoading} value={filters.facultyId || undefined} options={faculties.map(item=>({value:item.id,label:`${item.facultyCode} — ${item.facultyName}`}))} onChange={value=>apply({facultyId:value||'',administrativeClassId:'',page:1})}/>
+          {filters.role !== 'LECTURER' && (
+            <Select showSearch allowClear optionFilterProp="label" placeholder="Tất cả lớp hành chính"
+              loading={classesLoading} value={filters.administrativeClassId || undefined}
+              options={administrativeClasses.filter(item => !filters.facultyId || Number(item.facultyId) === Number(filters.facultyId)).map(item => ({ value: item.id, label: `${item.classCode} — ${item.className}` }))}
+              onChange={value => apply({ administrativeClassId: value || '', page: 1 })} />
+          )}
           <select
             value={`${filters.sortBy}-${filters.sortOrder}`}
             onChange={e => {
@@ -347,6 +395,7 @@ export default function UsersPage() {
                   <th>Họ và tên</th>
                   <th>Email / Tên đăng nhập</th>
                   <th>Vai trò</th>
+                  <th>Học vị</th>
                   <th>Trạng thái</th>
                   <th>Ngày tạo</th>
                   <th>Thao tác</th>
@@ -372,6 +421,7 @@ export default function UsersPage() {
                           {roles[user.role] || user.role}
                         </span>
                       </td>
+                      <td>{user.role === 'LECTURER' ? user.academicDegree || '—' : '—'}</td>
                       <td>
                         <span className={`status-pill ${user.isActive === false ? 'inactive' : 'active'}`}>
                           <i />{user.isActive === false ? 'Đã khóa' : 'Hoạt động'}
@@ -435,6 +485,7 @@ export default function UsersPage() {
                   ['Số điện thoại', modal.user.phone],
                   ['Khoa', modal.user.department],
                   ['Lớp', modal.user.className],
+                  ['Học vị', modal.user.academicDegree],
                   ['Vai trò', roles[modal.user.role] || modal.user.role],
                   ['Trạng thái', modal.user.isActive === false ? 'Đã khóa' : 'Hoạt động'],
                   ['Ngày tạo', formatDate(modal.user.createdAt)]
@@ -504,13 +555,14 @@ export default function UsersPage() {
                       value={form.facultyId || undefined} placeholder="Chọn khoa"
                       notFoundContent={facultiesLoading ? 'Đang tải...' : 'Chưa có dữ liệu khoa'}
                       options={faculties.map(item => ({ value: item.id, label: `${item.facultyCode} - ${item.facultyName}` }))}
-                      onChange={value => { const faculty = faculties.find(item => item.id === value); setForm({ ...form, facultyId: value || '', department: faculty?.facultyName || '' }) }}
+                      onChange={value => { const faculty = faculties.find(item => item.id === value); const selectedClass=administrativeClasses.find(item=>Number(item.id)===Number(form.administrativeClassId));setForm({ ...form, facultyId: value || '', department: faculty?.facultyName || '', administrativeClassId:selectedClass&&Number(selectedClass.facultyId)===Number(value)?form.administrativeClassId:'',className:selectedClass&&Number(selectedClass.facultyId)===Number(value)?form.className:'' }) }}
                     />
                   </label>
-                  <label>
+                  {form.role === 'STUDENT' && <label>
                     Lớp
-                    <input value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} />
-                  </label>
+                    <Select showSearch allowClear={form.role!=='STUDENT'} loading={classesLoading} optionFilterProp="label" value={form.administrativeClassId||undefined} placeholder="Chọn lớp hành chính" notFoundContent={classesLoading?'Đang tải...':'Không có lớp phù hợp'} options={classesForFaculty.map(item=>({value:item.id,label:`${item.classCode} — ${item.className}`}))} onChange={value=>{const item=administrativeClasses.find(x=>Number(x.id)===Number(value));setForm({...form,administrativeClassId:value||'',className:item?.classCode||''})}} />
+                  </label>}
+                  {form.role === 'LECTURER' && <label>Học vị<Select allowClear value={form.academicDegree||undefined} placeholder="Chọn học vị" options={['Cử nhân','Kỹ sư','Thạc sĩ','Tiến sĩ',...(form.academicDegree&&!['Cử nhân','Kỹ sư','Thạc sĩ','Tiến sĩ'].includes(form.academicDegree)?[form.academicDegree]:[])].map(value=>({value,label:value}))} onChange={value=>setForm({...form,academicDegree:value||''})}/></label>}
                   {modal.type === 'create' && (
                     <>
                       <label>

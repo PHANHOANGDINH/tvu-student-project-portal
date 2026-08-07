@@ -38,6 +38,7 @@ export async function findUserById(id) {
         Phone,
         Department,
         ClassName,
+        AcademicDegree,
         Role,
         IsActive,
         CreatedAt,

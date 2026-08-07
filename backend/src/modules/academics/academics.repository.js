@@ -53,6 +53,9 @@ const workspaceSelect=`c.Id id,c.Code code,sub.Id subjectId,sub.Code subjectCode
  (SELECT COUNT(*) FROM StudentGroups g WHERE g.ClassId=c.Id AND g.DeletedAt IS NULL) groupCount,
  (SELECT COUNT(*) FROM TopicRegistrations t WHERE t.ClassId=c.Id AND t.Status='PENDING' AND t.DeletedAt IS NULL) topicsPending,
  (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.ClassId=c.Id AND s.Status IN('SUBMITTED','LATE','RESUBMITTED','UNDER_REVIEW')) waitingGrade`
+const studentWorkspaceSelect=`${workspaceSelect},
+ (SELECT TOP 1 g.Id FROM StudentGroups g JOIN GroupMembers gm ON gm.GroupId=g.Id AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL WHERE g.ClassId=c.Id AND g.DeletedAt IS NULL) groupId,
+ (SELECT TOP 1 t.Status FROM TopicRegistrations t JOIN StudentGroups g ON g.Id=t.GroupId JOIN GroupMembers gm ON gm.GroupId=g.Id AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL WHERE g.ClassId=c.Id AND g.DeletedAt IS NULL AND t.DeletedAt IS NULL ORDER BY t.CreatedAt DESC) topicStatus`
 const studentFrom=' FROM CourseClasses c JOIN CourseClassEnrollments scm ON scm.CourseClassId=c.Id AND scm.StudentId=@Uid AND scm.IsActive=1 AND scm.DeletedAt IS NULL JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId LEFT JOIN Users u ON u.Id=c.LecturerId WHERE c.DeletedAt IS NULL'
 const filterWhere=` AND (@Pattern IS NULL OR c.Code LIKE @Pattern OR sub.Code LIKE @Pattern OR sub.Name LIKE @Pattern)
  AND (@AcademicYearId IS NULL OR ay.Id=@AcademicYearId) AND (@SemesterId IS NULL OR sem.Id=@SemesterId)
@@ -62,11 +65,11 @@ const bindFilters=(request,uid,{search,academicYearId,semesterId,subjectId,statu
  .input('SemesterId',sql.Int,semesterId).input('SubjectId',sql.Int,subjectId).input('Status',sql.NVarChar(30),status)
 export async function listStudentClasses(uid,{page,pageSize,...filters}){
  const pool=await poolPromise,where=studentFrom+filterWhere,bind=r=>bindFilters(r,uid,filters)
- const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+workspaceSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
+ const items=await bind(pool.request()).input('Offset',sql.Int,(page-1)*pageSize).input('PageSize',sql.Int,pageSize).query('SELECT '+studentWorkspaceSelect+where+' ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY')
  const total=await bind(pool.request()).query('SELECT COUNT(*) total'+where);return{items:items.recordset,total:total.recordset[0].total}
 }
 export async function findStudentClass(uid,id){
- const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+workspaceSelect+studentFrom+' AND c.Id=@Id')
+ const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+studentWorkspaceSelect+studentFrom+' AND c.Id=@Id')
  return r.recordset[0]||null
 }
 const lecturerFrom=' FROM CourseClasses c JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId LEFT JOIN Users u ON u.Id=c.LecturerId WHERE c.LecturerId=@Uid AND c.DeletedAt IS NULL'

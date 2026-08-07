@@ -19,17 +19,18 @@ export default function StudentCourseClassesPage() {
   const [page, setPage] = useState(1)
   const [pages, setPages] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const load = async () => {
     try {
-      setLoading(true); setError('')
-      if (id) setDetail((await getStudentCourseClass(id)).data)
+      setLoading(true); setError(null); setDetail(null)
+      if (id) { const response=await getStudentCourseClass(id); if(!response?.data)setError({status:404,message:'Không tìm thấy lớp học phần.'});else setDetail(response.data) }
       else { const response = await listStudentCourseClasses({ ...paramsOf(filters), page, pageSize: 100 }); const rows=response.data.items || []; setItems(rows); setPages(response.data.totalPages || 1); setFilters(current => ({ ...current, academicYears: current.academicYears.length ? current.academicYears : unique(rows,'academicYearId','academicYearName'), semesters: current.semesters.length ? current.semesters : unique(rows,'semesterId','semesterName'), subjects: current.subjects.length ? current.subjects : unique(rows,'subjectId','subjectName','subjectCode') })) }
-    } catch (err) { setError(err.message) } finally { setLoading(false) }
+    } catch (err) { setError({status:err.status,message:err.status===403?'Bạn không có quyền truy cập lớp học phần này.':err.status===404?'Không tìm thấy lớp học phần.':err.message}) } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [id, page])
   if (loading) return <div className="panel"><LoadingState label="Đang tải lớp học phần..." /></div>
-  if (error) return <div className="panel"><ErrorState message={error} onRetry={load} /></div>
+  if (error) return <div className="panel"><ErrorState message={error.message} onRetry={load} /></div>
+  if (id && !detail) return <div className="panel"><EmptyState title="Không tìm thấy lớp học phần" description="Lớp không tồn tại hoặc bạn chưa được ghi danh." /></div>
   if (id) return <ClassWorkspace course={detail} role="student" />
   return <div>
     <PageHeader eyebrow="Không gian học tập" title="Lớp học phần của tôi" description="Truy cập các lớp học phần được phân quyền theo tài khoản sinh viên." />

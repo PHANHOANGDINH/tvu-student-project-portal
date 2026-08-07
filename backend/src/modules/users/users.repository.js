@@ -20,6 +20,10 @@ function mapUser(record) {
     phone: record.Phone,
     department: record.Department,
     className: record.ClassName,
+    facultyId: record.FacultyId,
+    administrativeClassId: record.AdministrativeClassId,
+    administrativeClassName: record.AdministrativeClassName,
+    academicDegree: record.AcademicDegree,
     role: record.Role,
     isActive: record.IsActive,
     createdAt: record.CreatedAt,
@@ -31,10 +35,14 @@ function addUserFilters(request, filters = {}) {
   const search = filters.search ? `%${filters.search}%` : null;
   const role = filters.role || null;
   const status = filters.status || null;
+  const facultyId = Number(filters.facultyId) || null;
+  const administrativeClassId = Number(filters.administrativeClassId) || null;
 
   request.input('Search', sql.NVarChar(200), search);
   request.input('Role', sql.NVarChar(20), role);
   request.input('Status', sql.NVarChar(20), status);
+  request.input('FacultyId', sql.Int, facultyId);
+  request.input('AdministrativeClassId', sql.Int, administrativeClassId);
 
   return `
     WHERE u.DeletedAt IS NULL
@@ -46,8 +54,11 @@ function addUserFilters(request, filters = {}) {
         OR u.Phone LIKE @Search
         OR u.Department LIKE @Search
         OR u.ClassName LIKE @Search
+        OR u.AcademicDegree LIKE @Search
       )
       AND (@Role IS NULL OR u.Role = @Role)
+      AND (@FacultyId IS NULL OR faculty.Id = @FacultyId OR activeClass.FacultyId = @FacultyId)
+      AND (@AdministrativeClassId IS NULL OR activeClass.Id = @AdministrativeClassId)
       AND (
         @Status IS NULL
         OR (@Status = 'ACTIVE' AND u.IsActive = 1)
@@ -83,12 +94,23 @@ export async function findUsers(filters = {}) {
       u.UserCode,
       u.Phone,
       u.Department,
-      u.ClassName,
+      COALESCE(activeClass.ClassCode, u.ClassName) AS ClassName,
+      u.AcademicDegree,
+      faculty.Id AS FacultyId,
+      activeClass.Id AS AdministrativeClassId,
+      activeClass.ClassName AS AdministrativeClassName,
       u.Role,
       u.IsActive,
       u.CreatedAt,
       u.UpdatedAt
     FROM Users u
+    LEFT JOIN Faculties faculty ON faculty.FacultyName = u.Department AND faculty.DeletedAt IS NULL
+    OUTER APPLY (
+      SELECT TOP 1 c.Id,c.ClassCode,c.ClassName,c.FacultyId
+      FROM StudentClassMembers scm JOIN Classes c ON c.Id=scm.ClassId
+      WHERE scm.StudentId=u.Id AND scm.DeletedAt IS NULL AND c.DeletedAt IS NULL
+      ORDER BY scm.CreatedAt DESC
+    ) activeClass
     ${whereClause}
     ORDER BY ${orderBy}
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
@@ -105,6 +127,13 @@ export async function countUsers(filters = {}) {
   const result = await request.query(`
     SELECT COUNT(*) AS Total
     FROM Users u
+    LEFT JOIN Faculties faculty ON faculty.FacultyName = u.Department AND faculty.DeletedAt IS NULL
+    OUTER APPLY (
+      SELECT TOP 1 c.Id,c.ClassCode,c.ClassName,c.FacultyId
+      FROM StudentClassMembers scm JOIN Classes c ON c.Id=scm.ClassId
+      WHERE scm.StudentId=u.Id AND scm.DeletedAt IS NULL AND c.DeletedAt IS NULL
+      ORDER BY scm.CreatedAt DESC
+    ) activeClass
     ${whereClause}
   `);
 
@@ -125,6 +154,7 @@ export async function findUserById(id) {
         Phone,
         Department,
         ClassName,
+        AcademicDegree,
         Role,
         IsActive,
         CreatedAt,
@@ -195,6 +225,7 @@ export async function createUser(data) {
     .input('Phone', sql.NVarChar(20), data.phone || null)
     .input('Department', sql.NVarChar(100), data.department || null)
     .input('ClassName', sql.NVarChar(100), data.className || null)
+    .input('AcademicDegree', sql.NVarChar(100), data.academicDegree || null)
     .query(`
       INSERT INTO Users (
         FullName,
@@ -205,6 +236,7 @@ export async function createUser(data) {
         Phone,
         Department,
         ClassName,
+        AcademicDegree,
         IsActive
       )
       OUTPUT
@@ -215,6 +247,7 @@ export async function createUser(data) {
         INSERTED.Phone,
         INSERTED.Department,
         INSERTED.ClassName,
+        INSERTED.AcademicDegree,
         INSERTED.Role,
         INSERTED.IsActive,
         INSERTED.CreatedAt,
@@ -228,6 +261,7 @@ export async function createUser(data) {
         @Phone,
         @Department,
         @ClassName,
+        @AcademicDegree,
         1
       )
     `);
@@ -247,6 +281,7 @@ export async function updateUser(id, data) {
     .input('Phone', sql.NVarChar(20), data.phone || null)
     .input('Department', sql.NVarChar(100), data.department || null)
     .input('ClassName', sql.NVarChar(100), data.className || null)
+    .input('AcademicDegree', sql.NVarChar(100), data.academicDegree || null)
     .query(`
       UPDATE Users
       SET
@@ -257,6 +292,7 @@ export async function updateUser(id, data) {
         Phone = @Phone,
         Department = @Department,
         ClassName = @ClassName,
+        AcademicDegree = @AcademicDegree,
         UpdatedAt = SYSDATETIME()
       OUTPUT
         INSERTED.Id,
@@ -266,6 +302,7 @@ export async function updateUser(id, data) {
         INSERTED.Phone,
         INSERTED.Department,
         INSERTED.ClassName,
+        INSERTED.AcademicDegree,
         INSERTED.Role,
         INSERTED.IsActive,
         INSERTED.CreatedAt,
@@ -296,6 +333,7 @@ export async function updateUserStatus(id, isActive) {
         INSERTED.Phone,
         INSERTED.Department,
         INSERTED.ClassName,
+        INSERTED.AcademicDegree,
         INSERTED.Role,
         INSERTED.IsActive,
         INSERTED.CreatedAt,
