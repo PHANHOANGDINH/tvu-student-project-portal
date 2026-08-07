@@ -20,7 +20,7 @@ export default function AppHeader({ pathname, items, user, role, roleLabel, onMe
       <div className="header-leading">
         <button className="menu-toggle" aria-label="Mở menu" onClick={onMenu}><Menu size={22} /></button>
         <div className="header-title">
-          <p>TRƯỜNG ĐẠI HỌC TRÀ VINH · Cổng quản lý đồ án sinh viên</p>
+          <p>ĐẠI HỌC TRÀ VINH · Cổng quản lý đồ án sinh viên</p>
           <h1>{active?.label || crumbs.at(-1)?.label || 'Khu vực làm việc'}</h1>
           <div className="breadcrumbs" aria-label="Đường dẫn trang"><span>Trang chủ</span>{crumbs.map(item => <span key={item.path}><ChevronRight size={13} />{item.label}</span>)}</div>
         </div>

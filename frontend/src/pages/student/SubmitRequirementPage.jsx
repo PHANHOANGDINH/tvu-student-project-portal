@@ -3,6 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { currentSubmission, uploadSubmission } from '../../api/submissionsApi'
 
 const FILE_ITEMS = ['REPORT', 'SLIDE', 'SOURCE_CODE', 'OTHER']
+const ITEM_LABELS = {
+  REPORT: 'Báo cáo',
+  SLIDE: 'Bài trình chiếu',
+  SOURCE_CODE: 'Mã nguồn',
+  OTHER: 'Tệp khác'
+}
 const ACCEPTED_TYPES = {
   REPORT: '.pdf,.doc,.docx',
   SLIDE: '.pdf,.ppt,.pptx',
@@ -76,7 +82,7 @@ export default function SubmitRequirementPage() {
     {isLate && <div className="alert error">Đã quá hạn. Lần nộp này sẽ được đánh dấu trễ nếu đợt cho phép.</div>}
     {error && <div className="alert error">{error}</div>}
     <form key={formKey} className="panel" onSubmit={submit}>
-      {requirement.requiredItems.filter((type) => FILE_ITEMS.includes(type)).map((type) => <label key={type}>{type}<input type="file" accept={ACCEPTED_TYPES[type]} required onChange={(event) => setSelected((current) => ({ ...current, [type]: event.target.files[0] }))} /></label>)}
+      {requirement.requiredItems.filter((type) => FILE_ITEMS.includes(type)).map((type) => <label key={type}>{ITEM_LABELS[type]}<input type="file" accept={ACCEPTED_TYPES[type]} required onChange={(event) => setSelected((current) => ({ ...current, [type]: event.target.files[0] }))} /></label>)}
       {requirement.requiredItems.includes('GITHUB_LINK') && <input type="url" required placeholder="Liên kết GitHub" value={github} onChange={(event) => setGithub(event.target.value)} />}
       {requirement.requiredItems.includes('VIDEO_LINK') && <input type="url" required placeholder="Liên kết video" value={video} onChange={(event) => setVideo(event.target.value)} />}
       <button className="btn-primary" disabled={loading}>{loading ? 'Đang gửi...' : `Gửi bài${progress ? ` (${progress}%)` : ''}`}</button>

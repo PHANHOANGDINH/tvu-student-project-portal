@@ -26,12 +26,12 @@ export default function LoginPage() {
   }
   return <div className="auth-page lms-auth-page">
     <section className="auth-showcase">
-      <div className="auth-showcase-brand"><TvuBrandMark size={58} inverse/><div><strong>TRƯỜNG ĐẠI HỌC TRÀ VINH</strong><span>Tra Vinh University</span></div></div>
+      <div className="auth-showcase-brand"><TvuBrandMark size={58} inverse/><div><strong>ĐẠI HỌC TRÀ VINH</strong><span>Tra Vinh University</span></div></div>
       <div className="auth-showcase-copy"><span className="auth-kicker">TVU STUDENT PROJECT PORTAL</span><h1>Không gian học tập và quản lý đồ án tập trung</h1><p>Theo dõi lớp học phần, đề tài, tiến độ và kết quả trong một hệ thống thống nhất.</p><div className="auth-benefits"><span><GraduationCap /> Quản lý học phần</span><span><BookOpenCheck /> Theo dõi đồ án</span><span><ShieldCheck /> Truy cập an toàn</span></div></div>
       <div className="auth-showcase-orbit" aria-hidden="true" />
     </section>
     <section className="auth-login-panel"><div className="auth-card">
-      <div className="auth-mobile-brand"><TvuBrandMark size={68}/><strong>TRƯỜNG ĐẠI HỌC TRÀ VINH</strong></div>
+      <div className="auth-mobile-brand"><TvuBrandMark size={68}/><strong>ĐẠI HỌC TRÀ VINH</strong></div>
       <div className="auth-heading"><span>CỔNG THÔNG TIN HỌC VỤ</span><h2>Đăng nhập hệ thống</h2></div>
       <p className="auth-desc">Sử dụng tài khoản được cấp để tiếp tục vào không gian làm việc của bạn.</p>
       <div className={`alert error auth-error ${error ? 'visible' : ''}`} role="alert">{error || ' '}</div>
