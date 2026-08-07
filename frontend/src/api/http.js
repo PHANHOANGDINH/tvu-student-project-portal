@@ -25,10 +25,13 @@ export async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(buildApiUrl(path), {
-    ...options,
-    headers
-  })
+  let response
+  try {
+    response = await fetch(buildApiUrl(path), { ...options, headers })
+  } catch (error) {
+    console.error('Không thể kết nối API:', error)
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra Backend và thử lại.', { cause: error })
+  }
 
   const data = await response.json().catch(() => null)
 

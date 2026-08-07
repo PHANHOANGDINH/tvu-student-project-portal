@@ -14,6 +14,7 @@ import RoleDashboardPage from './pages/dashboards/RoleDashboardPage'
 import AcademicSummaryPage from './pages/admin/AcademicSummaryPage'
 import BulkStudentImportPage from './pages/admin/BulkStudentImportPage'
 import BulkLecturerImportPage from './pages/admin/BulkLecturerImportPage'
+import OrganizationManagementPage from './pages/admin/OrganizationManagementPage'
 
 // Teacher/Lecturer Pages
 import LecturerGroupsPage from './pages/teacher/LecturerGroupsPage'
@@ -109,6 +110,8 @@ function App() {
           <Route path="admin/academic-years" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="academicYears" title="Năm học" /></RoleRoute>} />
           <Route path="admin/semesters" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="semesters" title="Học kỳ" /></RoleRoute>} />
           <Route path="admin/subjects" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><AcademicSummaryPage resource="subjects" title="Môn học" /></RoleRoute>} />
+          <Route path="admin/faculties" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><OrganizationManagementPage type="faculties" /></RoleRoute>} />
+          <Route path="admin/administrative-classes" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><OrganizationManagementPage type="classes" /></RoleRoute>} />
           <Route path="admin/students/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkStudentImportPage /></RoleRoute>} />
           <Route path="admin/lecturers/import" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><BulkLecturerImportPage /></RoleRoute>} />
           <Route path="admin/dashboard" element={<RoleRoute allowedRoles={[USER_ROLES.ADMIN]}><RoleDashboardPage role="admin" title="Tổng quan quản trị" /></RoleRoute>} />

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, LogOut, Menu, UserRound } from 'lucide-react'
 import NotificationBell from '../NotificationBell'
 
-const labels = { admin: 'Quản trị', lecturer: 'Giảng viên', student: 'Sinh viên', dashboard: 'Tổng quan', users: 'Tài khoản', new: 'Thêm mới', students: 'Sinh viên', lecturers: 'Giảng viên', import: 'Nhập dữ liệu', 'academic-years': 'Năm học', semesters: 'Học kỳ', subjects: 'Môn học', 'course-classes': 'Lớp học phần', profile: 'Hồ sơ', groups: 'Nhóm', 'topic-registrations': 'Đăng ký đề tài', 'topic-registration': 'Đề tài', 'submission-requirements': 'Yêu cầu nộp bài', submissions: 'Bài nộp', progress: 'Tiến độ', 'final-submissions': 'Bài cuối kỳ', notifications: 'Thông báo' }
+const labels = { admin: 'Quản trị', lecturer: 'Giảng viên', student: 'Sinh viên', dashboard: 'Tổng quan', users: 'Tài khoản', new: 'Thêm mới', students: 'Sinh viên', lecturers: 'Giảng viên', import: 'Nhập dữ liệu', 'academic-years': 'Năm học', semesters: 'Học kỳ', subjects: 'Môn học', faculties: 'Khoa', 'administrative-classes': 'Lớp hành chính', 'course-classes': 'Lớp học phần', profile: 'Hồ sơ', groups: 'Nhóm', 'topic-registrations': 'Đăng ký đề tài', 'topic-registration': 'Đề tài', 'submission-requirements': 'Yêu cầu nộp bài', submissions: 'Bài nộp', progress: 'Tiến độ', 'final-submissions': 'Bài cuối kỳ', notifications: 'Thông báo' }
 
 export default function AppHeader({ pathname, items, user, role, roleLabel, onMenu, onProfile, onLogout }) {
   const [open, setOpen] = useState(false)

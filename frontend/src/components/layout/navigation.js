@@ -1,4 +1,4 @@
-import { BarChart3, Bell, BookOpen, FileCheck2, FileUp, FolderKanban, GraduationCap, Layers3, LayoutDashboard, School, UserPlus, UserRound, Users } from 'lucide-react'
+import { BarChart3, Bell, BookOpen, Building2, FileCheck2, FileUp, FolderKanban, GraduationCap, Layers3, LayoutDashboard, School, UserPlus, UserRound, Users } from 'lucide-react'
 import { USER_ROLES } from '../../constants/roles'
 
 const roleLabels = { ADMIN: 'Quản trị viên', LECTURER: 'Giảng viên', STUDENT: 'Sinh viên' }
@@ -18,6 +18,8 @@ const navigations = {
         { label: 'Nhập giảng viên', icon: GraduationCap, path: '/admin/lecturers/import' }
       ] },
       { label: 'Học vụ', items: [
+        { label: 'Khoa', icon: Building2, path: '/admin/faculties' },
+        { label: 'Lớp hành chính', icon: Users, path: '/admin/administrative-classes' },
         { label: 'Năm học', icon: Layers3, path: '/admin/academic-years' },
         { label: 'Học kỳ', icon: BookOpen, path: '/admin/semesters' },
         { label: 'Môn học', icon: School, path: '/admin/subjects' },

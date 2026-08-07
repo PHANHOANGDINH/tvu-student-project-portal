@@ -1880,6 +1880,17 @@ body { background: #f4f7fb; }
 .academic-list-panel { padding-bottom: 18px; }
 .academic-list-panel .ui-state { min-height: 300px; }
 .academic-list-panel .pagination-bar { padding-top: 17px; border-top: 1px solid #edf1f5; }
+.organization-filters { display:grid;grid-template-columns:minmax(240px,2fr) repeat(3,minmax(140px,1fr)) auto;gap:12px;margin-bottom:18px;align-items:center }
+.organization-filters .search-field { min-width:0 }
+.organization-page .compact-actions { flex-wrap:wrap }
+.organization-page .compact-actions button { display:inline-flex;align-items:center;gap:5px }
+.organization-page .danger-link { color:#b42318!important;border-color:#fecaca!important }
+.organization-page .alert { display:flex;justify-content:space-between;gap:16px;align-items:center }
+.organization-page .alert button { border:0;background:transparent;font-size:20px;cursor:pointer }
+.student-assignment { display:grid;gap:18px }
+.assignment-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px }
+@media(max-width:1000px){.organization-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.organization-filters .search-field{grid-column:1/-1}}
+@media(max-width:600px){.organization-filters,.assignment-row{grid-template-columns:1fr}.organization-filters .search-field{grid-column:auto}}
 
 @media (max-width: 768px) {
   .modal-overlay,
