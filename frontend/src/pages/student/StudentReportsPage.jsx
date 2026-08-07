@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Collapse, Descriptions, Drawer, Empty, List, Progress, Select, Space } from 'antd'
-import { DownloadOutlined, EyeOutlined, FileDoneOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Card, Collapse, Descriptions, Empty, Progress, Select, Space } from 'antd'
+import { EyeOutlined, FileDoneOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { getStudentResult } from '../../api/gradingApi'
-import { currentSubmission, downloadSubmissionFile, studentSubmissionWorkflow } from '../../api/submissionsApi'
+import { studentSubmissionWorkflow } from '../../api/submissionsApi'
 import { ErrorState, LoadingState, StatusBadge } from '../../components/common/UiState'
 import { formatDateTimeVi, statusLabel } from '../../utils/formatters'
 import './student-workflow.css'
@@ -29,7 +28,6 @@ export default function StudentReportsPage({ type }) {
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [drawer, setDrawer] = useState({ open: false, loading: false, item: null, submission: null, result: null })
 
   async function load() {
     try {
@@ -60,28 +58,6 @@ export default function StudentReportsPage({ type }) {
     requirements: course.requirements.filter(item => !status || (item.submissionStatus || 'NOT_SUBMITTED') === status)
   })).filter(course => !status || course.requirements.length)
 
-  async function openDetail(item) {
-    setDrawer({ open: true, loading: true, item, submission: null, result: null })
-    try {
-      const submissionResponse = await currentSubmission(item.requirementId)
-      const submission = submissionResponse.data
-      const result = submission.submission ? (await getStudentResult(submission.submission.id)).data : null
-      setDrawer({ open: true, loading: false, item, submission, result })
-    } catch {
-      setDrawer(current => ({ ...current, loading: false }))
-    }
-  }
-
-  async function download(file) {
-    const blob = await downloadSubmissionFile(file.id, 'student')
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = file.originalName
-    anchor.click()
-    URL.revokeObjectURL(url)
-  }
-
   if (loading) return <LoadingState />
   if (error) return <ErrorState message={error} onRetry={load} />
 
@@ -99,16 +75,9 @@ export default function StudentReportsPage({ type }) {
         return <Card key={item.requirementId} title={item.title} extra={<StatusBadge status={itemStatus} />}>
           <p>{item.description || 'Không có mô tả.'}</p>
           <Descriptions size="small" column={{ xs: 1, sm: 2 }} items={[{ key: 'deadline', label: 'Hạn nộp', children: formatDateTimeVi(item.dueAt) }, { key: 'attempt', label: 'Lần nộp gần nhất', children: item.attemptNumber ? `#${item.attemptNumber}` : 'Chưa nộp' }, { key: 'submitted', label: 'Nộp lúc', children: formatDateTimeVi(item.submittedAt) }, { key: 'score', label: 'Điểm', children: item.score == null ? 'Chưa công bố' : `${item.score}/${item.maxScore || 10}` }]} />
-          <Space wrap><Button icon={<EyeOutlined />} disabled={!item.submissionId} onClick={() => openDetail(item)}>Xem bài đã nộp</Button><Button icon={<FileDoneOutlined />} disabled={!item.feedback && item.score == null} onClick={() => openDetail(item)}>Xem đánh giá</Button>{canSubmit(item) && <Button type="primary" onClick={() => navigate(`/student/submission-requirements/${item.requirementId}/submit`)}>{item.attemptNumber ? 'Nộp lại' : 'Nộp báo cáo'}</Button>}</Space>
+          <Space wrap><Button icon={<EyeOutlined />} disabled={!item.submissionId} onClick={() => navigate(isFinal ? `/student/final-submissions/${item.submissionId}` : `/student/progress/${item.submissionId}/submission`)}>{isFinal ? 'Xem bài nộp' : 'Xem bài đã nộp'}</Button>{isFinal && <Button disabled={!item.submissionId} onClick={() => navigate(`/student/final-submissions/${item.submissionId}`)}>Xem lịch sử</Button>}<Button icon={<FileDoneOutlined />} disabled={!item.submissionId || (!item.feedback && item.score == null)} onClick={() => navigate(isFinal ? `/student/final-submissions/${item.submissionId}/evaluation` : `/student/progress/${item.submissionId}/evaluation`)}>Xem đánh giá</Button>{canSubmit(item) && <Button type="primary" onClick={() => navigate(`/student/submission-requirements/${item.requirementId}/submit`)}>{item.attemptNumber ? 'Nộp lại' : 'Nộp báo cáo'}</Button>}</Space>
         </Card>
       })}</div> : <Empty description={isFinal ? 'Chưa có yêu cầu bài cuối kỳ.' : 'Chưa có yêu cầu tiến độ.'} /> }
     })} />}
-
-    <Drawer width={640} title={drawer.item?.title || 'Chi tiết bài nộp'} open={drawer.open} onClose={() => setDrawer(current => ({ ...current, open: false }))}>
-      {drawer.loading ? <LoadingState /> : !drawer.submission?.submission ? <Empty description="Chưa có bài nộp." /> : <>
-        <Descriptions bordered size="small" column={1} items={[{ key: 'class', label: 'Lớp học phần', children: drawer.item.courseClassCode }, { key: 'status', label: 'Trạng thái', children: <StatusBadge status={drawer.submission.submission.status} /> }, { key: 'feedback', label: 'Đánh giá', children: drawer.result?.feedback?.comment || 'Giảng viên chưa phản hồi.' }, { key: 'revision', label: 'Yêu cầu chỉnh sửa', children: drawer.result?.feedback?.revisionRequired ? drawer.result.feedback.revisionReason : 'Không' }, { key: 'grade', label: 'Điểm', children: drawer.result?.grade ? `${drawer.result.grade.totalScore}/${drawer.result.grade.maxScore}` : 'Chưa công bố' }, { key: 'evaluated', label: 'Ngày đánh giá', children: formatDateTimeVi(drawer.result?.feedback?.updatedAt) }]} />
-        <List header={<strong>Lịch sử các lần nộp</strong>} dataSource={drawer.submission.attempts || []} renderItem={attempt => <List.Item><List.Item.Meta title={`Lần ${attempt.attemptNumber} · ${statusLabel(attempt.status)}`} description={<><div>{formatDateTimeVi(attempt.submittedAt)}</div>{attempt.files.map(file => <Button key={file.id} type="link" icon={<DownloadOutlined />} onClick={() => download(file)}>{file.originalName}</Button>)}{attempt.links.map(link => <div key={link.id}><a href={link.url} target="_blank" rel="noreferrer">{link.url}</a></div>)}</>} /></List.Item>} />
-      </>}
-    </Drawer>
   </div>
 }

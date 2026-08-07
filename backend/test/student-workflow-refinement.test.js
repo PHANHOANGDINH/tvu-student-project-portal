@@ -15,6 +15,7 @@ test('student workflow returns progress and final requirements grouped by Course
   assert.match(repository, /c\.Id courseClassId,c\.Code courseClassCode/)
   assert.match(repository, /@WorkflowType='PROGRESS'/)
   assert.match(repository, /@WorkflowType='FINAL'/)
+  assert.match(repository, /r\.RequirementType='ASSIGNMENT'/)
 })
 
 test('student workflow is isolated to active enrollment and own group', async () => {
@@ -48,7 +49,7 @@ test('closed requirements and deadlines are validated by backend submission serv
 test('lecturer review is restricted to the lecturer assigned to the CourseClass', async () => {
   const grading = await source('../src/modules/grading/grading.service.js')
   assert.match(grading, /s\.lecturerId!==user\.id/)
-  assert.match(grading, /Bạn không phụ trách lớp học phần này/)
+  assert.match(grading, /không phụ trách lớp học phần này/)
 })
 
 test('student result hides unpublished grades and verifies group membership', async () => {
@@ -67,11 +68,27 @@ test('student module UI uses shared Vietnamese statuses and minute date format',
   assert.doesNotMatch(page, /toLocaleString/)
 })
 
-test('student module provides attempts, files, links, feedback and grade drawers', async () => {
-  const page = await source('../../frontend/src/pages/student/StudentReportsPage.jsx')
-  assert.match(page, /Lịch sử các lần nộp/)
-  assert.match(page, /downloadSubmissionFile/)
-  assert.match(page, /attempt\.links\.map/)
-  assert.match(page, /feedback\?\.comment/)
-  assert.match(page, /result\?\.grade/)
+test('student module provides separate requirement, submission and evaluation pages', async () => {
+  const app = await source('../../frontend/src/App.jsx')
+  const requirements = await source('../../frontend/src/pages/student/SubmissionRequirementsPage.jsx')
+  const submission = await source('../../frontend/src/pages/student/WorkflowSubmissionDetailPage.jsx')
+  const evaluation = await source('../../frontend/src/pages/student/WorkflowEvaluationPage.jsx')
+  assert.match(app, /student\/submission-requirements\/:id/)
+  assert.match(app, /student\/progress\/:id\/submission/)
+  assert.match(app, /student\/progress\/:id\/evaluation/)
+  assert.match(app, /student\/final-submissions\/:id/)
+  assert.doesNotMatch(requirements, /setSelected/)
+  assert.match(submission, /Lịch sử các lần nộp/)
+  assert.match(submission, /downloadSubmissionFile/)
+  assert.match(submission, /selected\.links/)
+  assert.match(evaluation, /feedback\?\.comment/)
+  assert.match(evaluation, /grade\?\.isPublished/)
+})
+
+test('presentation seed is idempotent and never resets data', async () => {
+  const seed = await source('../src/scripts/seedPresentation.js')
+  assert.match(seed, /SERIALIZABLE/)
+  assert.match(seed, /business keys/)
+  assert.doesNotMatch(seed, /\b(?:DROP|TRUNCATE)\s+(?:TABLE|DATABASE)/i)
+  assert.doesNotMatch(seed, /docker compose down/)
 })

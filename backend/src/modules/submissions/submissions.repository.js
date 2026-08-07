@@ -28,8 +28,8 @@ export async function studentWorkflow(userId, workflowType) {
     LEFT JOIN StudentGroups g ON g.Id=member.GroupId AND g.DeletedAt IS NULL
     LEFT JOIN TopicRegistrations topic ON topic.ClassId=c.Id AND topic.GroupId=g.Id AND topic.DeletedAt IS NULL
     LEFT JOIN SubmissionRequirements r ON r.ClassId=c.Id AND r.DeletedAt IS NULL AND
-      ((@WorkflowType='FINAL' AND (LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%' OR LOWER(r.Title) LIKE N'%final%')) OR
-       (@WorkflowType='PROGRESS' AND NOT (LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%' OR LOWER(r.Title) LIKE N'%final%')))
+      ((@WorkflowType='FINAL' AND (r.RequirementType='ASSIGNMENT' OR LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%')) OR
+       (@WorkflowType='PROGRESS' AND r.RequirementType<>'ASSIGNMENT' AND NOT (LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%')))
     LEFT JOIN SubmissionRounds sr ON sr.RequirementId=r.Id AND sr.Status<>'DRAFT'
     LEFT JOIN Submissions s ON s.RequirementId=r.Id AND s.GroupId=g.Id
     OUTER APPLY (SELECT TOP 1 a.SubmittedAt FROM SubmissionAttempts a WHERE a.SubmissionId=s.Id ORDER BY a.AttemptNumber DESC) latest

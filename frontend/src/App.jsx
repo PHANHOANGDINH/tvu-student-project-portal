@@ -38,6 +38,9 @@ import SubmissionResultPage from './pages/student/SubmissionResultPage'
 import StudentCourseClassesPage from './pages/student/StudentCourseClassesPage'
 import StudentReportsPage from './pages/student/StudentReportsPage'
 import StudentUnavailablePage from './pages/student/StudentUnavailablePage'
+import RequirementDetailPage from './pages/student/RequirementDetailPage'
+import WorkflowSubmissionDetailPage from './pages/student/WorkflowSubmissionDetailPage'
+import WorkflowEvaluationPage from './pages/student/WorkflowEvaluationPage'
 
 import RoleRoute from './components/RoleRoute'
 import { USER_ROLES } from './constants/roles'
@@ -138,12 +141,17 @@ function App() {
           <Route path="student/topic-registration" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><TopicRegistrationPage /></RoleRoute>} />
           <Route path="student/projects" element={<Navigate to="/student/topic-registration" replace />} />
           <Route path="student/submission-requirements" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionRequirementsPage /></RoleRoute>} />
+          <Route path="student/submission-requirements/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><RequirementDetailPage /></RoleRoute>} />
           <Route path="student/submissions" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentSubmissionsPage /></RoleRoute>} />
           <Route path="student/submission-requirements/:id/submit" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmitRequirementPage /></RoleRoute>} />
           <Route path="student/submissions/:id/history" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionHistoryPage /></RoleRoute>} />
           <Route path="student/submissions/:id/result" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><SubmissionResultPage /></RoleRoute>} />
           <Route path="student/progress" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="progress" /></RoleRoute>} />
+          <Route path="student/progress/:id/submission" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowSubmissionDetailPage type="progress" /></RoleRoute>} />
+          <Route path="student/progress/:id/evaluation" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowEvaluationPage type="progress" /></RoleRoute>} />
           <Route path="student/final-submissions" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentReportsPage type="final" /></RoleRoute>} />
+          <Route path="student/final-submissions/:id" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowSubmissionDetailPage type="final" /></RoleRoute>} />
+          <Route path="student/final-submissions/:id/evaluation" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><WorkflowEvaluationPage type="final" /></RoleRoute>} />
           <Route path="student/notifications" element={<RoleRoute allowedRoles={[USER_ROLES.STUDENT]}><StudentUnavailablePage /></RoleRoute>} />
           <Route path="student/profile" element={<Navigate to="/profile" replace />} />
 
