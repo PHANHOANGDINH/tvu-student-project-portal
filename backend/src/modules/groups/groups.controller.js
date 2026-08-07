@@ -6,6 +6,7 @@ export const createGroup=run(req=>s.createGroup(req.params.courseClassId,req.bod
 export const listGroups=run(req=>s.getGroups(req.params.courseClassId,req.user));
 export const getGroup=run(req=>s.getGroup(req.params.id,req.user));
 export const getMyGroup=run(req=>s.getMyGroup(req.user,req.query.courseClassId));
+export const candidates=run(req=>s.getCandidates(req.params.id,req.query.search,req.user));
 export const addMember=run(req=>s.addMember(req.params.id,req.body,req.user));
 export const removeMember=run(req=>s.removeMember(req.params.id,req.params.studentId,req.user));
 export const transferLeader=run(req=>s.transferLeader(req.params.id,req.body,req.user));

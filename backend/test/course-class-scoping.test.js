@@ -17,6 +17,17 @@ test('group membership is unique inside a class, not globally', async () => {
   assert.match(repository, /CourseClassEnrollments WHERE CourseClassId=@ClassId AND StudentId=@StudentId/)
 })
 
+test('group candidate selector returns business keys only inside the current CourseClass', async () => {
+  const repository = await source('../src/modules/groups/groups.repository.js')
+  const routes = await source('../src/modules/groups/groups.routes.js')
+  assert.match(repository, /e\.CourseClassId=@ClassId/)
+  assert.match(repository, /u\.UserCode AS studentCode/)
+  assert.match(repository, /u\.FullName AS fullName/)
+  assert.match(repository, /u\.Email AS email/)
+  assert.match(repository, /NOT EXISTS\(SELECT 1 FROM GroupMembers/)
+  assert.match(routes, /\/:id\/candidates/)
+})
+
 test('lecturer and student class queries return every authorized class', async () => {
   const academics = await source('../src/modules/academics/academics.repository.js')
   const dashboard = await source('../src/modules/dashboard/dashboard.repository.js')

@@ -2,6 +2,7 @@ import { request } from './http'
 export const listGroups=(classId)=>request(`/course-classes/${classId}/groups`)
 export const createGroup=(classId,data)=>request(`/course-classes/${classId}/groups`,{method:'POST',body:JSON.stringify(data)})
 export const getMyGroup=(classId)=>request(`/groups/my-group${classId?`?courseClassId=${classId}`:''}`)
+export const listGroupCandidates=(id,search='')=>request(`/groups/${id}/candidates${search?`?search=${encodeURIComponent(search)}`:''}`)
 export const addGroupMember=(id,studentId)=>request(`/groups/${id}/members`,{method:'POST',body:JSON.stringify({studentId})})
 export const removeGroupMember=(id,studentId)=>request(`/groups/${id}/members/${studentId}`,{method:'DELETE'})
 export const transferGroupLeader=(id,studentId)=>request(`/groups/${id}/leader`,{method:'PATCH',body:JSON.stringify({studentId})})

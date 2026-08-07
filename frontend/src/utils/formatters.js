@@ -24,6 +24,7 @@ export const submissionStatusLabel = value => domainLabel(SUBMISSION_STATUS_LABE
 export const progressStatusLabel = submissionStatusLabel
 export const gradeStatusLabel = value => domainLabel({ PENDING: 'Chưa công bố', PUBLISHED: 'Đã công bố', GRADED: 'Đã chấm điểm' }, value)
 export const accountStatusLabel = value => domainLabel(ACCOUNT_STATUS_LABELS, value)
+export const formatGroupName = value => { const name=String(value||'').trim(); return name ? (/^nhóm\s/i.test(name) ? name : `Nhóm ${name}`) : 'Chưa có nhóm' }
 
 export function formatDateTimeVi(value, fallback = '—') {
   if (!value) return fallback
