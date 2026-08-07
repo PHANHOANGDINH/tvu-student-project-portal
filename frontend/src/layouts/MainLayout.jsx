@@ -22,10 +22,18 @@ export default function MainLayout() {
     title="TVU Project Portal" logo={<TvuBrandMark compact />}
     layout="mix" route={route} location={{ pathname: location.pathname }}
     fixedHeader fixSiderbar collapsible collapsed={collapsed} onCollapse={setCollapsed}
-    siderWidth={268} breakpoint="lg" contentStyle={{ margin: 0, padding: '20px 24px 32px', minHeight: 'calc(100vh - 56px)', background: '#F4F6FB' }}
+    siderWidth={268} breakpoint="lg" className="shared-app-layout"
+    contentStyle={{ margin: 0, padding: 0, background: '#F4F6FB' }}
     menuItemRender={(item, dom) => <button type="button" className="pro-menu-link" onClick={() => navigate(item.path)}>{dom}</button>}
     avatarProps={{ icon: <UserOutlined />, title: user?.fullName || user?.FullName || getRoleLabel(role), onClick: () => navigate('/profile') }}
     actionsRender={() => [<Tooltip title="Đăng xuất" key="logout"><Button type="text" aria-label="Đăng xuất" icon={<LogoutOutlined />} onClick={logout} /></Tooltip>]}
     menuFooterRender={props => !props?.collapsed && <span style={{ color: '#6B778C', fontSize: 12 }}>{getRoleLabel(role)}</span>}
-  ><Outlet /><AppFooter /></ProLayout>
+  >
+    <div className="shared-main-area">
+      <main className="shared-main-content">
+        <Outlet />
+      </main>
+      <AppFooter />
+    </div>
+  </ProLayout>
 }
