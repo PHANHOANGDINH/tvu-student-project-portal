@@ -1,4 +1,5 @@
 import { AlertCircle, Inbox, LoaderCircle, RefreshCw } from 'lucide-react'
+import { STATUS_LABELS } from '../../utils/formatters'
 
 export function LoadingState({ label = 'Đang tải dữ liệu...' }) {
   return <div className="ui-state" aria-live="polite"><LoaderCircle className="spin-icon" /><strong>{label}</strong><span>Vui lòng chờ trong giây lát.</span></div>
@@ -17,6 +18,8 @@ const statusMap = {
 }
 export function StatusBadge({ status, children }) {
   const value = String(status || '')
-  const [label, tone] = statusMap[value.toUpperCase()] || [children || value || 'Chưa xác định', 'muted']
+  const upper = value.toUpperCase()
+  const [, tone] = statusMap[upper] || ['', 'muted']
+  const label = STATUS_LABELS[upper] || children || 'Chưa xác định'
   return <span className={`status-badge-ui ${tone}`}>{children || label}</span>
 }

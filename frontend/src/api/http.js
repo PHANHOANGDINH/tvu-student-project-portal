@@ -46,7 +46,11 @@ export async function request(path, options = {}) {
   }
 
   if (!response.ok) {
-    const error = new Error(data?.message || data?.error || `Lỗi API: ${response.status}`)
+    const serverMessage = data?.message || data?.error
+    const safeMessage = response.status === 404 && serverMessage === 'Không tìm thấy API'
+      ? 'Không tải được dữ liệu. Vui lòng thử lại.'
+      : serverMessage || `Lỗi API: ${response.status}`
+    const error = new Error(safeMessage)
     error.status = response.status
     error.errors = data?.errors || null
     throw error

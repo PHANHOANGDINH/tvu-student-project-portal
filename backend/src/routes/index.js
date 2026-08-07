@@ -13,6 +13,7 @@ import { academicYearRoutes, semesterRoutes, subjectRoutes, courseClassRoutes, s
 import { adminStudentImportRoutes,courseClassStudentRoutes } from '../modules/students/studentImport.routes.js';
 import lecturerImportRoutes from '../modules/lecturers/lecturerImport.routes.js';
 import { facultyRoutes, administrativeClassRoutes, administrativeStudentRoutes } from '../modules/organization/organization.routes.js';
+import studentRoutes from '../modules/student/student.routes.js';
 
 const router = express.Router();
 
@@ -34,6 +35,7 @@ router.use('/lecturer/course-classes', lecturerCourseClassRoutes);
 router.use('/admin/dashboard', adminDashboardRoutes);
 router.use('/lecturer/dashboard', lecturerDashboardRoutes);
 router.use('/student/dashboard', studentDashboardRoutes);
+router.use('/student', studentRoutes);
 router.use('/admin/students',adminStudentImportRoutes);
 router.use('/admin/lecturers',lecturerImportRoutes);
 router.use('/admin/faculties',facultyRoutes);

@@ -45,3 +45,11 @@ test('workspace routes preserve CourseClassId in lecturer and student navigation
   assert.match(card, /to=\{to\}/)
   assert.doesNotMatch(card, /course\s*=\s*\{[^}]*code:\s*['"]/)
 })
+
+test('student progress and final submission routers are mounted in the API', async () => {
+  const routes = await source('../src/routes/index.js')
+  const studentRoutes = await source('../src/modules/student/student.routes.js')
+  assert.match(routes, /router\.use\('\/student', studentRoutes\)/)
+  assert.match(studentRoutes, /router\.use\('\/progress', studentProgressRoutes\)/)
+  assert.match(studentRoutes, /router\.use\('\/final-submissions', studentFinalSubmissionRoutes\)/)
+})

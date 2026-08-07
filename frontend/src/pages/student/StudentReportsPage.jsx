@@ -1,14 +1,114 @@
-import { useEffect, useState } from 'react'
-import { createStudentFinalApi, createStudentProgressApi, getStudentFinalsApi, getStudentProgressApi, getStudentRegistrationsApi } from '../../api/studentApi'
-import { EmptyState, LoadingState, StatusBadge } from '../../components/common/UiState'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, Card, Collapse, Descriptions, Drawer, Empty, List, Progress, Select, Space } from 'antd'
+import { DownloadOutlined, EyeOutlined, FileDoneOutlined, PlusOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { getStudentResult } from '../../api/gradingApi'
+import { currentSubmission, downloadSubmissionFile, studentSubmissionWorkflow } from '../../api/submissionsApi'
+import { ErrorState, LoadingState, StatusBadge } from '../../components/common/UiState'
+import { formatDateTimeVi, statusLabel } from '../../utils/formatters'
+import './student-workflow.css'
 
-function StudentReportsPage({ type }) {
-  const isFinal = type === 'final'
-  const empty = { projectId:'', title:'', content:'', progressPercent:0, reportDate:'', fileUrl:'', description:'', reportFileUrl:'', githubUrl:'', demoUrl:'' }
-  const [items,setItems]=useState([]), [projects,setProjects]=useState([]), [form,setForm]=useState(empty), [show,setShow]=useState(false), [loading,setLoading]=useState(true), [saving,setSaving]=useState(false), [error,setError]=useState(''), [success,setSuccess]=useState('')
-  async function load(){try{setLoading(true);setError('');const [list,regs]=await Promise.all([isFinal?getStudentFinalsApi({limit:100}):getStudentProgressApi({limit:100}),getStudentRegistrationsApi({limit:100,status:'Approved'})]);setItems(list?.data||[]);setProjects(regs?.data||[])}catch(e){setError(e.message)}finally{setLoading(false)}}
-  useEffect(()=>{load()},[type])
-  async function submit(e){e.preventDefault();try{setSaving(true);setError('');const base={projectId:Number(form.projectId),title:form.title};if(isFinal)await createStudentFinalApi({...base,description:form.description,reportFileUrl:form.reportFileUrl,githubUrl:form.githubUrl,demoUrl:form.demoUrl});else await createStudentProgressApi({...base,content:form.content,progressPercent:Number(form.progressPercent),reportDate:form.reportDate,fileUrl:form.fileUrl});setSuccess('Nộp bài thành công.');setForm(empty);setShow(false);await load()}catch(err){setError(err.message)}finally{setSaving(false)}}
-  return <><div className="page-title row-between"><div><h2>{isFinal?'Bài nộp cuối kỳ':'Báo cáo tiến độ'}</h2><p>{isFinal?'Quản lý sản phẩm, báo cáo và liên kết đồ án.':'Cập nhật tiến độ và theo dõi phản hồi của giảng viên.'}</p></div><button className="btn-primary small" onClick={()=>setShow(!show)}>Nộp bài mới</button></div>{error&&<div className="alert error">{error}</div>}{success&&<div className="alert success">{success}</div>}{show&&<form className="panel" onSubmit={submit}><h3>Thông tin bài nộp</h3><div className="form-grid"><div className="form-group"><label htmlFor="report-project">Đề tài *</label><select id="report-project" required value={form.projectId} onChange={e=>setForm({...form,projectId:e.target.value})}><option value="">Chọn đề tài đã duyệt</option>{projects.map(p=><option key={p.ProjectId} value={p.ProjectId}>{p.Title}</option>)}</select></div><div className="form-group"><label htmlFor="report-title">Tiêu đề *</label><input id="report-title" required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></div>{isFinal?<><div className="form-group form-span"><label htmlFor="report-description">Mô tả</label><textarea id="report-description" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div>{[['reportFileUrl','Liên kết báo cáo'],['githubUrl','GitHub'],['demoUrl','Demo']].map(([key,label])=><div className="form-group" key={key}><label htmlFor={key}>{label}</label><input id={key} type="url" value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder="https://..."/></div>)}</>:<><div className="form-group"><label htmlFor="percent">Mức hoàn thành (%)</label><input id="percent" type="number" min="0" max="100" value={form.progressPercent} onChange={e=>setForm({...form,progressPercent:e.target.value})}/></div><div className="form-group"><label htmlFor="reportDate">Ngày báo cáo</label><input id="reportDate" type="date" value={form.reportDate} onChange={e=>setForm({...form,reportDate:e.target.value})}/></div><div className="form-group form-span"><label htmlFor="content">Nội dung</label><textarea id="content" value={form.content} onChange={e=>setForm({...form,content:e.target.value})}/></div><div className="form-group form-span"><label htmlFor="fileUrl">Liên kết tệp</label><input id="fileUrl" type="url" value={form.fileUrl} onChange={e=>setForm({...form,fileUrl:e.target.value})} placeholder="https://..."/></div></>}</div><div className="form-actions"><button type="button" className="btn-light" onClick={()=>setShow(false)}>Hủy</button><button className="btn-primary small" disabled={saving}>{saving?'Đang xử lý...':'Xác nhận nộp'}</button></div></form>}{loading?<LoadingState/>:items.length?<div className="timeline">{items.map((x,index)=><article className="timeline-item" key={x.Id}><div className="timeline-marker">{items.length-index}</div><div className="panel"><div className="row-between"><div><h3>{x.Title}</h3><span className="muted-text">{x.ProjectTitle} · {new Date(x.SubmittedAt||x.CreatedAt||Date.now()).toLocaleDateString('vi-VN')}</span></div><StatusBadge status={x.Status}/></div>{!isFinal&&<div className="progress-track"><span style={{width:`${x.ProgressPercent||0}%`}}/></div>}<p>{x.Description||x.Content||'Không có ghi chú.'}</p>{x.TeacherComment&&<div className="review-note"><strong>Phản hồi:</strong> {x.TeacherComment}</div>}{x.Status==='Reviewed'&&x.TeacherScore!==null&&<div className="score-chip">Điểm: {x.TeacherScore}</div>}</div></article>)}</div>:<EmptyState title="Chưa có bài nộp" description="Các bài đã gửi sẽ được lưu và hiển thị tại đây."/>}</>
+const completedStatuses = new Set(['GRADED', 'COMPLETED'])
+
+function canSubmit(item) {
+  if (!item.requirementId || item.requirementStatus !== 'OPEN' || !item.groupId) return false
+  const now = Date.now()
+  const started = now >= new Date(item.startAt).getTime()
+  const beforeDeadline = now <= new Date(item.dueAt).getTime()
+  const attemptsRemain = Number(item.attemptNumber || 0) < Number(item.maxAttempts || 1)
+  const resubmissionAllowed = !item.attemptNumber || item.allowResubmission
+  return started && (beforeDeadline || item.allowLate) && attemptsRemain && resubmissionAllowed
 }
-export default StudentReportsPage
+
+export default function StudentReportsPage({ type }) {
+  const isFinal = type === 'final'
+  const workflowType = isFinal ? 'FINAL' : 'PROGRESS'
+  const navigate = useNavigate()
+  const [items, setItems] = useState([])
+  const [classId, setClassId] = useState('')
+  const [status, setStatus] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [drawer, setDrawer] = useState({ open: false, loading: false, item: null, submission: null, result: null })
+
+  async function load() {
+    try {
+      setLoading(true)
+      setError('')
+      const response = await studentSubmissionWorkflow(workflowType)
+      setItems(response.data || [])
+    } catch {
+      setError('Không tải được dữ liệu. Vui lòng thử lại.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [workflowType])
+
+  const courses = useMemo(() => {
+    const map = new Map()
+    items.forEach(item => {
+      if (!map.has(item.courseClassId)) map.set(item.courseClassId, { ...item, requirements: [] })
+      if (item.requirementId) map.get(item.courseClassId).requirements.push(item)
+    })
+    return [...map.values()]
+  }, [items])
+
+  const visibleCourses = courses.filter(course => !classId || course.courseClassId === classId).map(course => ({
+    ...course,
+    requirements: course.requirements.filter(item => !status || (item.submissionStatus || 'NOT_SUBMITTED') === status)
+  })).filter(course => !status || course.requirements.length)
+
+  async function openDetail(item) {
+    setDrawer({ open: true, loading: true, item, submission: null, result: null })
+    try {
+      const submissionResponse = await currentSubmission(item.requirementId)
+      const submission = submissionResponse.data
+      const result = submission.submission ? (await getStudentResult(submission.submission.id)).data : null
+      setDrawer({ open: true, loading: false, item, submission, result })
+    } catch {
+      setDrawer(current => ({ ...current, loading: false }))
+    }
+  }
+
+  async function download(file) {
+    const blob = await downloadSubmissionFile(file.id, 'student')
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = file.originalName
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (loading) return <LoadingState />
+  if (error) return <ErrorState message={error} onRetry={load} />
+
+  const title = isFinal ? 'Bài nộp cuối kỳ và điểm' : 'Báo cáo tiến độ'
+  const description = isFinal ? 'Quản lý sản phẩm cuối kỳ, báo cáo, liên kết đồ án và kết quả đánh giá.' : 'Theo dõi các mốc tiến độ, bài đã nộp và phản hồi của giảng viên.'
+
+  return <div className="student-workflow">
+    <div className="page-title row-between"><div><h2>{title}</h2><p>{description}</p></div><Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/student/submission-requirements')}>{isFinal ? 'Nộp bài cuối kỳ' : 'Nộp báo cáo mới'}</Button></div>
+    <div className="workflow-filters"><Select allowClear placeholder="Tất cả lớp học phần" value={classId || undefined} onChange={value => setClassId(value || '')} options={courses.map(course => ({ value: course.courseClassId, label: `${course.courseClassCode} — ${course.courseName}` }))} /><Select allowClear placeholder="Tất cả trạng thái" value={status || undefined} onChange={value => setStatus(value || '')} options={['NOT_SUBMITTED', 'SUBMITTED', 'LATE', 'RESUBMITTED', 'UNDER_REVIEW', 'REQUIRES_REVISION', 'GRADED'].map(value => ({ value, label: statusLabel(value) }))} /></div>
+    {!visibleCourses.length ? <Empty description={isFinal ? 'Khi giảng viên mở yêu cầu nộp bài cuối kỳ, bạn có thể gửi sản phẩm tại đây.' : 'Bạn chưa có mốc báo cáo tiến độ trong các lớp học phần.'} /> : <Collapse defaultActiveKey={visibleCourses.map(course => String(course.courseClassId))} items={visibleCourses.map(course => {
+      const completed = course.requirements.filter(item => completedStatuses.has(item.submissionStatus)).length
+      const percent = course.requirements.length ? Math.round(completed * 100 / course.requirements.length) : 0
+      return { key: String(course.courseClassId), label: <div className="course-collapse-header"><div><strong>{course.courseClassCode} — {course.courseName}</strong><span>GV: {course.lecturerName} · Nhóm: {course.groupName || 'Chưa có nhóm'} · Đề tài: {course.topicTitle || 'Chưa có đề tài'}</span></div><div><span>{completed}/{course.requirements.length} mốc hoàn thành</span><Progress percent={percent} showInfo={false} size="small" /></div></div>, children: course.requirements.length ? <div className="requirement-grid">{course.requirements.map(item => {
+        const itemStatus = item.submissionStatus || 'NOT_SUBMITTED'
+        return <Card key={item.requirementId} title={item.title} extra={<StatusBadge status={itemStatus} />}>
+          <p>{item.description || 'Không có mô tả.'}</p>
+          <Descriptions size="small" column={{ xs: 1, sm: 2 }} items={[{ key: 'deadline', label: 'Hạn nộp', children: formatDateTimeVi(item.dueAt) }, { key: 'attempt', label: 'Lần nộp gần nhất', children: item.attemptNumber ? `#${item.attemptNumber}` : 'Chưa nộp' }, { key: 'submitted', label: 'Nộp lúc', children: formatDateTimeVi(item.submittedAt) }, { key: 'score', label: 'Điểm', children: item.score == null ? 'Chưa công bố' : `${item.score}/${item.maxScore || 10}` }]} />
+          <Space wrap><Button icon={<EyeOutlined />} disabled={!item.submissionId} onClick={() => openDetail(item)}>Xem bài đã nộp</Button><Button icon={<FileDoneOutlined />} disabled={!item.feedback && item.score == null} onClick={() => openDetail(item)}>Xem đánh giá</Button>{canSubmit(item) && <Button type="primary" onClick={() => navigate(`/student/submission-requirements/${item.requirementId}/submit`)}>{item.attemptNumber ? 'Nộp lại' : 'Nộp báo cáo'}</Button>}</Space>
+        </Card>
+      })}</div> : <Empty description={isFinal ? 'Chưa có yêu cầu bài cuối kỳ.' : 'Chưa có yêu cầu tiến độ.'} /> }
+    })} />}
+
+    <Drawer width={640} title={drawer.item?.title || 'Chi tiết bài nộp'} open={drawer.open} onClose={() => setDrawer(current => ({ ...current, open: false }))}>
+      {drawer.loading ? <LoadingState /> : !drawer.submission?.submission ? <Empty description="Chưa có bài nộp." /> : <>
+        <Descriptions bordered size="small" column={1} items={[{ key: 'class', label: 'Lớp học phần', children: drawer.item.courseClassCode }, { key: 'status', label: 'Trạng thái', children: <StatusBadge status={drawer.submission.submission.status} /> }, { key: 'feedback', label: 'Đánh giá', children: drawer.result?.feedback?.comment || 'Giảng viên chưa phản hồi.' }, { key: 'revision', label: 'Yêu cầu chỉnh sửa', children: drawer.result?.feedback?.revisionRequired ? drawer.result.feedback.revisionReason : 'Không' }, { key: 'grade', label: 'Điểm', children: drawer.result?.grade ? `${drawer.result.grade.totalScore}/${drawer.result.grade.maxScore}` : 'Chưa công bố' }, { key: 'evaluated', label: 'Ngày đánh giá', children: formatDateTimeVi(drawer.result?.feedback?.updatedAt) }]} />
+        <List header={<strong>Lịch sử các lần nộp</strong>} dataSource={drawer.submission.attempts || []} renderItem={attempt => <List.Item><List.Item.Meta title={`Lần ${attempt.attemptNumber} · ${statusLabel(attempt.status)}`} description={<><div>{formatDateTimeVi(attempt.submittedAt)}</div>{attempt.files.map(file => <Button key={file.id} type="link" icon={<DownloadOutlined />} onClick={() => download(file)}>{file.originalName}</Button>)}{attempt.links.map(link => <div key={link.id}><a href={link.url} target="_blank" rel="noreferrer">{link.url}</a></div>)}</>} /></List.Item>} />
+      </>}
+    </Drawer>
+  </div>
+}
