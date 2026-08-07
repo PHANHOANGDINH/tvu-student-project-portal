@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Ellipsis, Eye, FileUp, Lock, LockOpen, Pencil, Plus, Search, Users as UsersIcon } from 'lucide-react'
+import { Download, Eye, FileUp, Lock, LockOpen, Plus, Search, Users as UsersIcon } from 'lucide-react'
+import { Button, Dropdown, Select } from 'antd'
+import { EditOutlined, LockOutlined, MoreOutlined, UnlockOutlined } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createUser, getUserById, getUsers, resetUserPassword, updateUser, updateUserStatus } from '../api/adminApi'
+import { listOrganization } from '../api/organizationApi'
 import { USER_ROLES } from '../constants/roles'
+import { ROLE_LABELS } from '../constants/uiLabels'
 import Modal from '../components/common/Modal'
 
-const roles = {
-  ADMIN: 'Quản trị viên',
-  LECTURER: 'Giảng viên',
-  STUDENT: 'Sinh viên'
-}
+const roles = ROLE_LABELS
 
 const emptyForm = {
   role: 'STUDENT',
@@ -18,6 +18,7 @@ const emptyForm = {
   email: '',
   phone: '',
   department: '',
+  facultyId: '',
   className: '',
   password: '',
   confirmPassword: '',
@@ -56,6 +57,8 @@ export default function UsersPage() {
   const location = useLocation()
 
   const [users, setUsers] = useState([])
+  const [faculties, setFaculties] = useState([])
+  const [facultiesLoading, setFacultiesLoading] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 })
   const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc' })
 
@@ -66,7 +69,6 @@ export default function UsersPage() {
   const [selected, setSelected] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [resetForm, setResetForm] = useState(emptyResetForm)
-  const [openMenu, setOpenMenu] = useState(null)
 
   const load = async (next = filters) => {
     try {
@@ -88,6 +90,14 @@ export default function UsersPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    setFacultiesLoading(true)
+    listOrganization('faculties', { pageSize: 100, isActive: true })
+      .then(response => setFaculties(response.data.items || []))
+      .catch(() => setFaculties([]))
+      .finally(() => setFacultiesLoading(false))
+  }, [])
 
   useEffect(() => {
     if (location.pathname.endsWith('/new')) openCreate()
@@ -132,6 +142,7 @@ export default function UsersPage() {
       email: user.email || '',
       phone: user.phone || '',
       department: user.department || '',
+      facultyId: faculties.find(item => item.facultyName === user.department)?.id || '',
       className: user.className || '',
       isActive: user.isActive !== false,
       password: '',
@@ -368,24 +379,16 @@ export default function UsersPage() {
                       </td>
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
-                        <div className="compact-actions">
-                          <button onClick={() => openDetail(user)}><Eye size={16} />Xem</button>
-                          <button onClick={() => openEdit(user)}><Pencil size={16} />Sửa</button>
-                          <div className="more-menu">
-                            <button aria-label="Thêm thao tác" onClick={() => setOpenMenu(openMenu === uId ? null : uId)}>
-                              <Ellipsis size={18} />
-                            </button>
-                            {openMenu === uId && (
-                              <div className="action-dropdown">
-                                <button onClick={() => { setResetForm(emptyResetForm); setModal({ type: 'reset', user }); setOpenMenu(null) }}>
-                                  Đặt lại mật khẩu
-                                </button>
-                                <button onClick={() => { confirmStatus(user); setOpenMenu(null) }}>
-                                  {user.isActive === false ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                        <div className="compact-actions account-actions">
+                          <Button size="small" type="link" icon={<Eye size={15} />} onClick={() => openDetail(user)}>Xem</Button>
+                          <Dropdown trigger={['click']} menu={{ items: [
+                            { key: 'edit', icon: <EditOutlined />, label: 'Chỉnh sửa', onClick: () => openEdit(user) },
+                            { type: 'divider' },
+                            { key: 'reset', icon: <LockOutlined />, label: 'Đặt lại mật khẩu', onClick: () => { setResetForm(emptyResetForm); setModal({ type: 'reset', user }) } },
+                            { key: 'status', danger: user.isActive !== false, icon: user.isActive === false ? <UnlockOutlined /> : <LockOutlined />, label: user.isActive === false ? 'Mở khóa tài khoản' : 'Khóa tài khoản', onClick: () => confirmStatus(user) }
+                          ] }}>
+                            <Button size="small" type="text" icon={<MoreOutlined />} aria-label={`Mở menu thao tác cho ${user.fullName}`} />
+                          </Dropdown>
                         </div>
                       </td>
                     </tr>
@@ -496,7 +499,13 @@ export default function UsersPage() {
                   </label>
                   <label>
                     Khoa
-                    <input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
+                    <Select
+                      showSearch allowClear loading={facultiesLoading} optionFilterProp="label"
+                      value={form.facultyId || undefined} placeholder="Chọn khoa"
+                      notFoundContent={facultiesLoading ? 'Đang tải...' : 'Chưa có dữ liệu khoa'}
+                      options={faculties.map(item => ({ value: item.id, label: `${item.facultyCode} - ${item.facultyName}` }))}
+                      onChange={value => { const faculty = faculties.find(item => item.id === value); setForm({ ...form, facultyId: value || '', department: faculty?.facultyName || '' }) }}
+                    />
                   </label>
                   <label>
                     Lớp

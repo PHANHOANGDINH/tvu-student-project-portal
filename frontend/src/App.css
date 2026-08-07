@@ -1882,6 +1882,30 @@ body { background: #f4f7fb; }
 .academic-list-panel .pagination-bar { padding-top: 17px; border-top: 1px solid #edf1f5; }
 .organization-filters { display:grid;grid-template-columns:minmax(240px,2fr) repeat(3,minmax(140px,1fr)) auto;gap:12px;margin-bottom:18px;align-items:center }
 .organization-filters .search-field { min-width:0 }
+.search-field { position:relative;display:flex;align-items:center;min-width:0;height:48px;margin:0 }
+.search-field>svg { position:absolute;top:50%;left:16px;z-index:2;display:block;flex:none;width:18px;height:18px;color:#667085;pointer-events:none;transform:translateY(-50%) }
+.search-field>input,
+.panel .search-field>input,
+.organization-filters .search-field>input,
+.admin-filterbar .search-field>input { width:100%;height:100%;min-height:48px;padding-right:14px!important;padding-left:54px!important;text-indent:0!important }
+.admin-filterbar,.student-search-row { display:grid;grid-template-columns:minmax(280px,2fr) repeat(3,minmax(150px,1fr)) auto;align-items:center;gap:12px;width:100% }
+.admin-filterbar.compact { grid-template-columns:minmax(280px,1fr) auto }
+.admin-filterbar>select,.admin-filterbar>button,.student-search-row>button,.organization-filters>input,.organization-filters>select,.organization-filters>button { height:48px;min-height:48px;margin:0 }
+.panel select,
+.organization-filters select,
+.admin-filterbar select,
+.course-filters select {
+  padding-right: 44px !important;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23344554' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  background-size: 16px 16px !important;
+}
+.student-search-row { grid-template-columns:minmax(240px,1fr) auto }
+.class-filter-grid .search-field { height:44px }
+.class-filter-grid .search-field input { min-height:44px }
 .organization-page .compact-actions { flex-wrap:wrap }
 .organization-page .compact-actions button { display:inline-flex;align-items:center;gap:5px }
 .organization-page .danger-link { color:#b42318!important;border-color:#fecaca!important }
@@ -1889,8 +1913,8 @@ body { background: #f4f7fb; }
 .organization-page .alert button { border:0;background:transparent;font-size:20px;cursor:pointer }
 .student-assignment { display:grid;gap:18px }
 .assignment-row { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px }
-@media(max-width:1000px){.organization-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.organization-filters .search-field{grid-column:1/-1}}
-@media(max-width:600px){.organization-filters,.assignment-row{grid-template-columns:1fr}.organization-filters .search-field{grid-column:auto}}
+@media(max-width:1000px){.organization-filters,.admin-filterbar{grid-template-columns:repeat(2,minmax(0,1fr))}.organization-filters .search-field,.admin-filterbar .search-field{grid-column:1/-1}}
+@media(max-width:600px){.organization-filters,.admin-filterbar,.admin-filterbar.compact,.student-search-row,.assignment-row{grid-template-columns:1fr}.organization-filters .search-field,.admin-filterbar .search-field{grid-column:auto}.organization-filters button,.admin-filterbar button,.student-search-row button{width:100%}}
 
 @media (max-width: 768px) {
   .modal-overlay,
@@ -1915,3 +1939,6 @@ body { background: #f4f7fb; }
   .modal-card .modal-actions .btn-light,
   .modal-card .modal-actions .btn-danger { width: 100%; }
 }
+
+/* UI refinement: compact account table toolbar and actions. */
+.table-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e7edf4}.table-summary>div{display:flex;align-items:center;gap:7px;min-width:0}.table-summary>span{color:#667085;white-space:nowrap}.account-table th:last-child,.account-table td:last-child{width:120px;min-width:120px}.account-actions{display:flex;align-items:center;flex-wrap:nowrap!important;white-space:nowrap}.account-table tbody tr{height:60px}@media(max-width:600px){.table-summary{align-items:flex-start;flex-wrap:wrap}.account-actions .ant-btn-link{display:none}.account-table th:last-child,.account-table td:last-child{width:64px;min-width:64px}}

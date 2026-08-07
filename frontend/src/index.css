@@ -261,4 +261,4 @@
     }
 }
 html, body, button, input, select, textarea { font-family: "Be Vietnam Pro", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-.pro-menu-link{display:flex;width:100%;align-items:center;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.ant-pro-layout .ant-layout-header{background:#fff!important}.ant-pro-sider{background:#fff!important}.ant-pro-layout-content{overflow-x:hidden}
+.pro-menu-link{display:flex;width:100%;align-items:center;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.ant-pro-layout .ant-layout-header{background:#fff!important}.ant-pro-sider{background:#fff!important}.ant-pro-layout-content{display:flex;min-height:calc(100vh - 56px);overflow-x:hidden;flex-direction:column}.ant-pro-layout-content>.app-footer{width:auto;margin:40px -24px -32px;flex:none}@media(max-width:600px){.ant-pro-layout-content>.app-footer{margin-inline:-24px}.ant-pro-layout-content>.app-footer .footer-inner{padding-inline:20px}}
