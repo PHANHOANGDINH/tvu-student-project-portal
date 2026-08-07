@@ -1,52 +1,31 @@
-import { useState } from 'react'
+import { createElement, useState } from 'react'
+import { Button, Tooltip } from 'antd'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
+import { ProLayout } from '@ant-design/pro-components'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { clearAuth, getUser, getUserRole } from '../utils/auth'
 import { getNavigation, getRoleLabel } from '../components/layout/navigation'
-import AppSidebar from '../components/layout/AppSidebar'
-import AppHeader from '../components/layout/AppHeader'
+import TvuBrandMark from '../components/common/TvuBrandMark'
 import AppFooter from '../components/layout/AppFooter'
 
 export default function MainLayout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const user = getUser()
-  const role = getUserRole()
+  const navigate = useNavigate(), location = useLocation(), user = getUser(), role = getUserRole()
   const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   const navigation = getNavigation(role)
+  const route = { routes: navigation.groups.map((group, groupIndex) => ({
+    path: `group-${groupIndex}`, name: group.label,
+    routes: group.items.map(item => ({ path: item.path, name: item.label, icon: createElement(item.icon, { size: 18 }) }))
+  })) }
+  const logout = () => { clearAuth(); navigate('/login') }
 
-  const handleLogout = () => {
-    clearAuth()
-    navigate('/login')
-  }
-
-  return (
-    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
-      {mobileOpen && <button className="sidebar-overlay" aria-label="Đóng menu" onClick={() => setMobileOpen(false)} />}
-      <AppSidebar
-        groups={navigation.groups}
-        roleLabel={getRoleLabel(role)}
-        homePath={navigation.homePath}
-        collapsed={collapsed}
-        mobileOpen={mobileOpen}
-        onNavigate={() => setMobileOpen(false)}
-        onClose={() => setMobileOpen(false)}
-        onToggle={() => setCollapsed(value => !value)}
-      />
-      <div className="main-area">
-        <AppHeader
-          pathname={location.pathname}
-          items={navigation.groups.flatMap(group => group.items)}
-          user={user}
-          role={role}
-          roleLabel={getRoleLabel(role)}
-          onMenu={() => setMobileOpen(true)}
-          onProfile={() => navigate('/profile')}
-          onLogout={handleLogout}
-        />
-        <main className="content"><Outlet /></main>
-        <AppFooter />
-      </div>
-    </div>
-  )
+  return <ProLayout
+    title="TVU Project Portal" logo={<TvuBrandMark compact />}
+    layout="mix" route={route} location={{ pathname: location.pathname }}
+    fixedHeader fixSiderbar collapsible collapsed={collapsed} onCollapse={setCollapsed}
+    siderWidth={268} breakpoint="lg" contentStyle={{ margin: 0, padding: '20px 24px 32px', minHeight: 'calc(100vh - 56px)', background: '#F4F6FB' }}
+    menuItemRender={(item, dom) => <button type="button" className="pro-menu-link" onClick={() => navigate(item.path)}>{dom}</button>}
+    avatarProps={{ icon: <UserOutlined />, title: user?.fullName || user?.FullName || getRoleLabel(role), onClick: () => navigate('/profile') }}
+    actionsRender={() => [<Tooltip title="Đăng xuất" key="logout"><Button type="text" aria-label="Đăng xuất" icon={<LogoutOutlined />} onClick={logout} /></Tooltip>]}
+    menuFooterRender={props => !props?.collapsed && <span style={{ color: '#6B778C', fontSize: 12 }}>{getRoleLabel(role)}</span>}
+  ><Outlet /><AppFooter /></ProLayout>
 }

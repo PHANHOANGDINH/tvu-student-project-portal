@@ -260,3 +260,5 @@
         min-width: 900px;
     }
 }
+html, body, button, input, select, textarea { font-family: "Be Vietnam Pro", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+.pro-menu-link{display:flex;width:100%;align-items:center;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}.ant-pro-layout .ant-layout-header{background:#fff!important}.ant-pro-sider{background:#fff!important}.ant-pro-layout-content{overflow-x:hidden}
