@@ -8,8 +8,9 @@ const source = relative => readFile(new URL(relative, import.meta.url), 'utf8')
 
 test('lecturer CSV keeps legacy headers and accepts optional academicDegree', async () => {
   const suffix = randomUUID().slice(0, 8)
-  const legacy = await preview({ buffer: Buffer.from(`lecturerCode,fullName,email,password\nGV${suffix},Giảng viên cũ,legacy-${suffix}@example.edu.vn,ValidPass1`) }, 1)
-  const extended = await preview({ buffer: Buffer.from(`lecturerCode,fullName,email,password,academicDegree\nGX${suffix},Giảng viên mới,degree-${suffix}@example.edu.vn,ValidPass1,Tiến sĩ`) }, 1)
+  const dependencies = { repository: { findExisting: async () => [] } }
+  const legacy = await preview({ buffer: Buffer.from(`lecturerCode,fullName,email,password\nGV${suffix},Giảng viên cũ,legacy-${suffix}@example.edu.vn,ValidPass1`) }, 1, dependencies)
+  const extended = await preview({ buffer: Buffer.from(`lecturerCode,fullName,email,password,academicDegree\nGX${suffix},Giảng viên mới,degree-${suffix}@example.edu.vn,ValidPass1,Tiến sĩ`) }, 1, dependencies)
   assert.equal(legacy.success, true)
   assert.equal(legacy.data.validCount, 1)
   assert.equal(extended.success, true)

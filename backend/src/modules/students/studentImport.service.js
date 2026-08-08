@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { hashPassword } from '../../utils/password.util.js';
 import { createCsv, csvRecords } from '../../utils/csv.util.js';
-import { validatePassword } from '../users/users.service.js';
+import { validatePassword } from '../../utils/passwordPolicy.util.js';
 import * as repository from './studentImport.repository.js';
 
 const HEADERS=['studentCode','fullName','email','password'];

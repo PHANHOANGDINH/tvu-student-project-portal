@@ -1,4 +1,4 @@
-import * as repository from './dashboard-analytics.repository.js';
+const loadRepository = () => import('./dashboard-analytics.repository.js');
 
 const positiveInt = (value, field) => {
   if (value == null || value === '') return undefined;
@@ -23,6 +23,6 @@ export function filters(query) {
   return result;
 }
 
-export const admin = (name, query) => repository.adminDataset(name, filters(query));
-export const lecturer = (name, query, user) => repository.lecturerDataset(name, filters(query), user.id);
-export const student = (name, query, user) => repository.studentDataset(name, filters(query), user.id);
+export const admin = async (name, query) => (await loadRepository()).adminDataset(name, filters(query));
+export const lecturer = async (name, query, user) => (await loadRepository()).lecturerDataset(name, filters(query), user.id);
+export const student = async (name, query, user) => (await loadRepository()).studentDataset(name, filters(query), user.id);
