@@ -5,6 +5,7 @@ import { EditOutlined, LockOutlined, MoreOutlined, UnlockOutlined } from '@ant-d
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createUser, getUserById, getUsers, resetUserPassword, updateUser, updateUserStatus } from '../api/adminApi'
 import { listOrganization } from '../api/organizationApi'
+import { exportAdminStudents, listAcademic } from '../api/academicsApi'
 import { USER_ROLES } from '../constants/roles'
 import { ROLE_LABELS } from '../constants/uiLabels'
 import Modal from '../components/common/Modal'
@@ -73,6 +74,8 @@ export default function UsersPage() {
   const [selected, setSelected] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [resetForm, setResetForm] = useState(emptyResetForm)
+  const [courseClasses, setCourseClasses] = useState([])
+  const [exportForm, setExportForm] = useState({ scope: 'all', facultyId: '', administrativeClassId: '', courseClassId: '' })
 
   const load = async (next = filters) => {
     try {
@@ -112,12 +115,14 @@ export default function UsersPage() {
   }, [])
 
   const classesForFaculty = useMemo(() => administrativeClasses.filter(item => !form.facultyId || Number(item.facultyId) === Number(form.facultyId)), [administrativeClasses, form.facultyId])
+  const exportClassesForFaculty = useMemo(() => administrativeClasses.filter(item => !exportForm.facultyId || Number(item.facultyId) === Number(exportForm.facultyId)), [administrativeClasses, exportForm.facultyId])
 
   useEffect(() => {
     if (location.pathname.endsWith('/new')) openCreate()
   }, [location.pathname])
 
   const title = useMemo(() => {
+    if (modal?.type === 'studentExport') return 'Xuất danh sách sinh viên'
     if (modal?.type === 'detail') return 'Chi tiết tài khoản'
     if (modal?.type === 'edit') return 'Chỉnh sửa tài khoản'
     if (modal?.type === 'reset') return 'Đặt lại mật khẩu'
@@ -299,6 +304,45 @@ export default function UsersPage() {
     }
   }
 
+  const openStudentExport = async () => {
+    setExportForm({ scope: 'all', facultyId: '', administrativeClassId: '', courseClassId: '' })
+    setModal({ type: 'studentExport' })
+    if (!courseClasses.length) {
+      try {
+        const response = await listAcademic('courseClasses', { page: 1, pageSize: 100 })
+        setCourseClasses(response?.data?.items || [])
+      } catch (e) {
+        setMessage({ type: 'error', text: e.message || 'Không thể tải danh sách lớp học phần.' })
+      }
+    }
+  }
+
+  const submitStudentExport = async event => {
+    event.preventDefault()
+    const required = { faculty: 'facultyId', administrativeClass: 'administrativeClassId', courseClass: 'courseClassId' }[exportForm.scope]
+    if (required && !exportForm[required]) return setMessage({ type: 'error', text: 'Vui lòng chọn đầy đủ điều kiện cho phạm vi xuất.' })
+    try {
+      setSaving(true)
+      const blob = await exportAdminStudents(exportForm)
+      const faculty = faculties.find(item => Number(item.id) === Number(exportForm.facultyId))
+      const adminClass = administrativeClasses.find(item => Number(item.id) === Number(exportForm.administrativeClassId))
+      const courseClass = courseClasses.find(item => Number(item.id) === Number(exportForm.courseClassId))
+      const suffix = courseClass?.code || adminClass?.classCode || faculty?.facultyCode || 'tat-ca'
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `danh-sach-sinh-vien-${suffix}.csv`
+      anchor.click()
+      URL.revokeObjectURL(url)
+      setMessage({ type: 'success', text: 'Đã xuất danh sách sinh viên thành công.' })
+      close()
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Không thể xuất danh sách sinh viên.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="admin-page">
       <div className="page-title admin-page-heading">
@@ -310,7 +354,7 @@ export default function UsersPage() {
         <div className="toolbar-actions">
           <button className="btn-light" onClick={() => navigate('/admin/students/import')}><FileUp size={17} />Nhập sinh viên</button>
           <button className="btn-light" onClick={() => navigate('/admin/lecturers/import')}><FileUp size={17} />Nhập giảng viên</button>
-          <button className="btn-light" onClick={() => exportUsers('STUDENT')}><Download size={17} />Xuất sinh viên</button>
+          <button className="btn-light" onClick={openStudentExport}><Download size={17} />Xuất sinh viên</button>
           <button className="btn-light" onClick={() => exportUsers('LECTURER')}><Download size={17} />Xuất giảng viên</button>
           <button className="btn-primary" onClick={openCreate}><Plus size={18} />Thêm tài khoản</button>
         </div>
@@ -476,7 +520,29 @@ export default function UsersPage() {
           closeOnEscape={!saving}
         >
 
-            {modal.type === 'detail' ? (
+            {modal.type === 'studentExport' ? (
+              <form onSubmit={submitStudentExport} className="student-export-form">
+                <label>Phạm vi xuất
+                  <Select value={exportForm.scope} options={[
+                    { value: 'all', label: 'Tất cả sinh viên' },
+                    { value: 'faculty', label: 'Theo khoa' },
+                    { value: 'administrativeClass', label: 'Theo lớp hành chính' },
+                    { value: 'courseClass', label: 'Theo lớp học phần' }
+                  ]} onChange={scope => setExportForm({ scope, facultyId: '', administrativeClassId: '', courseClassId: '' })} />
+                </label>
+                {(exportForm.scope === 'faculty' || exportForm.scope === 'administrativeClass') && <label>Khoa
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn khoa" loading={facultiesLoading} value={exportForm.facultyId || undefined} options={faculties.map(item => ({ value: item.id, label: `${item.facultyCode} — ${item.facultyName}` }))} onChange={facultyId => setExportForm({ ...exportForm, facultyId, administrativeClassId: '' })} />
+                </label>}
+                {exportForm.scope === 'administrativeClass' && <label>Lớp hành chính
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn lớp hành chính" disabled={!exportForm.facultyId} value={exportForm.administrativeClassId || undefined} options={exportClassesForFaculty.map(item => ({ value: item.id, label: `${item.classCode} — ${item.className}` }))} onChange={administrativeClassId => setExportForm({ ...exportForm, administrativeClassId })} />
+                </label>}
+                {exportForm.scope === 'courseClass' && <label>Lớp học phần
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn lớp học phần" value={exportForm.courseClassId || undefined} options={courseClasses.map(item => ({ value: item.id, label: `${item.code} — ${item.subjectName || 'Học phần'}` }))} onChange={courseClassId => setExportForm({ ...exportForm, courseClassId })} />
+                </label>}
+                <p className="form-hint">File CSV chứa toàn bộ sinh viên phù hợp với phạm vi đã chọn, không giới hạn theo trang hiện tại.</p>
+                <div className="modal-actions"><button type="button" className="btn-light" onClick={close}>Hủy</button><button className="btn-primary" disabled={saving}><Download size={17} />{saving ? 'Đang xuất...' : 'Tải danh sách'}</button></div>
+              </form>
+            ) : modal.type === 'detail' ? (
               <div className="info-list">
                 {[
                   ['Mã tài khoản', modal.user.userCode],
