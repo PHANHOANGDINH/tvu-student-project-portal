@@ -46,7 +46,8 @@ async function ensureLocalAccountPassword(userId) {
 
 try {
   await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-  await query("UPDATE Users SET Email=LOWER(COALESCE(NULLIF(UserCode,''),'admin.local'))+'@tvu.local',UpdatedAt=SYSDATETIME() WHERE Email LIKE '%@tvu.test' AND (UserCode LIKE 'GV26%' OR UserCode LIKE '1101%' OR Role='ADMIN')");
+  await query("UPDATE Users SET Email=LOWER(UserCode)+'@tvu.local',UpdatedAt=SYSDATETIME() WHERE Email LIKE '%@tvu.test' AND (UserCode LIKE 'GV26%' OR UserCode LIKE '1101%')");
+  await query("UPDATE Users SET Email='admin.local.'+CONVERT(NVARCHAR(20),Id)+'@tvu.local',UpdatedAt=SYSDATETIME() WHERE Email LIKE '%@tvu.test' AND Role='ADMIN'");
   await query("UPDATE Users SET AcademicDegree=CASE ABS(CHECKSUM(UserCode))%4 WHEN 0 THEN N'Cử nhân' WHEN 1 THEN N'Kỹ sư' WHEN 2 THEN N'Thạc sĩ' ELSE N'Tiến sĩ' END,UpdatedAt=SYSDATETIME() WHERE Role='LECTURER' AND UserCode LIKE 'GV26%' AND (AcademicDegree IS NULL OR LTRIM(RTRIM(AcademicDegree))='')");
   const facultyIds = {};
   for (const [code,name] of faculties) facultyIds[code]=await ensure('faculties','SELECT Id id FROM Faculties WITH(UPDLOCK,HOLDLOCK) WHERE FacultyCode=@Code AND DeletedAt IS NULL','INSERT Faculties(FacultyCode,FacultyName,Description,IsActive) OUTPUT INSERTED.Id id VALUES(@Code,@Name,@Description,1)',[input('Code',sql.NVarChar(30),code),input('Name',sql.NVarChar(150),name),input('Description',sql.NVarChar(500),`Đơn vị đào tạo ${name.toLowerCase()}.`)]);

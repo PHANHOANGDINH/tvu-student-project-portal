@@ -126,6 +126,8 @@ test('presentation seed is idempotent and never resets data', async () => {
   assert.match(seed, /presentationStudentCode='110124001'/)
   assert.match(seed, /WHERE UserCode=@Code AND Role=\\'STUDENT\\'/)
   assert.match(seed, /fixtureFiles\.set/)
+  assert.match(seed, /Email='admin\.local\.'\+CONVERT\(NVARCHAR\(20\),Id\)\+'@tvu\.local'/)
+  assert.doesNotMatch(seed, /COALESCE\(NULLIF\(UserCode,''\),'admin\.local'\)/)
   assert.match(seed, /relativePath=`submissions\/\$\{storedName\}`/)
   assert.match(seed, /workflowNotices=.*Yêu cầu nộp bài mới/)
   assert.doesNotMatch(seed, /\b(?:DROP|TRUNCATE)\s+(?:TABLE|DATABASE)/i)
