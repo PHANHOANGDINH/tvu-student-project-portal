@@ -25,6 +25,7 @@ function Set-EnvValue([string]$content, [string]$name, [string]$value) {
 $content = Get-Content -LiteralPath $template -Raw
 $content = Set-EnvValue $content 'COMPOSE_PROJECT_NAME' 'tvu-student-project-portal-prod'
 $content = Set-EnvValue $content 'DOMAIN' 'localhost'
+$content = Set-EnvValue $content 'PROXY_BIND_IP' '127.0.0.1'
 $content = Set-EnvValue $content 'LETSENCRYPT_EMAIL' 'local@example.invalid'
 $content = Set-EnvValue $content 'MSSQL_PID' 'Developer'
 $content = Set-EnvValue $content 'MSSQL_SA_PASSWORD' (('Lo1!' + (New-RandomToken 30)))
