@@ -126,6 +126,7 @@ function ProfilePage() {
   const phone = profile?.phone || profile?.Phone || '-'
   const department = profile?.department || profile?.Department || '-'
   const className = profile?.className || profile?.ClassName || '-'
+  const academicDegree = profile?.academicDegree || profile?.AcademicDegree || '-'
   const isActive = profile?.isActive ?? profile?.IsActive
   const createdAt = profile?.createdAt || profile?.CreatedAt
 
@@ -207,6 +208,11 @@ function ProfilePage() {
                   <span>Lớp</span>
                   <strong>{className}</strong>
                 </div>
+
+                {role === 'LECTURER' && <div>
+                  <span>Học vị</span>
+                  <strong>{academicDegree}</strong>
+                </div>}
 
                 <div>
                   <span>Ngày tạo</span>

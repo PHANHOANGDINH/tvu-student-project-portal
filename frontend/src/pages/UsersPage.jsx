@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, Ellipsis, Eye, FileUp, Lock, LockOpen, Pencil, Plus, Search, Users as UsersIcon } from 'lucide-react'
+import { Download, Eye, FileUp, Lock, LockOpen, Plus, Search, Users as UsersIcon } from 'lucide-react'
+import { Button, Dropdown, Select } from 'antd'
+import { EditOutlined, LockOutlined, MoreOutlined, UnlockOutlined } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createUser, getUserById, getUsers, resetUserPassword, updateUser, updateUserStatus } from '../api/adminApi'
+import { listOrganization } from '../api/organizationApi'
+import { exportAdminStudents, listAcademic } from '../api/academicsApi'
 import { USER_ROLES } from '../constants/roles'
+import { ROLE_LABELS } from '../constants/uiLabels'
+import Modal from '../components/common/Modal'
 
-const roles = {
-  ADMIN: 'Quản trị viên',
-  LECTURER: 'Giảng viên',
-  STUDENT: 'Sinh viên'
-}
+const roles = ROLE_LABELS
 
 const emptyForm = {
   role: 'STUDENT',
@@ -17,7 +19,10 @@ const emptyForm = {
   email: '',
   phone: '',
   department: '',
+  facultyId: '',
+  administrativeClassId: '',
   className: '',
+  academicDegree: '',
   password: '',
   confirmPassword: '',
   isActive: true
@@ -31,21 +36,21 @@ const emptyResetForm = {
 const formatDate = value => value ? new Date(value).toLocaleDateString('vi-VN') : '—'
 const codeLabel = role => role === 'LECTURER' ? 'Mã giảng viên' : role === 'ADMIN' ? 'Mã quản trị viên' : 'Mã sinh viên'
 
-function downloadCsv(items) {
+function downloadCsv(items, fileName = 'danh-sach-tai-khoan.csv') {
   const safe = v => {
     let s = String(v ?? '')
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const rows = [
-    ['userCode', 'fullName', 'email', 'role', 'status', 'createdAt'],
-    ...items.map(x => [x.userCode, x.fullName, x.email, x.role, x.isActive ? 'ACTIVE' : 'INACTIVE', x.createdAt])
+    ['Mã tài khoản', 'Họ và tên', 'Email', 'Khoa', 'Lớp hành chính', 'Học vị', 'Vai trò', 'Trạng thái'],
+    ...items.map(x => [x.userCode, x.fullName, x.email, x.department, x.className, x.academicDegree, roles[x.role] || x.role, x.isActive ? 'Hoạt động' : 'Đã khóa'])
   ]
   const blob = new Blob(['\uFEFF' + rows.map(r => r.map(safe).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'danh-sach-tai-khoan.csv'
+  a.download = fileName
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -55,8 +60,12 @@ export default function UsersPage() {
   const location = useLocation()
 
   const [users, setUsers] = useState([])
+  const [faculties, setFaculties] = useState([])
+  const [facultiesLoading, setFacultiesLoading] = useState(false)
+  const [administrativeClasses, setAdministrativeClasses] = useState([])
+  const [classesLoading, setClassesLoading] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 })
-  const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', sortBy: 'createdAt', sortOrder: 'desc' })
+  const [filters, setFilters] = useState({ page: 1, pageSize: 10, search: '', role: '', status: '', facultyId: '', administrativeClassId: '', sortBy: 'createdAt', sortOrder: 'desc' })
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -65,7 +74,8 @@ export default function UsersPage() {
   const [selected, setSelected] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [resetForm, setResetForm] = useState(emptyResetForm)
-  const [openMenu, setOpenMenu] = useState(null)
+  const [courseClasses, setCourseClasses] = useState([])
+  const [exportForm, setExportForm] = useState({ scope: 'all', facultyId: '', administrativeClassId: '', courseClassId: '' })
 
   const load = async (next = filters) => {
     try {
@@ -89,10 +99,30 @@ export default function UsersPage() {
   useEffect(() => { load() }, [])
 
   useEffect(() => {
+    setFacultiesLoading(true)
+    listOrganization('faculties', { pageSize: 100, isActive: true })
+      .then(response => setFaculties(response.data.items || []))
+      .catch(() => setFaculties([]))
+      .finally(() => setFacultiesLoading(false))
+  }, [])
+
+  useEffect(() => {
+    setClassesLoading(true)
+    listOrganization('administrative-classes', { pageSize: 100, isActive: true })
+      .then(response => setAdministrativeClasses(response.data.items || []))
+      .catch(() => setAdministrativeClasses([]))
+      .finally(() => setClassesLoading(false))
+  }, [])
+
+  const classesForFaculty = useMemo(() => administrativeClasses.filter(item => !form.facultyId || Number(item.facultyId) === Number(form.facultyId)), [administrativeClasses, form.facultyId])
+  const exportClassesForFaculty = useMemo(() => administrativeClasses.filter(item => !exportForm.facultyId || Number(item.facultyId) === Number(exportForm.facultyId)), [administrativeClasses, exportForm.facultyId])
+
+  useEffect(() => {
     if (location.pathname.endsWith('/new')) openCreate()
   }, [location.pathname])
 
   const title = useMemo(() => {
+    if (modal?.type === 'studentExport') return 'Xuất danh sách sinh viên'
     if (modal?.type === 'detail') return 'Chi tiết tài khoản'
     if (modal?.type === 'edit') return 'Chỉnh sửa tài khoản'
     if (modal?.type === 'reset') return 'Đặt lại mật khẩu'
@@ -131,7 +161,10 @@ export default function UsersPage() {
       email: user.email || '',
       phone: user.phone || '',
       department: user.department || '',
+      facultyId: faculties.find(item => item.facultyName === user.department)?.id || '',
+      administrativeClassId: user.administrativeClassId || '',
       className: user.className || '',
+      academicDegree: user.academicDegree || '',
       isActive: user.isActive !== false,
       password: '',
       confirmPassword: ''
@@ -153,7 +186,10 @@ export default function UsersPage() {
     if (modal.type === 'create' && form.password !== form.confirmPassword) {
       return 'Xác nhận mật khẩu không khớp.'
     }
-    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.className.trim()) {
+    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.facultyId) {
+      return 'Sinh viên cần chọn khoa.'
+    }
+    if (form.role === (USER_ROLES?.STUDENT || 'STUDENT') && !form.administrativeClassId) {
       return 'Sinh viên cần bổ sung thông tin lớp học.'
     }
     return null
@@ -173,7 +209,9 @@ export default function UsersPage() {
         email: form.email.trim(),
         phone: form.phone.trim(),
         department: form.department.trim(),
-        className: form.className.trim()
+        className: form.className.trim(),
+        administrativeClassId: form.role === 'STUDENT' ? Number(form.administrativeClassId) : null,
+        academicDegree: form.role === 'LECTURER' ? form.academicDegree : ''
       }
 
       if (modal.type === 'create') {
@@ -238,12 +276,70 @@ export default function UsersPage() {
     }
   }
 
-  const exportAll = async () => {
+  const exportUsers = async role => {
     try {
-      const response = await getUsers({ ...filters, page: 1, pageSize: 100 })
-      downloadCsv(response?.data?.items || [])
+      const exportFilters = {
+        ...filters,
+        role,
+        administrativeClassId: role === 'STUDENT' ? filters.administrativeClassId : '',
+        pageSize: 100
+      }
+      const items = []
+      let page = 1
+      let totalPages = 1
+      do {
+        const response = await getUsers({ ...exportFilters, page })
+        items.push(...(response?.data?.items || []))
+        totalPages = response?.data?.totalPages || 1
+        page += 1
+      } while (page <= totalPages)
+      const faculty = faculties.find(item => Number(item.id) === Number(filters.facultyId))
+      const adminClass = role === 'STUDENT'
+        ? administrativeClasses.find(item => Number(item.id) === Number(filters.administrativeClassId))
+        : null
+      const suffix = adminClass?.classCode || faculty?.facultyCode || 'tat-ca'
+      downloadCsv(items, `danh-sach-${role === 'LECTURER' ? 'giang-vien' : 'sinh-vien'}-${suffix}.csv`)
     } catch (e) {
       setMessage({ type: 'error', text: e.message })
+    }
+  }
+
+  const openStudentExport = async () => {
+    setExportForm({ scope: 'all', facultyId: '', administrativeClassId: '', courseClassId: '' })
+    setModal({ type: 'studentExport' })
+    if (!courseClasses.length) {
+      try {
+        const response = await listAcademic('courseClasses', { page: 1, pageSize: 100 })
+        setCourseClasses(response?.data?.items || [])
+      } catch (e) {
+        setMessage({ type: 'error', text: e.message || 'Không thể tải danh sách lớp học phần.' })
+      }
+    }
+  }
+
+  const submitStudentExport = async event => {
+    event.preventDefault()
+    const required = { faculty: 'facultyId', administrativeClass: 'administrativeClassId', courseClass: 'courseClassId' }[exportForm.scope]
+    if (required && !exportForm[required]) return setMessage({ type: 'error', text: 'Vui lòng chọn đầy đủ điều kiện cho phạm vi xuất.' })
+    try {
+      setSaving(true)
+      const blob = await exportAdminStudents(exportForm)
+      const faculty = faculties.find(item => Number(item.id) === Number(exportForm.facultyId))
+      const adminClass = administrativeClasses.find(item => Number(item.id) === Number(exportForm.administrativeClassId))
+      const courseClass = courseClasses.find(item => Number(item.id) === Number(exportForm.courseClassId))
+      const suffix = courseClass?.code || adminClass?.classCode || faculty?.facultyCode || 'tat-ca'
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `danh-sach-sinh-vien-${suffix}.csv`
+      anchor.click()
+      URL.revokeObjectURL(url)
+      setMessage({ type: 'success', text: 'Đã xuất danh sách sinh viên thành công.' })
+      close()
+    } catch (e) {
+      setMessage({ type: 'error', text: e.message || 'Không thể xuất danh sách sinh viên.' })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -258,7 +354,8 @@ export default function UsersPage() {
         <div className="toolbar-actions">
           <button className="btn-light" onClick={() => navigate('/admin/students/import')}><FileUp size={17} />Nhập sinh viên</button>
           <button className="btn-light" onClick={() => navigate('/admin/lecturers/import')}><FileUp size={17} />Nhập giảng viên</button>
-          <button className="btn-light" onClick={exportAll}><Download size={17} />Xuất danh sách</button>
+          <button className="btn-light" onClick={openStudentExport}><Download size={17} />Xuất sinh viên</button>
+          <button className="btn-light" onClick={() => exportUsers('LECTURER')}><Download size={17} />Xuất giảng viên</button>
           <button className="btn-primary" onClick={openCreate}><Plus size={18} />Thêm tài khoản</button>
         </div>
       </div>
@@ -289,6 +386,13 @@ export default function UsersPage() {
             <option value="ACTIVE">Hoạt động</option>
             <option value="INACTIVE">Đã khóa</option>
           </select>
+          <Select showSearch allowClear optionFilterProp="label" placeholder="Tất cả khoa" loading={facultiesLoading} value={filters.facultyId || undefined} options={faculties.map(item=>({value:item.id,label:`${item.facultyCode} — ${item.facultyName}`}))} onChange={value=>apply({facultyId:value||'',administrativeClassId:'',page:1})}/>
+          {filters.role !== 'LECTURER' && (
+            <Select showSearch allowClear optionFilterProp="label" placeholder="Tất cả lớp hành chính"
+              loading={classesLoading} value={filters.administrativeClassId || undefined}
+              options={administrativeClasses.filter(item => !filters.facultyId || Number(item.facultyId) === Number(filters.facultyId)).map(item => ({ value: item.id, label: `${item.classCode} — ${item.className}` }))}
+              onChange={value => apply({ administrativeClassId: value || '', page: 1 })} />
+          )}
           <select
             value={`${filters.sortBy}-${filters.sortOrder}`}
             onChange={e => {
@@ -335,6 +439,7 @@ export default function UsersPage() {
                   <th>Họ và tên</th>
                   <th>Email / Tên đăng nhập</th>
                   <th>Vai trò</th>
+                  <th>Học vị</th>
                   <th>Trạng thái</th>
                   <th>Ngày tạo</th>
                   <th>Thao tác</th>
@@ -360,6 +465,7 @@ export default function UsersPage() {
                           {roles[user.role] || user.role}
                         </span>
                       </td>
+                      <td>{user.role === 'LECTURER' ? user.academicDegree || '—' : '—'}</td>
                       <td>
                         <span className={`status-pill ${user.isActive === false ? 'inactive' : 'active'}`}>
                           <i />{user.isActive === false ? 'Đã khóa' : 'Hoạt động'}
@@ -367,24 +473,16 @@ export default function UsersPage() {
                       </td>
                       <td>{formatDate(user.createdAt)}</td>
                       <td>
-                        <div className="compact-actions">
-                          <button onClick={() => openDetail(user)}><Eye size={16} />Xem</button>
-                          <button onClick={() => openEdit(user)}><Pencil size={16} />Sửa</button>
-                          <div className="more-menu">
-                            <button aria-label="Thêm thao tác" onClick={() => setOpenMenu(openMenu === uId ? null : uId)}>
-                              <Ellipsis size={18} />
-                            </button>
-                            {openMenu === uId && (
-                              <div className="action-dropdown">
-                                <button onClick={() => { setResetForm(emptyResetForm); setModal({ type: 'reset', user }); setOpenMenu(null) }}>
-                                  Đặt lại mật khẩu
-                                </button>
-                                <button onClick={() => { confirmStatus(user); setOpenMenu(null) }}>
-                                  {user.isActive === false ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                        <div className="compact-actions account-actions">
+                          <Button size="small" type="link" icon={<Eye size={15} />} onClick={() => openDetail(user)}>Xem</Button>
+                          <Dropdown trigger={['click']} menu={{ items: [
+                            { key: 'edit', icon: <EditOutlined />, label: 'Chỉnh sửa', onClick: () => openEdit(user) },
+                            { type: 'divider' },
+                            { key: 'reset', icon: <LockOutlined />, label: 'Đặt lại mật khẩu', onClick: () => { setResetForm(emptyResetForm); setModal({ type: 'reset', user }) } },
+                            { key: 'status', danger: user.isActive !== false, icon: user.isActive === false ? <UnlockOutlined /> : <LockOutlined />, label: user.isActive === false ? 'Mở khóa tài khoản' : 'Khóa tài khoản', onClick: () => confirmStatus(user) }
+                          ] }}>
+                            <Button size="small" type="text" icon={<MoreOutlined />} aria-label={`Mở menu thao tác cho ${user.fullName}`} />
+                          </Dropdown>
                         </div>
                       </td>
                     </tr>
@@ -412,17 +510,39 @@ export default function UsersPage() {
       </div>
 
       {modal && (
-        <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && close()}>
-          <div className="modal-card admin-modal">
-            <div className="modal-header">
-              <div>
-                <span className="eyebrow">TÀI KHOẢN</span>
-                <h3>{modal.type === 'status' ? (modal.next ? 'Mở khóa tài khoản' : 'Khóa tài khoản') : title}</h3>
-              </div>
-              <button onClick={close}>×</button>
-            </div>
+        <Modal
+          open
+          eyebrow="Tài khoản"
+          title={modal.type === 'status' ? (modal.next ? 'Mở khóa tài khoản' : 'Khóa tài khoản') : title}
+          description={modal.type === 'detail' ? 'Thông tin chi tiết của tài khoản trong hệ thống.' : undefined}
+          onClose={close}
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
 
-            {modal.type === 'detail' ? (
+            {modal.type === 'studentExport' ? (
+              <form onSubmit={submitStudentExport} className="student-export-form">
+                <label>Phạm vi xuất
+                  <Select value={exportForm.scope} options={[
+                    { value: 'all', label: 'Tất cả sinh viên' },
+                    { value: 'faculty', label: 'Theo khoa' },
+                    { value: 'administrativeClass', label: 'Theo lớp hành chính' },
+                    { value: 'courseClass', label: 'Theo lớp học phần' }
+                  ]} onChange={scope => setExportForm({ scope, facultyId: '', administrativeClassId: '', courseClassId: '' })} />
+                </label>
+                {(exportForm.scope === 'faculty' || exportForm.scope === 'administrativeClass') && <label>Khoa
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn khoa" loading={facultiesLoading} value={exportForm.facultyId || undefined} options={faculties.map(item => ({ value: item.id, label: `${item.facultyCode} — ${item.facultyName}` }))} onChange={facultyId => setExportForm({ ...exportForm, facultyId, administrativeClassId: '' })} />
+                </label>}
+                {exportForm.scope === 'administrativeClass' && <label>Lớp hành chính
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn lớp hành chính" disabled={!exportForm.facultyId} value={exportForm.administrativeClassId || undefined} options={exportClassesForFaculty.map(item => ({ value: item.id, label: `${item.classCode} — ${item.className}` }))} onChange={administrativeClassId => setExportForm({ ...exportForm, administrativeClassId })} />
+                </label>}
+                {exportForm.scope === 'courseClass' && <label>Lớp học phần
+                  <Select showSearch optionFilterProp="label" placeholder="Chọn lớp học phần" value={exportForm.courseClassId || undefined} options={courseClasses.map(item => ({ value: item.id, label: `${item.code} — ${item.subjectName || 'Học phần'}` }))} onChange={courseClassId => setExportForm({ ...exportForm, courseClassId })} />
+                </label>}
+                <p className="form-hint">File CSV chứa toàn bộ sinh viên phù hợp với phạm vi đã chọn, không giới hạn theo trang hiện tại.</p>
+                <div className="modal-actions"><button type="button" className="btn-light" onClick={close}>Hủy</button><button className="btn-primary" disabled={saving}><Download size={17} />{saving ? 'Đang xuất...' : 'Tải danh sách'}</button></div>
+              </form>
+            ) : modal.type === 'detail' ? (
               <div className="info-list">
                 {[
                   ['Mã tài khoản', modal.user.userCode],
@@ -431,6 +551,7 @@ export default function UsersPage() {
                   ['Số điện thoại', modal.user.phone],
                   ['Khoa', modal.user.department],
                   ['Lớp', modal.user.className],
+                  ['Học vị', modal.user.academicDegree],
                   ['Vai trò', roles[modal.user.role] || modal.user.role],
                   ['Trạng thái', modal.user.isActive === false ? 'Đã khóa' : 'Hoạt động'],
                   ['Ngày tạo', formatDate(modal.user.createdAt)]
@@ -495,12 +616,19 @@ export default function UsersPage() {
                   </label>
                   <label>
                     Khoa
-                    <input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
+                    <Select
+                      showSearch allowClear loading={facultiesLoading} optionFilterProp="label"
+                      value={form.facultyId || undefined} placeholder="Chọn khoa"
+                      notFoundContent={facultiesLoading ? 'Đang tải...' : 'Chưa có dữ liệu khoa'}
+                      options={faculties.map(item => ({ value: item.id, label: `${item.facultyCode} - ${item.facultyName}` }))}
+                      onChange={value => { const faculty = faculties.find(item => item.id === value); const selectedClass=administrativeClasses.find(item=>Number(item.id)===Number(form.administrativeClassId));setForm({ ...form, facultyId: value || '', department: faculty?.facultyName || '', administrativeClassId:selectedClass&&Number(selectedClass.facultyId)===Number(value)?form.administrativeClassId:'',className:selectedClass&&Number(selectedClass.facultyId)===Number(value)?form.className:'' }) }}
+                    />
                   </label>
-                  <label>
+                  {form.role === 'STUDENT' && <label>
                     Lớp
-                    <input value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} />
-                  </label>
+                    <Select showSearch allowClear={form.role!=='STUDENT'} loading={classesLoading} optionFilterProp="label" value={form.administrativeClassId||undefined} placeholder="Chọn lớp hành chính" notFoundContent={classesLoading?'Đang tải...':'Không có lớp phù hợp'} options={classesForFaculty.map(item=>({value:item.id,label:`${item.classCode} — ${item.className}`}))} onChange={value=>{const item=administrativeClasses.find(x=>Number(x.id)===Number(value));setForm({...form,administrativeClassId:value||'',className:item?.classCode||''})}} />
+                  </label>}
+                  {form.role === 'LECTURER' && <label>Học vị<Select allowClear value={form.academicDegree||undefined} placeholder="Chọn học vị" options={['Cử nhân','Kỹ sư','Thạc sĩ','Tiến sĩ',...(form.academicDegree&&!['Cử nhân','Kỹ sư','Thạc sĩ','Tiến sĩ'].includes(form.academicDegree)?[form.academicDegree]:[])].map(value=>({value,label:value}))} onChange={value=>setForm({...form,academicDegree:value||''})}/></label>}
                   {modal.type === 'create' && (
                     <>
                       <label>
@@ -520,8 +648,7 @@ export default function UsersPage() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

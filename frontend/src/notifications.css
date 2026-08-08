@@ -1,1 +1,9 @@
-.notification-wrap{position:relative}.notification-bell{position:relative;border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:9px 12px;font-size:20px;cursor:pointer}.notification-bell span{position:absolute;right:-7px;top:-7px;background:#dc2626;color:#fff;border-radius:999px;min-width:20px;padding:2px 5px;font-size:11px}.notification-panel{position:absolute;right:0;top:48px;width:min(380px,90vw);max-height:480px;overflow:auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 14px 35px rgba(0,0,0,.18);padding:14px;z-index:100}.notification-item{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eee;background:#fff;padding:12px;cursor:pointer}.notification-item.unread{background:#eff6ff}.notification-item small{display:block;color:#6b7280;margin-top:4px}
+.notification-wrap { position: relative; }
+.notification-bell { position: relative; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 1px solid #dbe5f0; border-radius: 10px; background: #fff; font-size: 17px; cursor: pointer; }
+.notification-bell:hover { background: #f2f7fd; }
+.notification-bell span { position: absolute; right: -5px; top: -6px; min-width: 19px; padding: 2px 5px; border: 2px solid #fff; border-radius: 999px; background: #c92835; color: #fff; font-size: 9px; font-weight: 700; }
+.notification-panel { position: absolute; z-index: 100; right: 0; top: 48px; width: min(380px, calc(100vw - 24px)); max-height: 480px; overflow: auto; padding: 14px; border: 1px solid #dbe5f0; border-radius: 14px; background: #fff; box-shadow: 0 16px 40px rgba(12,43,78,.18); }
+.notification-item { display: block; width: 100%; padding: 12px; border: 0; border-bottom: 1px solid #e8eef5; background: #fff; color: #243a55; text-align: left; cursor: pointer; }
+.notification-item:hover, .notification-item.unread { background: #edf5ff; }
+.notification-item small { display: block; margin-top: 4px; color: #6b7789; line-height: 1.4; }
+@media (max-width: 480px) { .notification-panel { position: fixed; top: 62px; right: 12px; left: 12px; width: auto; } }

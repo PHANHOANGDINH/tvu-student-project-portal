@@ -260,3 +260,16 @@
         min-width: 900px;
     }
 }
+html, body, #root { min-height: 100%; }
+html, body, button, input, select, textarea { font-family: "Be Vietnam Pro", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+.pro-menu-link{display:flex;width:100%;align-items:center;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.shared-app-layout{min-height:100dvh}
+.shared-app-layout.ant-pro-layout>.ant-layout{min-height:100dvh!important}
+.shared-app-layout .ant-layout-header{background:#fff!important}
+.shared-app-layout .ant-pro-sider{background:#fff!important}
+.shared-app-layout .ant-pro-layout-content{display:flex;min-width:0;overflow-x:hidden;flex:1;flex-direction:column}
+.shared-main-area{min-width:0;display:flex;flex:1 0 auto;flex-direction:column}
+.shared-main-content{min-width:0;padding:20px 24px 32px;flex:1 0 auto}
+.shared-main-area>.app-footer{width:100%;margin-top:auto;flex-shrink:0}
+@media(max-width:600px){.shared-main-content{padding-inline:20px}.shared-main-area>.app-footer .footer-inner{padding-inline:20px}}
+.app-fatal-state{max-width:680px;margin:12vh auto;padding:40px;border:1px solid #e7eaf0;border-radius:16px;background:#fff;box-shadow:0 12px 36px rgba(23,43,77,.1);text-align:center}.app-fatal-state h1{margin:0 0 12px;color:#172b4d}.app-fatal-state p{margin:0 0 24px;color:#6b778c}.app-fatal-state .modal-actions{justify-content:center}

@@ -1,5 +1,6 @@
 ﻿import { USER_ROLES, normalizeRole } from '../../constants/roles.js';
 import { hashPassword } from '../../utils/password.util.js';
+import { validatePassword } from '../../utils/passwordPolicy.util.js';
 import {
   countActiveAdmins,
   countUsers,
@@ -12,6 +13,7 @@ import {
   updateUser,
   updateUserStatus,
 } from './users.repository.js';
+import * as organizationService from '../organization/organization.service.js';
 
 const CREATE_ALLOWED_ROLES = [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT];
 const UPDATE_ALLOWED_ROLES = [USER_ROLES.ADMIN, USER_ROLES.LECTURER, USER_ROLES.STUDENT];
@@ -35,18 +37,6 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function validatePassword(password) {
-  const errors = [];
-
-  if (!password) errors.push('Mật khẩu không được để trống.');
-  if (password && password.length < 8) errors.push('Mật khẩu phải có ít nhất 8 ký tự.');
-  if (password && !/[A-Z]/.test(password)) errors.push('Mật khẩu phải có ít nhất một chữ hoa.');
-  if (password && !/[a-z]/.test(password)) errors.push('Mật khẩu phải có ít nhất một chữ thường.');
-  if (password && !/\d/.test(password)) errors.push('Mật khẩu phải có ít nhất một chữ số.');
-
-  return errors;
-}
-
 function getUserCodeLabel(role) {
   if (role === USER_ROLES.STUDENT) return 'MSSV';
   if (role === USER_ROLES.LECTURER) return 'Mã giảng viên';
@@ -63,6 +53,8 @@ function sanitizeProfilePayload(data = {}) {
     phone: normalizeString(data.phone),
     department: normalizeString(data.department),
     className: normalizeString(data.className).toUpperCase(),
+    academicDegree: normalizeString(data.academicDegree),
+    administrativeClassId: Number(data.administrativeClassId) || null,
   };
 }
 
@@ -104,6 +96,8 @@ export async function listUsers(query = {}) {
     search: normalizeString(query.search),
     role,
     status,
+    facultyId: query.facultyId,
+    administrativeClassId: query.administrativeClassId,
     sortBy,
     sortOrder,
   };
@@ -186,6 +180,7 @@ function validateProfilePayload(payload, { requirePassword = false, password = '
   if (!payload.userCode) {
     errors.userCode = [`${getUserCodeLabel(payload.role)} không được để trống.`];
   }
+  if (payload.role === USER_ROLES.STUDENT && !payload.administrativeClassId) errors.administrativeClassId = ['Vui lòng chọn lớp hành chính.'];
 
   if (requirePassword) {
     const passwordErrors = validatePassword(password);
@@ -235,12 +230,16 @@ export async function createAdminManagedUser(data = {}) {
     };
   }
 
+  let administrativeClass = null;
+  if (payload.role === USER_ROLES.STUDENT) administrativeClass = await organizationService.getClass(payload.administrativeClassId);
   const passwordHash = await hashPassword(password);
   const user = await createUser({
     ...payload,
-    className: payload.role === USER_ROLES.STUDENT ? payload.className : '',
+    department: administrativeClass?.facultyName || payload.department,
+    className: administrativeClass?.classCode || '',
     passwordHash,
   });
+  if (administrativeClass) await organizationService.moveStudent(user.id, { administrativeClassId: administrativeClass.id });
 
   return {
     success: true,
@@ -279,6 +278,8 @@ export async function updateAdminManagedUser(id, data = {}) {
     phone: data.phone ?? currentUser.phone,
     department: data.department ?? currentUser.department,
     className: data.className ?? currentUser.className,
+    academicDegree: data.academicDegree ?? currentUser.academicDegree,
+    administrativeClassId: data.administrativeClassId ?? currentUser.administrativeClassId,
   });
 
   const errors = validateProfilePayload(payload);
@@ -321,10 +322,14 @@ export async function updateAdminManagedUser(id, data = {}) {
     };
   }
 
+  let administrativeClass = null;
+  if (payload.role === USER_ROLES.STUDENT) administrativeClass = await organizationService.getClass(payload.administrativeClassId);
   const user = await updateUser(userId, {
     ...payload,
-    className: payload.role === USER_ROLES.STUDENT ? payload.className : '',
+    department: administrativeClass?.facultyName || payload.department,
+    className: administrativeClass?.classCode || '',
   });
+  if (administrativeClass) await organizationService.moveStudent(userId, { administrativeClassId: administrativeClass.id });
 
   return {
     success: true,

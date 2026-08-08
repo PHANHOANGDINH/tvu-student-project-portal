@@ -51,7 +51,14 @@ export async function lecturer(userId) {
   const activity = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 10 s.Id id,g.Name title,s.Status status,s.UpdatedAt createdAt
     FROM Submissions s JOIN StudentGroups g ON g.Id=s.GroupId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId
     WHERE c.LecturerId=@Uid ORDER BY s.UpdatedAt DESC`);
-  return { stats: stats.recordset[0], upcoming: upcoming.recordset, recentActivity: activity.recordset };
+  const classes = await pool.request().input('Uid', sql.Int, userId).query(`SELECT c.Id id,c.Code code,sub.Code subjectCode,sub.Name subjectName,sem.Name semesterName,sem.Code semesterCode,ay.Name academicYearName,c.Status status,c.MaxStudents maxStudents,
+    (SELECT COUNT(*) FROM CourseClassEnrollments e WHERE e.CourseClassId=c.Id AND e.IsActive=1 AND e.DeletedAt IS NULL) studentCount,
+    (SELECT COUNT(*) FROM StudentGroups g WHERE g.ClassId=c.Id AND g.DeletedAt IS NULL) groupCount,
+    (SELECT COUNT(*) FROM TopicRegistrations t WHERE t.ClassId=c.Id AND t.Status='PENDING' AND t.DeletedAt IS NULL) topicsPending,
+    (SELECT COUNT(*) FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId WHERE r.ClassId=c.Id AND s.Status IN('SUBMITTED','LATE','RESUBMITTED','UNDER_REVIEW')) waitingGrade
+    FROM CourseClasses c JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId
+    WHERE c.LecturerId=@Uid AND c.DeletedAt IS NULL ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code`);
+  return { stats: stats.recordset[0], courseClasses: classes.recordset, upcoming: upcoming.recordset, recentActivity: activity.recordset };
 }
 
 export async function student(userId) {
@@ -62,9 +69,16 @@ export async function student(userId) {
     (SELECT COUNT(*) FROM Notifications WHERE UserId=@Uid AND IsRead=0) unread,
     (SELECT COUNT(*) FROM Submissions s JOIN GroupMembers gm ON gm.GroupId=s.GroupId AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL WHERE s.Status='REQUIRES_REVISION') revisions,
     (SELECT COUNT(*) FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN GroupMembers gm ON gm.GroupId=s.GroupId AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL WHERE g.IsPublished=1) publishedGrades`);
-  const group = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 1 g.Id id,g.Name name,g.LeaderId leaderId,c.Code classCode,t.Status topicStatus,t.Title topicTitle
+  const groups = await pool.request().input('Uid', sql.Int, userId).query(`SELECT g.Id id,g.ClassId classId,g.Name name,g.LeaderId leaderId,c.Code classCode,t.Status topicStatus,t.Title topicTitle
     FROM GroupMembers gm JOIN StudentGroups g ON g.Id=gm.GroupId JOIN CourseClasses c ON c.Id=g.ClassId LEFT JOIN TopicRegistrations t ON t.GroupId=g.Id AND t.DeletedAt IS NULL
     WHERE gm.StudentId=@Uid AND gm.DeletedAt IS NULL ORDER BY gm.JoinedAt DESC`);
+  const classes = await pool.request().input('Uid', sql.Int, userId).query(`SELECT c.Id id,c.Code code,sub.Code subjectCode,sub.Name subjectName,sem.Name semesterName,sem.Code semesterCode,ay.Name academicYearName,u.FullName lecturerName,c.Status status,
+    g.Id groupId,g.Name groupName,t.Status topicStatus,
+    (SELECT COUNT(*) FROM SubmissionRequirements r JOIN SubmissionRounds sr ON sr.RequirementId=r.Id WHERE r.ClassId=c.Id AND sr.Status='OPEN') openRequirements,
+    (SELECT COUNT(*) FROM Notifications n WHERE n.UserId=@Uid AND n.IsRead=0 AND n.RelatedEntityId=c.Id) unread
+    FROM CourseClassEnrollments e JOIN CourseClasses c ON c.Id=e.CourseClassId JOIN Subjects sub ON sub.Id=c.SubjectId JOIN Semesters sem ON sem.Id=c.SemesterId JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId LEFT JOIN Users u ON u.Id=c.LecturerId
+    LEFT JOIN GroupMembers gm ON gm.ClassId=c.Id AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL LEFT JOIN StudentGroups g ON g.Id=gm.GroupId AND g.DeletedAt IS NULL LEFT JOIN TopicRegistrations t ON t.GroupId=g.Id AND t.DeletedAt IS NULL
+    WHERE e.StudentId=@Uid AND e.IsActive=1 AND e.DeletedAt IS NULL AND c.DeletedAt IS NULL ORDER BY ay.StartDate DESC,sem.StartDate DESC,c.Code`);
   const upcoming = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 8 r.Id id,r.Title title,c.Code classCode,sr.Deadline deadline
     FROM SubmissionRequirements r JOIN SubmissionRounds sr ON sr.RequirementId=r.Id JOIN CourseClasses c ON c.Id=r.ClassId JOIN CourseClassEnrollments enrollment ON enrollment.CourseClassId=r.ClassId AND enrollment.StudentId=@Uid AND enrollment.IsActive=1 AND enrollment.DeletedAt IS NULL
     WHERE sr.Status='OPEN' AND sr.Deadline>=SYSDATETIME() ORDER BY sr.Deadline`);
@@ -74,5 +88,5 @@ export async function student(userId) {
   const grades = await pool.request().input('Uid', sql.Int, userId).query(`SELECT TOP 8 s.Id submissionId,r.Title title,g.TotalScore totalScore,g.MaxScore maxScore,g.PublishedAt publishedAt
     FROM Grades g JOIN Submissions s ON s.Id=g.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN GroupMembers gm ON gm.GroupId=s.GroupId AND gm.StudentId=@Uid AND gm.DeletedAt IS NULL
     WHERE g.IsPublished=1 ORDER BY g.PublishedAt DESC`);
-  return { stats: stats.recordset[0], group: group.recordset[0] || null, upcoming: upcoming.recordset, recentSubmissions: recent.recordset, publishedGrades: grades.recordset };
+  return { stats: stats.recordset[0], groups: groups.recordset, courseClasses: classes.recordset, upcoming: upcoming.recordset, recentSubmissions: recent.recordset, publishedGrades: grades.recordset };
 }

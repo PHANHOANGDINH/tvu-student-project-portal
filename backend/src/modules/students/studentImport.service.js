@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { hashPassword } from '../../utils/password.util.js';
 import { createCsv, csvRecords } from '../../utils/csv.util.js';
-import { validatePassword } from '../users/users.service.js';
+import { validatePassword } from '../../utils/passwordPolicy.util.js';
 import * as repository from './studentImport.repository.js';
 
 const HEADERS=['studentCode','fullName','email','password'];
@@ -88,4 +88,25 @@ export async function exportCsv(courseClassId){
   const result=await list(courseClassId,{page:1,pageSize:100});if(!result.success)return result;
   const all=await repository.listEnrollments(Number(courseClassId),{page:1,pageSize:Math.max(result.data.totalItems,1)});
   return ok({courseClass:result.data.courseClass,csv:createCsv(['studentCode','fullName','email','enrolledAt'],all.items.map((item)=>[item.studentCode,item.fullName,item.email,item.enrolledAt?.toISOString?.()||item.enrolledAt]))},'Xuất danh sách thành công.');
+}
+
+export async function exportAdminStudents(query={}){
+  const requestedScope=String(query.scope||'all');
+  const scope=requestedScope==='class'?'administrativeClass':requestedScope;
+  const allowed=new Set(['all','faculty','administrativeClass','courseClass']);
+  if(!allowed.has(scope))return fail(400,'Phạm vi xuất sinh viên không hợp lệ.');
+  const required={faculty:'facultyId',administrativeClass:'administrativeClassId',courseClass:'courseClassId'}[scope];
+  const selectedId=required?Number(query[required]||(required==='administrativeClassId'?query.classId:null)):null;
+  if(required&&(!Number.isInteger(selectedId)||selectedId<=0))return fail(400,'Vui lòng chọn đầy đủ điều kiện cho phạm vi xuất.');
+  const filters={scope,facultyId:null,administrativeClassId:null,courseClassId:null};
+  if(required)filters[required]=selectedId;
+  const rows=await repository.exportStudentsByScope(filters);
+  if(!rows.length)return fail(404,'Không có dữ liệu phù hợp để xuất.');
+  const headers=['Mã sinh viên','Họ và tên','Email','Khoa','Lớp hành chính','Trạng thái','Ngày tạo'];
+  const values=rows.map((item)=>[item.studentCode,item.fullName,item.email,item.facultyName,[item.administrativeClassCode,item.administrativeClassName].filter(Boolean).join(' — '),item.isActive?'Hoạt động':'Đã khóa',item.createdAt?.toISOString?.()||item.createdAt]);
+  if(scope==='courseClass'){
+    headers.push('Mã lớp học phần','Mã học phần','Tên môn học','Học kỳ','Năm học','Giảng viên');
+    rows.forEach((item,index)=>values[index].push(item.courseClassCode,item.subjectCode,item.subjectName,item.semesterName,item.academicYearName,item.lecturerName));
+  }
+  return ok({csv:createCsv(headers,values),count:rows.length},'Xuất danh sách sinh viên thành công.');
 }

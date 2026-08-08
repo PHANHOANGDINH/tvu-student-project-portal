@@ -9,4 +9,34 @@ export async function isGroupMember(groupId,userId){const p=await poolPromise,r=
 export async function createAttempt(ctx,userId,fileData,linkData,isLate){const p=await poolPromise,tx=new sql.Transaction(p);await tx.begin();try{let submission=await new sql.Request(tx).input('Rid',sql.Int,ctx.requirementId).input('Gid',sql.Int,ctx.groupId).query(`SELECT Id id,Status status,LatestAttemptNumber latestAttemptNumber FROM Submissions WITH(UPDLOCK,HOLDLOCK) WHERE RequirementId=@Rid AND GroupId=@Gid`);let s=submission.recordset[0];if(!s){const x=await new sql.Request(tx).input('Rid',sql.Int,ctx.requirementId).input('Gid',sql.Int,ctx.groupId).query("INSERT Submissions(RequirementId,GroupId) OUTPUT INSERTED.Id id,INSERTED.Status status,INSERTED.LatestAttemptNumber latestAttemptNumber VALUES(@Rid,@Gid)");s=x.recordset[0]}const n=s.latestAttemptNumber+1,status=isLate?'LATE':n>1?'RESUBMITTED':'SUBMITTED';const ar=await new sql.Request(tx).input('Sid',sql.Int,s.id).input('N',sql.Int,n).input('Status',sql.NVarChar(30),status).input('Uid',sql.Int,userId).input('Late',sql.Bit,isLate).query('INSERT SubmissionAttempts(SubmissionId,AttemptNumber,Status,SubmittedBy,IsLate) OUTPUT INSERTED.Id id VALUES(@Sid,@N,@Status,@Uid,@Late)');const aid=ar.recordset[0].id;for(const f of fileData)await new sql.Request(tx).input('Aid',sql.Int,aid).input('Type',sql.NVarChar(30),f.type).input('Original',sql.NVarChar(260),f.originalName).input('Stored',sql.NVarChar(100),f.storedName).input('Path',sql.NVarChar(500),f.relativePath).input('Mime',sql.NVarChar(150),f.mimeType).input('Size',sql.BigInt,f.size).input('Uid',sql.Int,userId).query('INSERT SubmissionFiles(SubmissionAttemptId,ItemType,OriginalName,StoredName,RelativePath,MimeType,SizeBytes,UploadedBy) VALUES(@Aid,@Type,@Original,@Stored,@Path,@Mime,@Size,@Uid)');for(const l of linkData)await new sql.Request(tx).input('Aid',sql.Int,aid).input('Type',sql.NVarChar(30),l.type).input('Url',sql.NVarChar(2048),l.url).query('INSERT SubmissionLinks(SubmissionAttemptId,ItemType,Url) VALUES(@Aid,@Type,@Url)');await new sql.Request(tx).input('Sid',sql.Int,s.id).input('Aid',sql.Int,aid).input('Old',sql.NVarChar(30),s.status).input('Status',sql.NVarChar(30),status).input('Uid',sql.Int,userId).input('N',sql.Int,n).query("UPDATE Submissions SET Status=@Status,LatestAttemptNumber=@N,UpdatedAt=SYSDATETIME() WHERE Id=@Sid;INSERT SubmissionHistory(SubmissionId,SubmissionAttemptId,EventType,FromStatus,ToStatus,ActorId) VALUES(@Sid,@Aid,'SUBMITTED',@Old,@Status,@Uid)");await tx.commit();return findSubmission(s.id)}catch(e){await tx.rollback();throw e}}
 export async function history(id){const p=await poolPromise,r=await p.request().input('Id',sql.Int,id).query('SELECT h.Id id,h.SubmissionAttemptId attemptId,h.EventType eventType,h.FromStatus fromStatus,h.ToStatus toStatus,h.ActorId actorId,u.FullName actorName,h.CreatedAt createdAt FROM SubmissionHistory h JOIN Users u ON u.Id=h.ActorId WHERE h.SubmissionId=@Id ORDER BY h.CreatedAt DESC');return r.recordset}
 export async function lecturerRequirementSubmissions(requirementId,userId){const p=await poolPromise,r=await p.request().input('Rid',sql.Int,requirementId).input('Uid',sql.Int,userId).query(`SELECT s.Id id,s.Status status,s.LatestAttemptNumber latestAttemptNumber,s.UpdatedAt submittedAt,g.Name groupName,c.Code classCode,r.Title requirementTitle FROM Submissions s JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId JOIN StudentGroups g ON g.Id=s.GroupId WHERE s.RequirementId=@Rid AND c.LecturerId=@Uid ORDER BY s.UpdatedAt DESC`);return r.recordset}
+
+export async function studentWorkflow(userId, workflowType) {
+  const p = await poolPromise;
+  const r = await p.request().input('Uid', sql.Int, userId).input('WorkflowType', sql.NVarChar(20), workflowType).query(`
+    SELECT c.Id courseClassId,c.Code courseClassCode,subject.Name courseName,lecturer.FullName lecturerName,
+      g.Id groupId,g.Name groupName,topic.Title topicTitle,r.Id requirementId,r.Title title,r.Description description,
+      r.Instructions instructions,r.AllowLate allowLate,r.AllowResubmission allowResubmission,r.MaxAttempts maxAttempts,
+      sr.StartAt startAt,sr.Deadline dueAt,sr.Status requirementStatus,s.Id submissionId,s.Status submissionStatus,
+      s.LatestAttemptNumber attemptNumber,latest.SubmittedAt submittedAt,feedback.GeneralComment feedback,
+      feedback.RevisionRequired revisionRequired,feedback.RevisionReason revisionReason,feedback.UpdatedAt evaluatedAt,
+      evaluator.FullName evaluatedBy,CASE WHEN grade.IsPublished=1 THEN grade.TotalScore END score,
+      CASE WHEN grade.IsPublished=1 THEN grade.MaxScore END maxScore
+    FROM CourseClassEnrollments enrollment
+    JOIN CourseClasses c ON c.Id=enrollment.CourseClassId AND c.IsActive=1 AND c.DeletedAt IS NULL
+    JOIN Subjects subject ON subject.Id=c.SubjectId JOIN Users lecturer ON lecturer.Id=c.LecturerId
+    LEFT JOIN GroupMembers member ON member.ClassId=c.Id AND member.StudentId=@Uid AND member.DeletedAt IS NULL
+    LEFT JOIN StudentGroups g ON g.Id=member.GroupId AND g.DeletedAt IS NULL
+    LEFT JOIN TopicRegistrations topic ON topic.ClassId=c.Id AND topic.GroupId=g.Id AND topic.DeletedAt IS NULL
+    LEFT JOIN SubmissionRequirements r ON r.ClassId=c.Id AND r.DeletedAt IS NULL AND
+      ((@WorkflowType='FINAL' AND (r.RequirementType='ASSIGNMENT' OR LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%')) OR
+       (@WorkflowType='PROGRESS' AND r.RequirementType<>'ASSIGNMENT' AND NOT (LOWER(r.Title) LIKE N'%cuối kỳ%' OR LOWER(r.Title) LIKE N'%hoàn thiện sản phẩm%')))
+    LEFT JOIN SubmissionRounds sr ON sr.RequirementId=r.Id AND sr.Status<>'DRAFT'
+    LEFT JOIN Submissions s ON s.RequirementId=r.Id AND s.GroupId=g.Id
+    OUTER APPLY (SELECT TOP 1 a.SubmittedAt FROM SubmissionAttempts a WHERE a.SubmissionId=s.Id ORDER BY a.AttemptNumber DESC) latest
+    LEFT JOIN Feedback feedback ON feedback.SubmissionId=s.Id LEFT JOIN Users evaluator ON evaluator.Id=feedback.CreatedBy
+    LEFT JOIN Grades grade ON grade.SubmissionId=s.Id
+    WHERE enrollment.StudentId=@Uid AND enrollment.IsActive=1 AND enrollment.DeletedAt IS NULL AND (r.Id IS NULL OR sr.Id IS NOT NULL)
+    ORDER BY c.Code,sr.Deadline,r.Id`);
+  return r.recordset;
+}
 export async function findFile(id){const p=await poolPromise,r=await p.request().input('Id',sql.Int,id).query(`SELECT f.Id id,f.OriginalName originalName,f.RelativePath relativePath,f.MimeType mimeType,s.GroupId groupId,c.LecturerId lecturerId FROM SubmissionFiles f JOIN SubmissionAttempts a ON a.Id=f.SubmissionAttemptId JOIN Submissions s ON s.Id=a.SubmissionId JOIN SubmissionRequirements r ON r.Id=s.RequirementId JOIN CourseClasses c ON c.Id=r.ClassId WHERE f.Id=@Id`);return r.recordset[0]||null}

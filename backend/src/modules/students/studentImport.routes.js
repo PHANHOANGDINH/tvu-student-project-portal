@@ -11,6 +11,7 @@ const csvUpload=(req,res,next)=>upload.single('file')(req,res,(error)=>{if(!erro
 export const adminStudentImportRoutes=express.Router();
 adminStudentImportRoutes.use(auth,role(USER_ROLES.ADMIN));
 adminStudentImportRoutes.get('/import-template',controller.template);
+adminStudentImportRoutes.get('/export',controller.exportAdminStudents);
 adminStudentImportRoutes.post('/import-preview',csvUpload,controller.preview);
 adminStudentImportRoutes.post('/import-confirm',controller.confirm);
 

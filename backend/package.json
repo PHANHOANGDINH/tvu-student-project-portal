@@ -11,6 +11,7 @@
     "test": "node --test",
     "test:notifications:integration": "node src/scripts/verifyNotificationPipeline.js",
     "seed:demo": "node src/scripts/seedDemo.js",
+    "seed:presentation": "node src/scripts/seedPresentation.js",
     "reset:admin-demo": "node src/scripts/resetAdminDemo.js"
   },
   "keywords": [],

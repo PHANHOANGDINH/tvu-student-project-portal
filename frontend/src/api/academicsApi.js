@@ -7,6 +7,8 @@ export const updateAcademic=(resource,id,data)=>request(`/${resource}/${id}`,{me
 export const setAcademicStatus=(resource,id,isActive)=>request(`/${resource}/${id}/status`,{method:'PATCH',body:JSON.stringify({isActive})})
 export const listStudentCourseClasses=(params={})=>request(`/student/course-classes?${query(params)}`)
 export const getStudentCourseClass=(id)=>request(`/student/course-classes/${id}`)
+export const listLecturerCourseClasses=(params={})=>request(`/lecturer/course-classes?${query(params)}`)
+export const getLecturerCourseClass=(id)=>request(`/lecturer/course-classes/${id}`)
 export const previewStudentCsv=(courseClassId,file)=>{const body=new FormData();body.append('courseClassId',courseClassId);body.append('file',file);return request('/admin/students/import-preview',{method:'POST',body})}
 export const confirmStudentCsv=(previewId,courseClassId)=>request('/admin/students/import-confirm',{method:'POST',body:JSON.stringify({previewId,courseClassId,mode:'atomic'})})
 export const bulkEnrollStudents=(courseClassId,studentIds)=>request(`/course-classes/${courseClassId}/students/bulk`,{method:'POST',body:JSON.stringify({studentIds})})
@@ -14,3 +16,4 @@ export const listCourseClassStudents=(courseClassId,params={})=>request(`/course
 async function download(path){const response=await fetch(buildApiUrl(path),{headers:{Authorization:`Bearer ${localStorage.getItem('access_token')||''}`}});if(!response.ok){const data=await response.json().catch(()=>null);throw new Error(data?.message||'Không thể tải file')}return response.blob()}
 export const downloadStudentImportTemplate=()=>download('/admin/students/import-template')
 export const exportCourseClassStudents=(courseClassId)=>download(`/course-classes/${courseClassId}/students/export`)
+export const exportAdminStudents=(params={})=>download(`/admin/students/export?${query(params)}`)

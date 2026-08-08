@@ -25,23 +25,32 @@ export async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`
   }
 
-  const response = await fetch(buildApiUrl(path), {
-    ...options,
-    headers
-  })
+  let response
+  try {
+    response = await fetch(buildApiUrl(path), { ...options, headers })
+  } catch (error) {
+    console.error('Không thể kết nối API:', error)
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại.', { cause: error })
+  }
 
   const data = await response.json().catch(() => null)
 
   if (response.status === 401 && !path.includes('/auth/login')) {
-    clearAuth()
+    const isDashboardRequest = /^\/(admin|lecturer|student)\/dashboard(?:\/|$)/.test(path)
 
-    if (window.location.pathname !== '/login') {
+    if (!isDashboardRequest) clearAuth()
+
+    if (!isDashboardRequest && window.location.pathname !== '/login') {
       window.location.assign('/login')
     }
   }
 
   if (!response.ok) {
-    const error = new Error(data?.message || data?.error || `Lỗi API: ${response.status}`)
+    const serverMessage = data?.message || data?.error
+    const safeMessage = response.status === 404 && serverMessage === 'Không tìm thấy API'
+      ? 'Không tải được dữ liệu. Vui lòng thử lại.'
+      : serverMessage || `Lỗi API: ${response.status}`
+    const error = new Error(safeMessage)
     error.status = response.status
     error.errors = data?.errors || null
     throw error

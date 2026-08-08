@@ -137,6 +137,7 @@ export async function getCurrentUser(userId) {
       phone: user.Phone,
       department: user.Department,
       className: user.ClassName,
+      academicDegree: user.AcademicDegree,
       createdAt: user.CreatedAt,
       updatedAt: user.UpdatedAt,
     },

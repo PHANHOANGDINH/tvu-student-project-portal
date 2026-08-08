@@ -104,3 +104,35 @@ export async function listEnrollments(courseClassId,{page=1,pageSize=20,search='
   const total=await bind(pool.request()).query(`SELECT COUNT(*) total FROM CourseClassEnrollments e JOIN Users u ON u.Id=e.StudentId WHERE ${where}`);
   return {items:items.recordset,total:Number(total.recordset[0].total)};
 }
+
+export async function exportStudentsByScope({ scope, facultyId = null, administrativeClassId = null, courseClassId = null }) {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input('Scope', sql.NVarChar(30), scope)
+    .input('FacultyId', sql.Int, facultyId)
+    .input('AdministrativeClassId', sql.Int, administrativeClassId)
+    .input('CourseClassId', sql.Int, courseClassId)
+    .query(`
+      SELECT u.UserCode studentCode,u.FullName fullName,u.Email email,
+        f.FacultyName facultyName,ac.ClassCode administrativeClassCode,ac.ClassName administrativeClassName,
+        u.IsActive isActive,u.CreatedAt createdAt,cc.Code courseClassCode,
+        sub.Code subjectCode,sub.Name subjectName,sem.Name semesterName,ay.Name academicYearName,
+        lecturer.FullName lecturerName
+      FROM Users u
+      LEFT JOIN StudentClassMembers scm ON scm.StudentId=u.Id AND scm.DeletedAt IS NULL
+      LEFT JOIN Classes ac ON ac.Id=scm.ClassId AND ac.DeletedAt IS NULL
+      LEFT JOIN Faculties f ON f.Id=ac.FacultyId AND f.DeletedAt IS NULL
+      LEFT JOIN CourseClassEnrollments enrollment ON enrollment.StudentId=u.Id
+        AND enrollment.CourseClassId=@CourseClassId AND enrollment.IsActive=1 AND enrollment.DeletedAt IS NULL
+      LEFT JOIN CourseClasses cc ON cc.Id=enrollment.CourseClassId AND cc.DeletedAt IS NULL
+      LEFT JOIN Subjects sub ON sub.Id=cc.SubjectId AND sub.DeletedAt IS NULL
+      LEFT JOIN Semesters sem ON sem.Id=cc.SemesterId AND sem.DeletedAt IS NULL
+      LEFT JOIN AcademicYears ay ON ay.Id=sem.AcademicYearId AND ay.DeletedAt IS NULL
+      LEFT JOIN Users lecturer ON lecturer.Id=cc.LecturerId AND lecturer.DeletedAt IS NULL
+      WHERE u.Role='STUDENT' AND u.DeletedAt IS NULL
+        AND (@Scope<>'faculty' OR f.Id=@FacultyId)
+        AND (@Scope<>'administrativeClass' OR ac.Id=@AdministrativeClassId)
+        AND (@Scope<>'courseClass' OR enrollment.Id IS NOT NULL)
+      ORDER BY u.UserCode,u.FullName`);
+  return result.recordset;
+}

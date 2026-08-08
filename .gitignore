@@ -17,6 +17,8 @@ build/
 frontend/.env
 backend/.env
 .env.docker
+.presentation-seed-secret
+.local-seed-accounts.txt
 
 # Logs
 *.log
