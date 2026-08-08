@@ -7,6 +7,25 @@ x-logging: &default-logging
     max-file: ${LOG_MAX_FILES:-5}
 
 services:
+  rabbitmq-data-init:
+    image: alpine:3.21
+    user: "0:0"
+    command:
+      - sh
+      - -c
+      - >-
+        chown 100:101 /var/lib/rabbitmq && chmod 700 /var/lib/rabbitmq;
+        if [ -e /var/lib/rabbitmq/.erlang.cookie ]; then
+          chown 100:101 /var/lib/rabbitmq/.erlang.cookie &&
+          chmod 600 /var/lib/rabbitmq/.erlang.cookie;
+        fi
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: "no"
+    logging: *default-logging
+    networks:
+      - private
+
   database-backup-init:
     image: alpine:3.21
     user: "0:0"
@@ -36,6 +55,9 @@ services:
     logging: *default-logging
     networks:
       - private
+    depends_on:
+      rabbitmq-data-init:
+        condition: service_completed_successfully
 
   database:
     image: mcr.microsoft.com/mssql/server:2022-latest
