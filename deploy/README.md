@@ -12,6 +12,31 @@ Production Compose publishes only TCP 80 and 443. SQL Server, RabbitMQ, backend,
 
 Never commit `.env.production`. Never run `docker compose down -v`, `docker volume rm`, or delete named volumes during deploy or rollback.
 
+The production Compose file requires non-empty `DOMAIN`, `MSSQL_SA_PASSWORD`,
+`JWT_SECRET`, `RABBITMQ_USER`, and `RABBITMQ_PASSWORD`. Monitoring additionally
+requires `GRAFANA_ADMIN_PASSWORD`. The checked-in examples contain placeholders,
+not usable credentials.
+
+## Local production check
+
+On Windows, create the ignored local environment once, then use the safety check:
+
+```powershell
+.\deploy\scripts\new-local-production-env.ps1
+# Only use the generator for a new stack; existing volumes require their original credentials.
+.\deploy\scripts\local-production-check.ps1
+.\deploy\scripts\local-production-check.ps1 -Build
+.\deploy\scripts\local-production-check.ps1 -Start
+```
+
+For `DOMAIN=localhost`, the script creates a self-signed certificate inside the
+existing Compose certificate volume if one is missing. It does not print secrets,
+remove containers, delete volumes, reset the database, or seed an admin while the
+two admin seed variables are blank. Use `https://localhost` and accept the local
+self-signed certificate warning. Never replace credentials in `.env.production`
+when reusing an initialized SQL Server or RabbitMQ volume; use the credentials that
+originally initialized those volumes.
+
 ## First deployment
 
 ```bash
