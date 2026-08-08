@@ -33,7 +33,9 @@ For `DOMAIN=localhost`, the script creates a self-signed certificate inside the
 existing Compose certificate volume if one is missing. It does not print secrets,
 remove containers, delete volumes, reset the database, or seed an admin while the
 two admin seed variables are blank. Use `https://localhost` and accept the local
-self-signed certificate warning. Never replace credentials in `.env.production`
+self-signed certificate warning. It also binds ports 80/443 to `127.0.0.1` to
+avoid intermittent Docker Desktop/WSL IPv6 localhost relay resets. VPS deployments
+keep `PROXY_BIND_IP=0.0.0.0`. Never replace credentials in `.env.production`
 when reusing an initialized SQL Server or RabbitMQ volume; use the credentials that
 originally initialized those volumes.
 

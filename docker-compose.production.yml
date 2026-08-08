@@ -253,8 +253,8 @@ services:
       CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-25m}
       NGINX_ENVSUBST_FILTER: ^(DOMAIN|CLIENT_MAX_BODY_SIZE)$
     ports:
-      - "80:80"
-      - "443:443"
+      - "${PROXY_BIND_IP:-0.0.0.0}:80:80"
+      - "${PROXY_BIND_IP:-0.0.0.0}:443:443"
     volumes:
       - ./deploy/nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
       - letsencrypt:/etc/letsencrypt:ro
@@ -282,7 +282,7 @@ services:
     image: certbot/certbot:latest
     profiles: ["tools"]
     ports:
-      - "80:80"
+      - "${PROXY_BIND_IP:-0.0.0.0}:80:80"
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot

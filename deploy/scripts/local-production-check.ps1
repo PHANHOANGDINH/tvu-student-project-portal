@@ -34,6 +34,14 @@ if ($values['JWT_SECRET'].Length -lt 32) { throw 'JWT_SECRET must be at least 32
 if ($values['RABBITMQ_PASSWORD'].Length -lt 16) { throw 'RABBITMQ_PASSWORD must be at least 16 characters.' }
 if ($values['DOMAIN'] -notmatch '^[A-Za-z0-9.-]+$') { throw 'DOMAIN contains unsupported characters.' }
 
+# Docker Desktop can install a WSL IPv6 relay for ::1 that races the Docker
+# port publisher. Keep local production on IPv4 loopback so localhost clients
+# immediately fall back from ::1 instead of hanging on the stale relay.
+if ($values['DOMAIN'] -eq 'localhost') {
+    $env:PROXY_BIND_IP = '127.0.0.1'
+    Write-Host 'Local proxy binding: 127.0.0.1 (IPv4 loopback)'
+}
+
 $compose = @('compose', '--env-file', $envFile, '-f', $composeFile)
 Push-Location $root
 try {
