@@ -27,9 +27,13 @@ async function heartbeat() {
 async function main() {
   await poolPromise;
   databaseUp.set(1);
-  const metricsPort = Number(process.env.WORKER_METRICS_PORT || 9464);
+  const metricsPort = Number(process.env.PORT || process.env.WORKER_METRICS_PORT || 9464);
   const metricsServer = createServer(async (req, res) => {
-    if (req.url !== '/metrics') { res.writeHead(404); return res.end(); }
+    if (req.method === 'GET' && req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ status: 'ok', service: 'notification-worker' }));
+    }
+    if (req.method !== 'GET' || req.url !== '/metrics') { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'Content-Type': register.contentType }); res.end(await register.metrics());
   }).listen(metricsPort, '0.0.0.0');
   await broker.connect();
