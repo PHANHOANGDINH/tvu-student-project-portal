@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import sql from 'mssql';
 import { createLogger } from '../monitoring/logger.js';
 
-dotenv.config({ override: true });
+dotenv.config();
 const logger = createLogger(process.env.SERVICE_NAME || 'backend-api');
 const dbConfig = {
   user: process.env.DB_USER,

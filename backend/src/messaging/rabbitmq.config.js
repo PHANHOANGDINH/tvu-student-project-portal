@@ -15,8 +15,25 @@ export function rabbitUrl() {
   const user = encodeURIComponent(process.env.RABBITMQ_USER || '');
   const password = encodeURIComponent(process.env.RABBITMQ_PASSWORD || '');
   const host = process.env.RABBITMQ_HOST || 'rabbitmq';
-  const port = Number(process.env.RABBITMQ_PORT || 5672);
-  const vhost = encodeURIComponent(process.env.RABBITMQ_VHOST || '/');
-  if (!user || !password) throw new Error('RabbitMQ credentials are not configured');
-  return `amqp://${user}:${password}@${host}:${port}/${vhost}`;
+
+  const protocol = String(
+    process.env.RABBITMQ_PROTOCOL || 'amqp'
+  ).toLowerCase();
+
+  if (!['amqp', 'amqps'].includes(protocol)) {
+    throw new Error('Invalid RabbitMQ protocol');
+  }
+
+  const defaultPort = protocol === 'amqps' ? 5671 : 5672;
+  const port = Number(process.env.RABBITMQ_PORT || defaultPort);
+
+  const vhost = encodeURIComponent(
+    process.env.RABBITMQ_VHOST || '/'
+  );
+
+  if (!user || !password) {
+    throw new Error('RabbitMQ credentials are not configured');
+  }
+
+  return `${protocol}://${user}:${password}@${host}:${port}/${vhost}`;
 }
