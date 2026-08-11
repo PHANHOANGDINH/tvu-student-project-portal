@@ -1,0 +1,64 @@
+.optional-mark {
+  margin-inline-start: 4px;
+  color: #667085;
+  font-weight: 400;
+}
+
+.optional-mark::before { content: '('; }
+.optional-mark::after { content: ')'; }
+
+.workspace-content { margin-top: 22px; }
+.workspace-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.workspace-section-heading h3 { margin-top: 0; }
+.workspace-section-heading p { margin-bottom: 0; }
+.breakable-text { overflow-wrap: anywhere; word-break: break-word; }
+
+.topic-registration-page { display: grid; gap: 18px; }
+.topic-status-filter { display: grid; gap: 6px; width: min(100%, 280px); }
+.topic-status-filter span { color: #475467; font-size: .84rem; font-weight: 700; }
+.topic-class-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-width: 0; }
+.topic-class-heading strong { overflow-wrap: anywhere; }
+.topic-class-heading span { flex: 0 0 auto; color: #667085; font-size: .82rem; }
+.topic-registration-table td:first-child { min-width: 260px; max-width: 520px; }
+.topic-registration-table p { margin: 6px 0; }
+.topic-review-actions { min-width: 230px; }
+
+.course-card h3 {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.course-meta span { min-width: 0; overflow-wrap: anywhere; }
+
+.student-workflow, .student-workflow .ant-collapse, .student-workflow .ant-collapse-item,
+.student-workflow .ant-collapse-content, .student-workflow .ant-collapse-content-box,
+.student-workflow .ant-card, .student-workflow .ant-card-body { min-width: 0; }
+.student-workflow .page-title > div { min-width: 0; }
+.student-workflow .page-title h2, .student-workflow .page-title p,
+.student-workflow .ant-card-head-title, .student-workflow .ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.student-workflow .ant-space { max-width: 100%; }
+.student-workflow .ant-space-item { min-width: 0; }
+.student-workflow .ant-btn { height: auto; min-height: 32px; white-space: normal; }
+
+@media (max-width: 700px) {
+  .workspace-section-heading, .topic-class-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .topic-registration-table td:first-child { min-width: 220px; }
+  .topic-review-actions { min-width: 190px; }
+  .student-workflow .page-title.row-between { align-items: stretch; flex-direction: column; }
+  .student-workflow .page-title.row-between > .ant-btn { width: 100%; }
+  .student-workflow .ant-card-head { align-items: flex-start; flex-wrap: wrap; }
+  .student-workflow .ant-card-extra { margin-inline-start: 0; }
+}

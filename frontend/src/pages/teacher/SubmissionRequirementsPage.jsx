@@ -104,7 +104,7 @@ export default function SubmissionRequirementsPage() {
     {error && <Alert type="error" showIcon message={error} closable onClose={() => setError('')} />}
 
     {show && <Card className="requirement-form-card" title={editing ? 'Sửa yêu cầu' : 'Tạo yêu cầu'}>
-      <Form form={form} layout="vertical" initialValues={initialValues} onFinish={save} requiredMark="optional">
+      <Form form={form} layout="vertical" initialValues={initialValues} onFinish={save} requiredMark={(label, { required }) => <>{label}{!required && <span className="optional-mark">Tùy chọn</span>}</>}>
         <section><Typography.Title level={5}>Thông tin yêu cầu</Typography.Title><Divider />
           <Form.Item name="classId" label="Lớp học phần" rules={[{ required: true, message: 'Vui lòng chọn lớp học phần.' }]}>
             <Select showSearch optionFilterProp="label" disabled={Boolean(editing)} placeholder="Chọn lớp học phần" options={classes.map(item => ({ value: item.id, label: `${item.code} — ${item.subjectName}` }))} />
@@ -122,8 +122,8 @@ export default function SubmissionRequirementsPage() {
             <Col xs={24} md={12} xl={6}><Form.Item name="maxFileSizeMb" label="Dung lượng tối đa"><InputNumber min={1} precision={0} addonAfter="MB" placeholder="Không giới hạn" /></Form.Item></Col>
           </Row>
           <Flex className="requirement-switches" gap={24} wrap>
-            <Form.Item name="allowLate" label="Cho phép nộp trễ" valuePropName="checked"><Switch checkedChildren="Có" unCheckedChildren="Không" /></Form.Item>
-            <Form.Item name="allowResubmission" label="Cho phép nộp lại" valuePropName="checked"><Switch checkedChildren="Có" unCheckedChildren="Không" /></Form.Item>
+            <Form.Item name="allowLate" label="Cho phép nộp trễ" valuePropName="checked"><Switch /></Form.Item>
+            <Form.Item name="allowResubmission" label="Cho phép nộp lại" valuePropName="checked"><Switch /></Form.Item>
           </Flex>
         </section>
 

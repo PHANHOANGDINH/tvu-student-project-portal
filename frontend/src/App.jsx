@@ -3,6 +3,7 @@ import './App.css'
 import './group.css'
 import './notifications.css'
 import './theme.css'
+import './pages/teacher/lecturer-ui.css'
 
 import AppLayout from './layouts/AppLayout'
 import LoginPage from './pages/LoginPage'

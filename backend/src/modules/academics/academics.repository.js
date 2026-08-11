@@ -82,3 +82,13 @@ export async function findLecturerClass(uid,id){
  const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query('SELECT '+workspaceSelect+lecturerFrom+' AND c.Id=@Id')
  return r.recordset[0]||null
 }
+export async function listLecturerClassStudents(uid,id){
+ const pool=await poolPromise,r=await pool.request().input('Uid',sql.Int,uid).input('Id',sql.Int,id).query(`
+  SELECT u.Id id,u.UserCode studentCode,u.FullName fullName,u.Email email,e.CreatedAt enrolledAt
+  FROM CourseClasses c
+  JOIN CourseClassEnrollments e ON e.CourseClassId=c.Id AND e.IsActive=1 AND e.DeletedAt IS NULL
+  JOIN Users u ON u.Id=e.StudentId AND u.Role='STUDENT' AND u.DeletedAt IS NULL
+  WHERE c.Id=@Id AND c.LecturerId=@Uid AND c.DeletedAt IS NULL
+  ORDER BY u.UserCode,u.FullName`)
+ return r.recordset
+}
