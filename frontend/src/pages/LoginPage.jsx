@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpenCheck, Eye, EyeOff, GraduationCap, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { BookOpenCheck, CircleHelp, Eye, EyeOff, GraduationCap, LockKeyhole, Mail, Phone, ShieldCheck } from 'lucide-react'
 import { getCurrentUserApi, loginApi } from '../api/authApi'
+import { ADMIN_SUPPORT_CONTACT } from '../constants/support'
 import { setAuth, updateStoredUser } from '../utils/auth'
 import TvuBrandMark from '../components/common/TvuBrandMark'
 
@@ -41,6 +42,14 @@ export default function LoginPage() {
         <button className="btn-primary auth-submit" type="submit" disabled={loading}>{loading && <span className="button-spinner" />}{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
       </form>
       <div className="auth-footer"><strong>TVU Student Project Portal</strong><span>Hỗ trợ quản lý đồ án sinh viên</span></div>
+      <aside className="auth-support" aria-labelledby="password-support-title">
+        <div className="auth-support-heading"><CircleHelp size={17} /><strong id="password-support-title">Quên mật khẩu?</strong></div>
+        <p>Liên hệ quản trị viên để được hỗ trợ đặt lại mật khẩu.</p>
+        <div className="auth-support-links">
+          <a href={`mailto:${ADMIN_SUPPORT_CONTACT.email}`}><Mail size={15} /><span>Email: {ADMIN_SUPPORT_CONTACT.email}</span></a>
+          <a href={`tel:${ADMIN_SUPPORT_CONTACT.phoneHref}`}><Phone size={15} /><span>Điện thoại: {ADMIN_SUPPORT_CONTACT.phone}</span></a>
+        </div>
+      </aside>
     </div></section>
   </div>
 }

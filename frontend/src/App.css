@@ -137,6 +137,37 @@ button:disabled {
   font-size: 13px;
 }
 
+.auth-support {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth-support-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #173f70;
+}
+
+.auth-support-heading strong { font-size: 14px; }
+.auth-support p { margin: 5px 0 8px; }
+.auth-support-links { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.auth-support-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--blue-dark);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.auth-support-links a:hover { color: var(--blue); text-decoration: underline; }
+
 /* Form controls and buttons */
 .form-group {
   margin-bottom: 16px;
